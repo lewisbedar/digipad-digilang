@@ -883,7 +883,6 @@ export default {
 				} else {
 					document.querySelector('#bloc .fermer').focus()
 				}
-				const that = this
 				const editeur = pell.init({
 					element: document.querySelector('#texte'),
 					onChange: function (html) {
@@ -896,20 +895,20 @@ export default {
 						this.texte = texte
 					}.bind(this),
 					actions: [
-						{ name: 'gras', title: that.$t('gras'), icon: '<i class="material-icons">format_bold</i>', result: () => pell.exec('bold') },
-						{ name: 'italique', title: that.$t('italique'), icon: '<i class="material-icons">format_italic</i>', result: () => pell.exec('italic') },
-						{ name: 'souligne', title: that.$t('souligne'), icon: '<i class="material-icons">format_underlined</i>', result: () => pell.exec('underline') },
-						{ name: 'barre', title: that.$t('barre'), icon: '<i class="material-icons">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-						{ name: 'listeordonnee', title: that.$t('listeOrdonnee'), icon: '<i class="material-icons">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
-						{ name: 'liste', title: that.$t('liste'), icon: '<i class="material-icons">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
-						{ name: 'couleur', title: that.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
-						{ name: 'lien', title: that.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
+						{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons">format_bold</i>', result: () => pell.exec('bold') },
+						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons">format_italic</i>', result: () => pell.exec('italic') },
+						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons">format_underlined</i>', result: () => pell.exec('underline') },
+						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+						{ name: 'listeordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
+						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
+						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
+						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
 							const fragment = window.getSelection().focusNode.parentNode
 							let lienActuel = ''
 							if (fragment.href && fragment.href !== null) {
 								lienActuel = fragment.href
 							}
-							const url = window.prompt(that.$t('adresseLien'), lienActuel)
+							const url = window.prompt(this.$t('adresseLien'), lienActuel)
 							if (url && url !== '') {
 								pell.exec('createLink', url)
 							} else if (url === '') {
@@ -919,7 +918,7 @@ export default {
 					],
 					classes: { actionbar: 'boutons-editeur', button: 'bouton-editeur', content: 'contenu-editeur', selected: 'bouton-actif' }
 				})
-				editeur.content.innerHTML = this.texte
+				editeur.content.innerHTML = DOMPurify.sanitize(this.texte)
 				editeur.onpaste = function (event) {
 					event.preventDefault()
 					event.stopPropagation()
@@ -1617,6 +1616,7 @@ export default {
 		},
 		afficherVisionneuse (item) {
 			if (this.panneaux.map(function (e) { return e.id }).includes('panneau_' + item.bloc) === false) {
+				this.elementPrecedent = (document.activeElement || document.body)
 				const imageId = 'image-' + (new Date()).getTime()
 				let html
 				switch (item.type) {
@@ -1650,7 +1650,6 @@ export default {
 					break
 				}
 				this.$nextTick(function () {
-					const that = this
 					let largeurPanneau = '320px'
 					let hauteurPanneau = '312px'
 					let position = 'center'
@@ -1713,47 +1712,93 @@ export default {
 										panzoom.reset()
 									}
 								})
+								panel.querySelector('.jsPanel-btn-dezoom').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
+										panzoom.reset()
+									}
+								})
 							} else if (item.type === 'audio') {
 								panel.resize({
 									width: largeurPanneau,
 									height: '150px'
 								}).reposition()
 								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + that.definirCheminFichiers() + '/' + that.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
+									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
 									name: 'telecharger',
 									handler: function () {}
 								})
 							} else if (item.type === 'embed') {
 								panel.addControl({
-									html: '<span class="material-icons lien">link</span>',
+									html: '<span class="material-icons">link</span>',
 									name: 'copier-lien',
 									handler: function () {
 										let lien
 										if (item.source === 'etherpad') {
 											lien = item.media
-										} else if (that.verifierURL(item.iframe) === true) {
+										} else if (this.verifierURL(item.iframe) === true) {
 											lien = item.iframe
 										} else {
 											lien = item.iframe.match(/<iframe [^>]*src="[^"]*"[^>]*>/g).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0]
 										}
-										const clipboardLien = new ClipboardJS('#panneau_' + item.bloc + ' .lien', {
+										const clipboardLien = new ClipboardJS(panel.querySelector('.jsPanel-btn-copier-lien'), {
 											text: function () {
 												return lien
 											}
 										})
 										clipboardLien.on('success', function () {
-											that.notification = that.$t('lienCopie')
-										})
-									}
+											panel.querySelector('.jsPanel-btn-copier-lien').focus()
+											this.notification = this.$t('lienCopie')
+										}.bind(this))
+									}.bind(this)
 								})
+								panel.querySelector('.jsPanel-btn-copier-lien').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										e.target.click()
+									}
+								}.bind(this))
 							} else if (item.type === 'pdf' || item.type === 'document' || item.type === 'office') {
 								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + that.definirCheminFichiers() + '/' + that.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
+									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
 									name: 'telecharger',
 									handler: function () {}
 								})
 							}
-						},
+							if (panel.querySelector('.jsPanel-btn-smallify')) {
+								panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										if (panel.status === 'smallified') {
+											panel.unsmallify()
+										} else {
+											panel.smallify()
+										}
+									}
+								})
+							}
+							if (panel.querySelector('.jsPanel-btn-normalize')) {
+								panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										panel.normalize()
+										panel.querySelector('.jsPanel-btn-maximize').focus()
+									}
+								})
+							}
+							if (panel.querySelector('.jsPanel-btn-maximize')) {
+								panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										panel.maximize()
+										panel.querySelector('.jsPanel-btn-normalize').focus()
+									}
+								})
+							}
+							if (panel.querySelector('.jsPanel-btn-close')) {
+								panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', function (e) {
+									if (e.key === 'Enter') {
+										panel.close()
+									}
+								})
+							}
+						}.bind(this),
 						onmaximized: function(panel) {
 							if (item.type === 'image' || item.type === 'lien-image') {
 								document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
@@ -1769,6 +1814,7 @@ export default {
 									this.panneaux.splice(index, 1)
 								}
 							}.bind(this))
+							this.gererFocus()
 							return true
 						}.bind(this),
 						dragit: {
@@ -1776,6 +1822,9 @@ export default {
 						}
 					})
 					this.panneaux.push(panneau)
+					this.$nextTick(function () {
+						document.querySelector('#panneau_' + item.bloc + ' .jsPanel-btn-close').focus()
+					})
 				}.bind(this))
 			}
 		},
@@ -2193,7 +2242,7 @@ export default {
 					actions: actions,
 					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' }
 				})
-				editeur.content.innerHTML = this.commentaireModifie
+				editeur.content.innerHTML = DOMPurify.sanitize(this.commentaireModifie)
 				editeur.onpaste = function (event) {
 					event.preventDefault()
 					event.stopPropagation()
