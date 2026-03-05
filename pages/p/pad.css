@@ -29,6 +29,7 @@
 #champ-recherche span {
 	font-size: 24px;
 	color: #fff;
+	line-height: 1;
 	cursor: pointer;
 }
 
