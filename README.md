@@ -3,7 +3,7 @@
 Digipad est une application en ligne pour créer des murs collaboratifs. 
 
 Elle est publiée sous licence GNU AGPLv3.
-Sauf les fontes Roboto Slab et Material Icons (Apache License Version 2.0) et la fonte Mona Sans Expanded (Sil Open Font Licence 1.1), jsPanel4 (https://github.com/Flyer53/jsPanel4 - MIT), pdf.js (https://github.com/mozilla/pdf.js - Apache License Version 2.0), viewer.js (https://github.com/webodf/ViewerJS - Apache License Version 2.0), JavaScript-flexImages (https://github.com/Pixabay/JavaScript-flexImages - MIT), panzoom (https://github.com/timmywil/panzoom - MIT)
+Sauf les fontes Roboto Slab et Material Icons (Apache License Version 2.0) et la fonte Mona Sans Expanded (Sil Open Font Licence 1.1), jsPanel4 (https://github.com/Flyer53/jsPanel4 - MIT), pdf.js (https://github.com/mozilla/pdf.js - Apache License Version 2.0), JavaScript-flexImages (https://github.com/Pixabay/JavaScript-flexImages - MIT), panzoom (https://github.com/timmywil/panzoom - MIT)
 
 ### Prérequis
 Node.js 20+, Redis 6+, GraphicsMagick, Ghostscript, Libre Office
