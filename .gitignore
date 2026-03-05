@@ -12,6 +12,7 @@ _resources
 dist
 server/exporter-utilisateurs-json.js
 server/importer-utilisateurs-json.js
+server/exporter-pads-id-json.js
 
 # Runtime data
 pids
