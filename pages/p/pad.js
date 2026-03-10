@@ -401,8 +401,11 @@ export default {
 				}.bind(this))
 
 				this.blocs.forEach(function (bloc) {
-					bloc.texte = DOMPurify.sanitize(bloc.texte)
-				})
+					bloc.texte = this.formaterHTML(bloc.texte)
+					if (bloc.hasOwnProperty('iframe')) {
+						bloc.iframe = DOMPurify.sanitize(bloc.iframe)
+					}
+				}.bind(this))
 
 				setTimeout(function () {
 					this.chargementPage = false
@@ -886,13 +889,7 @@ export default {
 				const editeur = pell.init({
 					element: document.querySelector('#texte'),
 					onChange: function (html) {
-						let texte = html.replace(/(<a [^>]*)(target="[^"]*")([^>]*>)/gi, '$1$3')
-						texte = texte.replace(/(<a [^>]*)(>)/gi, '$1 target="_blank"$2')
-						texte = linkifyHtml(texte, {
-							defaultProtocol: 'https',
-							target: '_blank'
-						})
-						this.texte = texte
+						this.texte = html
 					}.bind(this),
 					actions: [
 						{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons">format_bold</i>', result: () => pell.exec('bold') },
@@ -903,10 +900,23 @@ export default {
 						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
 						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
 						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
-							const fragment = window.getSelection().focusNode.parentNode
+							let i = 0
 							let lienActuel = ''
-							if (fragment.href && fragment.href !== null) {
-								lienActuel = fragment.href
+							let fragment = window.getSelection().focusNode.parentNode
+							while (i < 6 && lienActuel === '') {
+								if (fragment.href && fragment.href !== null) {
+									lienActuel = fragment.href
+								} else {
+									fragment = fragment.parentNode
+								}
+								i++
+							}
+							if (lienActuel !== '') {
+								const range = document.createRange()
+								range.selectNodeContents(fragment)
+								const selection = window.getSelection()
+								selection.removeAllRanges()
+								selection.addRange(range)
 							}
 							const url = window.prompt(this.$t('adresseLien'), lienActuel)
 							if (url && url !== '') {
@@ -918,7 +928,7 @@ export default {
 					],
 					classes: { actionbar: 'boutons-editeur', button: 'bouton-editeur', content: 'contenu-editeur', selected: 'bouton-actif' }
 				})
-				editeur.content.innerHTML = DOMPurify.sanitize(this.texte)
+				editeur.content.innerHTML = this.formaterHTML(this.texte)
 				editeur.onpaste = function (event) {
 					event.preventDefault()
 					event.stopPropagation()
@@ -927,14 +937,25 @@ export default {
 						html = stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 						html = html.replace(/style=".*?"/mg, '')
 						html = html.replace(/class=".*?"/mg, '')
-						html = DOMPurify.sanitize(html)
+						html = this.formaterHTML(html)
 						pell.exec('insertHTML', html)
 					} else {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
-				}
+				}.bind(this)
 				document.querySelector('#couleur-texte').addEventListener('change', this.modifierCouleurTexte)
 			}.bind(this))
+		},
+		formaterHTML (html) {
+			html = linkifyHtml(html, {
+				defaultProtocol: 'https',
+				truncate: 50,
+				rel: 'noreferrer',
+				target: '_blank'
+			})
+			html = DOMPurify.sanitize(html)
+			html = html.replace(/(<a [^>]*)(>)/gi, '$1 target="_blank" rel="noreferrer"$2')
+			return html
 		},
 		modifierCouleurTexte (event) {
 			pell.exec('foreColor', event.target.value)
@@ -1096,9 +1117,9 @@ export default {
 				} else {
 					this.modale = ''
 					if (this.mode === 'creation') {
-						this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.texte, donnees, this.iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+						this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, DOMPurify.sanitize(this.iframe), 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 					} else {
-						this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.texte, donnees, this.iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+						this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, DOMPurify.sanitize(this.iframe), 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 					}
 				}
 				this.progressionEnregistrement = false
@@ -1407,7 +1428,7 @@ export default {
 			this.bloc = 'bloc-id-' + (new Date()).getTime() + Math.random().toString(16).slice(10)
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
-				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.texte, this.media, this.iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, DOMPurify.sanitize(this.iframe), this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1416,7 +1437,7 @@ export default {
 		modifierBloc () {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
-				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.texte, this.media, this.iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, DOMPurify.sanitize(this.iframe), this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1645,7 +1666,7 @@ export default {
 					} else if (this.verifierURL(item.iframe) === true) {
 						html = '<iframe src="' + item.iframe + '" allow="autoplay; fullscreen"></iframe>'
 					} else {
-						html = '<div class="html">' + item.iframe + '</div>'
+						html = '<div class="html">' + DOMPurify.sanitize(item.iframe) + '</div>'
 					}
 					break
 				}
@@ -2212,7 +2233,7 @@ export default {
 				bloc = this.donneesBloc.bloc
 			}
 			if (this.commentaire !== '') {
-				this.$socket.emit('commenterbloc', bloc, this.pad.id, this.titre, this.commentaire, this.identifiant, this.nom)
+				this.$socket.emit('commenterbloc', bloc, this.pad.id, this.titre, this.formaterHTML(this.commentaire), this.identifiant, this.nom)
 				this.commentaire = ''
 				this.commentaireId = ''
 				this.commentaireModifie = ''
@@ -2231,18 +2252,12 @@ export default {
 				const editeur = pell.init({
 					element: document.querySelector('#commentaire-modifie'),
 					onChange: function (html) {
-						let commentaire = html.replace(/(<a [^>]*)(target="[^"]*")([^>]*>)/gi, '$1$3')
-						commentaire = commentaire.replace(/(<a [^>]*)(>)/gi, '$1 target="_blank"$2')
-						commentaire = linkifyHtml(commentaire, {
-							defaultProtocol: 'https',
-							target: '_blank'
-						})
-						this.commentaireModifie = commentaire
+						this.commentaireModifie = html
 					}.bind(this),
 					actions: actions,
 					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' }
 				})
-				editeur.content.innerHTML = DOMPurify.sanitize(this.commentaireModifie)
+				editeur.content.innerHTML = this.formaterHTML(this.commentaireModifie)
 				editeur.onpaste = function (event) {
 					event.preventDefault()
 					event.stopPropagation()
@@ -2251,12 +2266,12 @@ export default {
 						html = stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 						html = html.replace(/style=".*?"/mg, '')
 						html = html.replace(/class=".*?"/mg, '')
-						html = DOMPurify.sanitize(html)
+						html = this.formaterHTML(html)
 						pell.exec('insertHTML', html)
 					} else {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
-				}
+				}.bind(this)
 				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('change', this.modifierCouleurCommentaireModifie)
 				document.querySelector('#commentaire-' + this.commentaireId + ' .action span').focus()
 			}.bind(this))
@@ -2276,7 +2291,7 @@ export default {
 			if (Object.keys(this.donneesBloc).length > 0) {
 				bloc = this.donneesBloc.bloc
 			}
-			this.$socket.emit('modifiercommentaire', bloc, this.pad.id, this.commentaireId, this.commentaireModifie, this.identifiant)
+			this.$socket.emit('modifiercommentaire', bloc, this.pad.id, this.commentaireId, this.formaterHTML(this.commentaireModifie), this.identifiant)
 			this.commentaireId = ''
 			this.commentaireModifie = ''
 			this.editionCommentaire = false
@@ -2308,13 +2323,7 @@ export default {
 				this.editeurCommentaire = pell.init({
 					element: document.querySelector('#commentaire'),
 					onChange: function (html) {
-						let commentaire = html.replace(/(<a [^>]*)(target="[^"]*")([^>]*>)/gi, '$1$3')
-						commentaire = commentaire.replace(/(<a [^>]*)(>)/gi, '$1 target="_blank"$2')
-						commentaire = linkifyHtml(commentaire, {
-							defaultProtocol: 'https',
-							target: '_blank'
-						})
-						this.commentaire = commentaire
+						this.commentaire = html
 					}.bind(this),
 					actions: actions,
 					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' }
@@ -2327,12 +2336,12 @@ export default {
 						html = stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 						html = html.replace(/style=".*?"/mg, '')
 						html = html.replace(/class=".*?"/mg, '')
-						html = DOMPurify.sanitize(html)
+						html = this.formaterHTML(html)
 						pell.exec('insertHTML', html)
 					} else {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
-				}
+				}.bind(this)
 				document.querySelector('#couleur-texte-commentaire').addEventListener('change', this.modifierCouleurCommentaire)
 			}
 		},
@@ -2344,10 +2353,23 @@ export default {
 				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
 				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color">', result: () => undefined },
 				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
-					const fragment = window.getSelection().focusNode.parentNode
+					let i = 0
 					let lienActuel = ''
-					if (fragment.href && fragment.href !== null) {
-						lienActuel = fragment.href
+					let fragment = window.getSelection().focusNode.parentNode
+					while (i < 6 && lienActuel === '') {
+						if (fragment.href && fragment.href !== null) {
+							lienActuel = fragment.href
+						} else {
+							fragment = fragment.parentNode
+						}
+						i++
+					}
+					if (lienActuel !== '') {
+						const range = document.createRange()
+						range.selectNodeContents(fragment)
+						const selection = window.getSelection()
+						selection.removeAllRanges()
+						selection.addRange(range)
 					}
 					const url = window.prompt(this.$t('adresseLien'), lienActuel)
 					if (url && url !== '') {
@@ -4058,6 +4080,7 @@ export default {
 			}.bind(this))
 
 			this.$socket.on('message', function (message) {
+				message.texte = this.formaterHTML(message.texte)
 				this.messagesChat.push(message)
 				if (message.identifiant !== this.identifiant && this.menu !== 'chat') {
 					this.nouveauxMessagesChat++
