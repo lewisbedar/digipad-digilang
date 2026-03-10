@@ -1295,26 +1295,6 @@
 	margin-bottom: 20px;
 }
 
-.modale .conteneur-motdepasse,
-.modale .conteneur-code-acces {
-	display: flex;
-	align-items: center;
-	margin-bottom: 20px;
-}
-
-.modale .conteneur-motdepasse input,
-.modale .conteneur-code-acces input {
-	margin-bottom: 0;
-}
-
-.modale .conteneur-motdepasse .icone,
-.modale .conteneur-code-acces .icone {
-	font-size: 24px;
-	margin-left: 10px;
-	user-select: none;
-	cursor: pointer;
-}
-
 #codeqr .contenu {
 	text-align: center;
 	font-size: 0;

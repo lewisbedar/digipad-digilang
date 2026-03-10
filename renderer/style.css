@@ -608,6 +608,27 @@ label.bouton-bleu {
 	padding-right: 30px;
 }
 
+.modale .conteneur-motdepasse,
+.modale .conteneur-code-acces {
+	display: flex;
+	align-items: center;
+	margin-bottom: 20px;
+}
+
+.modale .conteneur-motdepasse input,
+.modale .conteneur-code-acces input {
+	margin-bottom: 0!important;
+}
+
+.modale .conteneur-motdepasse .icone,
+.modale .conteneur-code-acces .icone {
+	font-size: 24px;
+	line-height: 1;
+	margin-left: 10px;
+	user-select: none;
+	cursor: pointer;
+}
+
 .modale .conteneur .bouton {
 	display: inline-block;
 	font-weight: 700;
