@@ -1291,6 +1291,8 @@ export default {
 						window.location.replace('/')
 					} else if (donnees === 'erreur') {
 						this.message = this.$t('erreurCommunicationServeur')
+					} else if (donnees === 'email_existe_deja') {
+						this.message = this.$t('emailExisteDeja', { email: email })
 					} else {
 						this.nom = nom
 						this.email = email
