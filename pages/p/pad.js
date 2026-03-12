@@ -403,7 +403,7 @@ export default {
 				this.blocs.forEach(function (bloc) {
 					bloc.texte = this.formaterHTML(bloc.texte)
 					if (bloc.hasOwnProperty('iframe')) {
-						bloc.iframe = DOMPurify.sanitize(bloc.iframe)
+						bloc.iframe = DOMPurify.sanitize(bloc.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
 					}
 				}.bind(this))
 
@@ -1116,10 +1116,11 @@ export default {
 					this.message = this.$t('erreurEspaceDisque')
 				} else {
 					this.modale = ''
+					const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
 					if (this.mode === 'creation') {
-						this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, DOMPurify.sanitize(this.iframe), 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+						this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 					} else {
-						this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, DOMPurify.sanitize(this.iframe), 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+						this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 					}
 				}
 				this.progressionEnregistrement = false
@@ -1428,7 +1429,8 @@ export default {
 			this.bloc = 'bloc-id-' + (new Date()).getTime() + Math.random().toString(16).slice(10)
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
-				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, DOMPurify.sanitize(this.iframe), this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
+				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1437,7 +1439,8 @@ export default {
 		modifierBloc () {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
-				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, DOMPurify.sanitize(this.iframe), this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
+				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1666,7 +1669,7 @@ export default {
 					} else if (this.verifierURL(item.iframe) === true) {
 						html = '<iframe src="' + item.iframe + '" allow="autoplay; fullscreen"></iframe>'
 					} else {
-						html = '<div class="html">' + DOMPurify.sanitize(item.iframe) + '</div>'
+						html = '<div class="html">' + DOMPurify.sanitize(item.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] }) + '</div>'
 					}
 					break
 				}
