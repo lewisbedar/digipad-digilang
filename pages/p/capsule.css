@@ -272,6 +272,7 @@
 
 #blocs .bloc .media {
 	display: block;
+	text-align: center;
 	line-height: 1;
 	font-size: 0;
 	outline: 0;
@@ -492,10 +493,6 @@
 		border-radius: 0!important;
 		margin-bottom: 1.5rem!important;
 		max-width: 700px!important;
-	}
-
-	#blocs .bloc .media {
-		text-align: center!important;
 	}
 
 	#blocs .bloc .media img {

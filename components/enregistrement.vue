@@ -1,17 +1,17 @@
 <template>
 	<div class="enregistrer audio">
 		<template v-if="!$parent.enregistrement && !chargement">
-			<span id="enregistrer" class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" @click="enregistrerAudio" @keydown.enter="enregistrerAudio"><i class="material-icons">fiber_manual_record</i><span>{{ $t('enregistrerAudio') }}</span></span>
+			<span id="enregistrer" class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" @click="enregistrerAudio" @keydown.enter.space.prevent="enregistrerAudio"><i class="material-icons" aria-hidden="true">fiber_manual_record</i><span>{{ $t('enregistrerAudio') }}</span></span>
 		</template>
 		<div id="enregistrement" v-else-if="$parent.enregistrement && !chargement">
 			<canvas id="visualisation" width="360" height="60" />
 			<div class="enregistrement">
-				<span class="bouton" :class="{'stopper': !pause}" role="button" :tabindex="$parent.definirTabIndexModale()" @click="arreterEnregistrementAudio" @keydown.enter="arreterEnregistrementAudio">
-					<i class="material-icons">stop</i>
+				<span class="bouton" :class="{'stopper': !pause}" role="button" :tabindex="$parent.definirTabIndexModale()" :title="$t('stopper')" :aria-label="$t('stopper')" @click="arreterEnregistrementAudio" @keydown.enter.space.prevent="arreterEnregistrementAudio">
+					<i class="material-icons" aria-hidden="true">stop</i>
 				</span>
-				<span class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" @click="mettreEnPauseEnregistrementAudio" @keydown.enter="mettreEnPauseEnregistrementAudio">
-					<i class="material-icons" v-if="!pause">pause</i>
-					<i class="material-icons" v-else>play_arrow</i>
+				<span class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" :title="$t('pause')" :aria-label="$t('pause')" @click="mettreEnPauseEnregistrementAudio" @keydown.enter.space.prevent="mettreEnPauseEnregistrementAudio">
+					<i class="material-icons" aria-hidden="true" v-if="!pause">pause</i>
+					<i class="material-icons" aria-hidden="true" v-else>play_arrow</i>
 				</span>
 				<span class="duree">{{ dureeEnregistrement }}</span>
 			</div>

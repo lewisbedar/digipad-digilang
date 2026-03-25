@@ -13,7 +13,6 @@ import Chargement from '#root/components/chargement.vue'
 import Message from '#root/components/message.vue'
 import Notification from '#root/components/notification.vue'
 import Capsule from '#root/components/capsule.vue'
-import CapsuleAlt from '#root/components/capsuleAlt.vue'
 import Emojis from '#root/components/emojis.vue'
 import Enregistrement from '#root/components/enregistrement.vue'
 import { VueDraggableNext } from 'vue-draggable-next'
@@ -26,7 +25,6 @@ export default {
 		Message,
 		Notification,
 		Capsule,
-		CapsuleAlt,
 		Emojis,
 		Enregistrement,
 		draggable: VueDraggableNext
@@ -275,7 +273,9 @@ export default {
 		},
 		messagesChat: function () {
 			this.$nextTick(function () {
-				document.querySelector('#messages').scrollIntoView({ behavior: 'smooth', block: 'end' })
+				if (document.querySelector('#messages')) {
+					document.querySelector('#messages').scrollIntoView({ behavior: 'smooth', block: 'end' })
+				}
 			})
 		},
 		page: function (page) {
@@ -892,14 +892,14 @@ export default {
 						this.texte = html
 					}.bind(this),
 					actions: [
-						{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons">format_bold</i>', result: () => pell.exec('bold') },
-						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons">format_italic</i>', result: () => pell.exec('italic') },
-						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons">format_underlined</i>', result: () => pell.exec('underline') },
-						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-						{ name: 'listeordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
-						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
-						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
-						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
+						{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold') },
+						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
+						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
+						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+						{ name: 'listeordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
+						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
+						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
+						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 							let i = 0
 							let lienActuel = ''
 							let fragment = window.getSelection().focusNode.parentNode
@@ -1731,13 +1731,17 @@ export default {
 								panel.addControl({
 									html: '<span class="material-icons">adjust</span>',
 									name: 'dezoom',
+									ariaLabel: this.$t('recentrer'),
 									handler: function () {
 										document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
 										panzoom.reset()
-									}
+									},
+									afterInsert: function (control) {
+										control.title = this.$t('recentrer')
+									}.bind(this)
 								})
 								panel.querySelector('.jsPanel-btn-dezoom').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
 										panzoom.reset()
 									}
@@ -1748,7 +1752,7 @@ export default {
 									height: '150px'
 								}).reposition()
 								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
+									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
 									name: 'telecharger',
 									handler: function () {}
 								})
@@ -1756,6 +1760,7 @@ export default {
 								panel.addControl({
 									html: '<span class="material-icons">link</span>',
 									name: 'copier-lien',
+									ariaLabel: this.$t('copierLien'),
 									handler: function () {
 										let lien
 										if (item.source === 'etherpad') {
@@ -1774,23 +1779,28 @@ export default {
 											panel.querySelector('.jsPanel-btn-copier-lien').focus()
 											this.notification = this.$t('lienCopie')
 										}.bind(this))
+									}.bind(this),
+									afterInsert: function (control) {
+										control.title = this.$t('copierLien')
 									}.bind(this)
 								})
 								panel.querySelector('.jsPanel-btn-copier-lien').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										e.target.click()
 									}
 								}.bind(this))
 							} else if (item.type === 'pdf' || item.type === 'document' || item.type === 'office') {
 								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank">file_download</a>',
+									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
 									name: 'telecharger',
 									handler: function () {}
 								})
 							}
 							if (panel.querySelector('.jsPanel-btn-smallify')) {
+								panel.querySelector('.jsPanel-btn-smallify').title = this.$t('plier')
+								panel.querySelector('.jsPanel-btn-smallify').ariaLabel = this.$t('plier')
 								panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										if (panel.status === 'smallified') {
 											panel.unsmallify()
 										} else {
@@ -1800,24 +1810,30 @@ export default {
 								})
 							}
 							if (panel.querySelector('.jsPanel-btn-normalize')) {
+								panel.querySelector('.jsPanel-btn-normalize').title = this.$t('normaliser')
+								panel.querySelector('.jsPanel-btn-normalize').ariaLabel = this.$t('normaliser')
 								panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										panel.normalize()
 										panel.querySelector('.jsPanel-btn-maximize').focus()
 									}
 								})
 							}
 							if (panel.querySelector('.jsPanel-btn-maximize')) {
+								panel.querySelector('.jsPanel-btn-maximize').title = this.$t('maximiser')
+								panel.querySelector('.jsPanel-btn-maximize').ariaLabel = this.$t('maximiser')
 								panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										panel.maximize()
 										panel.querySelector('.jsPanel-btn-normalize').focus()
 									}
 								})
 							}
 							if (panel.querySelector('.jsPanel-btn-close')) {
+								panel.querySelector('.jsPanel-btn-close').title = this.$t('fermer')
+								panel.querySelector('.jsPanel-btn-close').ariaLabel = this.$t('fermer')
 								panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', function (e) {
-									if (e.key === 'Enter') {
+									if (e.key === 'Enter' || e.key === ' ') {
 										panel.close()
 									}
 								})
@@ -2123,6 +2139,7 @@ export default {
 					if (this.pad.commentaires === 'actives') {
 						this.genererEditeur()
 					}
+					document.querySelector('#diapositive .fermer').focus()
 				}.bind(this))
 			}.bind(this)
 			if (document.querySelector('#diapositive')) {
@@ -2350,12 +2367,12 @@ export default {
 		},
 		definirActionsEditeur (type) {
 			const actions = [
-				{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons">format_bold</i>', result: () => pell.exec('bold') },
-				{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons">format_italic</i>', result: () => pell.exec('italic') },
-				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons">format_underlined</i>', result: () => pell.exec('underline') },
-				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color">', result: () => undefined },
-				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons">link</i>', result: () => {
+				{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold') },
+				{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
+				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
+				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color">', result: () => undefined },
+				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 					let i = 0
 					let lienActuel = ''
 					let fragment = window.getSelection().focusNode.parentNode
@@ -2381,7 +2398,7 @@ export default {
 						pell.exec('unlink')
 					}
 				} },
-				{ name: 'emojis', title: this.$t('emoticones'), icon: '<i class="material-icons">insert_emoticon</i>', result: function () { this.afficherEmojis(type) }.bind(this) }
+				{ name: 'emojis', title: this.$t('emoticones'), icon: '<i class="material-icons" aria-hidden="true">insert_emoticon</i>', result: function () { this.afficherEmojis(type) }.bind(this) }
 			]
 			return actions
 		},
@@ -2750,10 +2767,16 @@ export default {
 		masquerCodeAcces () {
 			this.modificationCode = false
 			this.codeVisible = false
+			this.$nextTick(function () {
+				document.querySelector('.modale .icone').focus()
+			})
 		},
 		afficherModifierCodeAcces () {
 			this.codeVisible = true
 			this.modificationCode = true
+			this.$nextTick(function () {
+				document.querySelector('.modale .icone').focus()
+			})
 		},
 		annulerModifierCodeAcces () {
 			this.codeVisible = false

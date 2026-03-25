@@ -5,7 +5,7 @@
 				<div class="contenu">
 					<div class="message" v-html="message" />
 					<div class="actions">
-						<span class="bouton" role="button" tabindex="0" @click="fermer" @keydown.enter="fermer">{{ $t('fermer') }}</span>
+						<span class="bouton" role="button" tabindex="0" @click="fermer" @keydown.enter.space.prevent="fermer">{{ $t('fermer') }}</span>
 					</div>
 				</div>
 			</div>

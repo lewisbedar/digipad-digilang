@@ -2,12 +2,12 @@
 	<div id="page">
 		<div id="accueil" :style="{'background-image': 'url(./img/fond.png)'}">
 			<div id="langues">
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter="modifierLangue('fr')">FR</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter="modifierLangue('es')">ES</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter="modifierLangue('it')">IT</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter="modifierLangue('de')">DE</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter="modifierLangue('en')">EN</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter="modifierLangue('hr')">HR</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter.space.prevent="modifierLangue('fr')">FR</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter.space.prevent="modifierLangue('es')">ES</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter.space.prevent="modifierLangue('it')">IT</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter.space.prevent="modifierLangue('de')">DE</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter.space.prevent="modifierLangue('en')">EN</span>
+				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter.space.prevent="modifierLangue('hr')">HR</span>
 			</div>
 			<div id="conteneur">
 				<div id="contenu">
@@ -17,17 +17,17 @@
 					<div>
 						<p v-html="$t('slogan')" />
 						<div id="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleConnexion" @keydown.enter="afficherModaleConnexion">{{ $t('seConnecter') }}</span>
-							<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleInscription" @keydown.enter="afficherModaleInscription" v-if="creationCompte === 1">{{ $t('sInscrire') }}</span>
+							<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleConnexion" @keydown.enter.space.prevent="afficherModaleConnexion">{{ $t('seConnecter') }}</span>
+							<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleInscription" @keydown.enter.space.prevent="afficherModaleInscription" v-if="creationCompte === 1">{{ $t('sInscrire') }}</span>
 							<div v-if="creationPadSansCompte === 1">
-								<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleCreer" @keydown.enter="afficherModaleCreer">{{ $t('creerPad') }}</span>
+								<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleCreer" @keydown.enter.space.prevent="afficherModaleCreer">{{ $t('creerPad') }}</span>
 							</div>
 						</div>
 					</div>
 				</div>
 				<div id="credits">
 					<p><a :href="mentionsLegales" target="_blank" rel="noreferrer" v-if="mentionsLegales !== ''">{{ $t('mentionsLegales') }}</a> - <a href="https://opencollective.com/ladigitale" target="_blank">{{ $t('soutien') }} ❤️.</a></p>
-					<p>{{ new Date().getFullYear() }} - <a href="https://ladigitale.dev" target="_blank" rel="noreferrer">La Digitale</a> - <a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noreferrer">{{ $t('codeSource') }}</a> - <a href="https://codeberg.org/ladigitale/digipad/releases" target="_blank" rel="noreferrer">v{{ version }}</a> - <span class="hub" role="button" :tabindex="definirTabIndex()" @click="ouvrirHub" @keydown.enter="ouvrirHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#001d1d" width="36px" height="36px"><path d="M0 0h24v24H0z" fill="none" /><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" /></svg></span></p>
+					<p>{{ new Date().getFullYear() }} - <a href="https://ladigitale.dev" target="_blank" rel="noreferrer">La Digitale</a> - <a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noreferrer">{{ $t('codeSource') }}</a> - <a href="https://codeberg.org/ladigitale/digipad/releases" target="_blank" rel="noreferrer">v{{ version }}</a> - <span class="hub" role="button" :tabindex="definirTabIndex()" :title="$t('afficherHub')" :aria-label="$t('afficherHub')" @click="ouvrirHub" @keydown.enter.space.prevent="ouvrirHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#001d1d" width="36px" height="36px" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none" /><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" /></svg></span></p>
 				</div>
 			</div>
 		</div>
@@ -36,10 +36,10 @@
 			<div id="creation" class="modale" role="dialog">
 				<div class="en-tete">
 					<span class="titre">{{ $t('creerPad') }}</span>
-					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleCreer" @keydown.enter="fermerModaleCreer"><i class="material-icons">close</i></span>
+					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCreer" @keydown.enter.space.prevent="fermerModaleCreer"><i class="material-icons" aria-hidden="true">close</i></span>
 				</div>
 				<div class="conteneur">
-					<div class="contenu">
+					<div class="contenu" role="form" :aria-label="$t('creerPad')">
 						<label for="champ-titre-pad">{{ $t('titrePad') }}</label>
 						<input id="champ-titre-pad" type="text" maxlength="48" :value="titre" @input="titre = $event.target.value">
 						<label for="champ-motdepasse-pad">{{ $t('motDePassePad') }}</label>
@@ -47,11 +47,11 @@
 						<div class="conteneur-motdepasse">
 							<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePassePad" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-if="!motDePasseVisible">
 							<input id="champ-motdepasse" type="text" maxlength="48" :value="motDePassePad" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-else>
-							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('masquerMotDePasse')" @click="motDePasseVisible = false" @keydown.enter="motDePasseVisible = false" v-if="motDePasseVisible"><i class="material-icons">visibility_off</i></span>
-							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('afficherMotDePasse')" @click="motDePasseVisible = true" @keydown.enter="motDePasseVisible = true" v-else><i class="material-icons">visibility</i></span>
+							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="modifierMotDePasseVisible(false)" @keydown.enter.space.prevent="modifierMotDePasseVisible(false)" v-if="motDePasseVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></span>
+							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="modifierMotDePasseVisible(true)" @keydown.enter.space.prevent="modifierMotDePasseVisible(true)" v-else><i class="material-icons" aria-hidden="true">visibility</i></span>
 						</div>
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="creerPad" @keydown.enter="creerPad" v-if="!chargement">{{ $t('creer') }}</span>
+							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="creerPad" @keydown.enter.space.prevent="creerPad" v-if="!chargement">{{ $t('creer') }}</span>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -65,22 +65,22 @@
 			<div id="connexion" class="modale" role="dialog" v-if="modale === 'connexion'">
 				<div class="en-tete">
 					<span class="titre">{{ $t('seConnecter') }}</span>
-					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleConnexion" @keydown.enter="fermerModaleConnexion"><i class="material-icons">close</i></span>
+					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleConnexion" @keydown.enter.space.prevent="fermerModaleConnexion"><i class="material-icons" aria-hidden="true">close</i></span>
 				</div>
 				<div class="conteneur">
-					<div class="contenu">
+					<div class="contenu" role="form" :aria-label="$t('seConnecter')">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
 						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" @input="identifiant = $event.target.value">
 						<label for="champ-motdepasse">{{ $t('motDePasse') }}</label>
 						<div class="conteneur-motdepasse">
 							<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-if="!motDePasseVisible">
 							<input id="champ-motdepasse" type="text" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-else>
-							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('masquerMotDePasse')" @click="motDePasseVisible = false" @keydown.enter="motDePasseVisible = false" v-if="motDePasseVisible"><i class="material-icons">visibility_off</i></span>
-							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('afficherMotDePasse')" @click="motDePasseVisible = true" @keydown.enter="motDePasseVisible = true" v-else><i class="material-icons">visibility</i></span>
+							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="modifierMotDePasseVisible(false)" @keydown.enter.space.prevent="modifierMotDePasseVisible(false)" v-if="motDePasseVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></span>
+							<span class="icone" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="modifierMotDePasseVisible(true)" @keydown.enter.space.prevent="modifierMotDePasseVisible(true)" v-else><i class="material-icons" aria-hidden="true">visibility</i></span>
 						</div>
-						<div class="mot-de-passe-oublie" role="button" :tabindex="message === '' ? 0 : -1" @click="afficherModaleMotDePasseOublie" @keydown.enter="afficherModaleMotDePasseOublie" v-html="$t('motDePasseOublie')" />
+						<div class="mot-de-passe-oublie" role="button" :tabindex="message === '' ? 0 : -1" @click="afficherModaleMotDePasseOublie" @keydown.enter.space.prevent="afficherModaleMotDePasseOublie" v-html="$t('motDePasseOublie')" />
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="seConnecter" @keydown.enter="seConnecter" v-if="!chargement">{{ $t('valider') }}</span>
+							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="seConnecter" @keydown.enter.space.prevent="seConnecter" v-if="!chargement">{{ $t('valider') }}</span>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -91,16 +91,16 @@
 			<div class="modale" role="dialog" v-else-if="modale === 'mot-de-passe-oublie'">
 				<div class="en-tete">
 					<span class="titre">{{ $t('motDePasseOublie') }}</span>
-					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleMotDePasseOublie" @keydown.enter="fermerModaleMotDePasseOublie"><i class="material-icons">close</i></span>
+					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasseOublie" @keydown.enter.space.prevent="fermerModaleMotDePasseOublie"><i class="material-icons" aria-hidden="true">close</i></span>
 				</div>
 				<div class="conteneur">
-					<div class="contenu">
+					<div class="contenu" role="form" :aria-label="$t('motDePasseOublie')">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
 						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" @input="identifiant = $event.target.value">
 						<label for="champ-email">{{ $t('email') }}</label>
 						<input id="champ-email" type="text" :value="email" @input="email = $event.target.value" @keydown.enter="envoyerMotDePasse">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="envoyerMotDePasse" @keydown.enter="envoyerMotDePasse" v-if="!chargement">{{ $t('valider') }}</span>
+							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="envoyerMotDePasse" @keydown.enter.space.prevent="envoyerMotDePasse" v-if="!chargement">{{ $t('valider') }}</span>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -114,10 +114,10 @@
 			<div id="inscription" class="modale" role="dialog">
 				<div class="en-tete">
 					<span class="titre">{{ $t('sInscrire') }}</span>
-					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleInscription" @keydown.enter="fermerModaleInscription"><i class="material-icons">close</i></span>
+					<span class="fermer" role="button" :tabindex="message === '' ? 0 : -1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleInscription" @keydown.enter.space.prevent="fermerModaleInscription"><i class="material-icons" aria-hidden="true">close</i></span>
 				</div>
 				<div class="conteneur">
-					<div class="contenu">
+					<div class="contenu" role="form" :aria-label="$t('sInscrire')">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
 						<p class="information">{{ $t('infoIdentifiant') }}</p>
 						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" @input="identifiant = $event.target.value">
@@ -129,7 +129,7 @@
 						<label for="champ-confirmation-motdepasse">{{ $t('confirmationMotDePasse') }}</label>
 						<input id="champ-confirmation-motdepasse" type="password" maxlength="48" :value="confirmationMotDePasse" @input="confirmationMotDePasse = $event.target.value" @keydown.enter="sInscrire">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="sInscrire" @keydown.enter="sInscrire" v-if="!chargement">{{ $t('valider') }}</span>
+							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="sInscrire" @keydown.enter.space.prevent="sInscrire" v-if="!chargement">{{ $t('valider') }}</span>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -140,11 +140,11 @@
 		</div>
 
 		<div id="hub" :class="{'ouvert': hub}" :tabindex="hub ? 0 : -1">
-			<span role="button" :tabindex="hub ? 0 : -1" @click="fermerHub" @keydown.enter="fermerHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#fff" width="36px" height="36px"><path d="M0 0h24v24H0z" fill="none" /><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg></span>
+			<span role="button" :tabindex="hub ? 0 : -1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerHub" @keydown.enter.space.prevent="fermerHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#fff" width="36px" height="36px" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none" /><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg></span>
 			<iframe src="https://ladigitale.dev/hub.html" title="Le Hub by La Digitale"></iframe>
 		</div>
 
-		<Notification :notification="notification" @fermer="notification = ''" v-if="notification !== ''" />
+		<Notification :notification="notification" @fermer="notification = ''" />
 
 		<Message :message="message" @elementPrecedent="definirElementPrecedent" @fermer="fermerMessage" v-if="message !== ''" />
 
@@ -222,6 +222,12 @@ export default {
 	methods: {
 		definirTabIndex () {
 			return this.modale === '' && this.message === '' && !this.hub ? 0 : -1
+		},
+		modifierMotDePasseVisible (valeur) {
+			this.motDePasseVisible = valeur
+			this.$nextTick(function () {
+				document.querySelector('.conteneur-motdepasse .icone').focus()
+			})
 		},
 		afficherModaleCreer () {
 			this.elementPrecedent = (document.activeElement || document.body)

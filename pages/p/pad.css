@@ -363,6 +363,8 @@
 #lien .icone,
 #fichier .icone {
 	display: block;
+	width: 100%;
+	height: auto;
 	font-size: 5rem;
 	line-height: 1;
 }
@@ -523,6 +525,11 @@
 	box-sizing: content-box;
 	overflow: hidden;
 	position: relative;
+}
+
+#recherche #resultats .item:focus {
+	outline: 2px solid #ed5b00;
+	outline-offset: -2px;
 }
 
 #recherche #resultats .item img {
@@ -763,12 +770,12 @@
 }
 
 #ecrire-message input {
-    border: 0;
-    padding: 0.5rem 1rem;
-    width: 25rem;
-	margin-right: 0;
-	background: #fff;
 	font-size: 16px;
+    width: 24.5rem;
+    padding: 0.5rem 1rem;
+	margin-right: 0.5rem;
+	background: #fff;
+	border: 0;
 }
 
 #ecrire-message button {
@@ -776,7 +783,7 @@
 	text-align: center;
     background: #00ced1;
     border: none;
-    padding: 0.4rem 0;
+    padding: 0.5rem 0;
     color: #fff;
 }
 
@@ -805,7 +812,7 @@
 }
 
 #utilisateurs li.moi .utilisateur.invite.edition .icone {
-	font-size: 20px;
+	font-size: 24px;
 	line-height: 1;
 	margin-left: 5px;
 }
