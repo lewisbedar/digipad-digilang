@@ -1,6 +1,6 @@
 export { render as onRenderHtml }
 
-import { escapeInject } from 'vike/server'
+import { escapeInject, dangerouslySkipEscape } from 'vike/server'
 
 async function render (pageContext) {
 	let hote = 'https://digipad.app'
@@ -18,6 +18,10 @@ async function render (pageContext) {
 	let robots = 'index,no-follow'
 	if (url !== hote) {
 		robots = 'noindex'
+	}
+	let umami = ''
+	if (process.env.NODE_ENV === 'production' && import.meta.env.UMAMI_SCRIPT_URL && import.meta.env.UMAMI_SCRIPT_URL !== '' && import.meta.env.UMAMI_WEBSITE_ID && import.meta.env.UMAMI_WEBSITE_ID !== '') {
+		umami = dangerouslySkipEscape('<script defer src="' + import.meta.env.UMAMI_SCRIPT_URL + '" data-website-id="' + import.meta.env.UMAMI_WEBSITE_ID + '"></script>')
 	}
 	const documentHtml = escapeInject`<!DOCTYPE html>
 		<html lang="fr">
@@ -39,6 +43,7 @@ async function render (pageContext) {
 				<meta property="og:locale" content="fr_FR" />
 				<title>${titre}</title>
 				<link rel="icon" type="image/png" href="/img/favicon.png">
+				${umami}
 			</head>
 			<body>
 				<noscript>

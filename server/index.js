@@ -191,12 +191,21 @@ async function demarrerServeur () {
 	// Augmenter nombre de tâches asynchrones par défaut
 	EventEmitter.defaultMaxListeners = 20
 
+	let scriptSrc
+	if (process.env.MATOMO && process.env.MATOMO !== '') {
+		scriptSrc = ["'self'", process.env.MATOMO, "'unsafe-inline'"]
+	} else if (process.env.UMAMI_SCRIPT_URL && process.env.UMAMI_SCRIPT_URL !== '') {
+		const umamiScriptUrl = new URL(process.env.UMAMI_SCRIPT_URL)
+		scriptSrc = ["'self'", umamiScriptUrl.protocol + '//' + umamiScriptUrl.hostname, "'unsafe-inline'"]
+	} else {
+		scriptSrc = ["'self'", "'unsafe-inline'"]
+	}
 	app.set('trust proxy', true)
 	app.use(
 		helmet.contentSecurityPolicy({
 			directives: {
 				"default-src": ["'self'", "https:", "ws:"],
-				"script-src": ["'self'", process.env.VITE_MATOMO, "'unsafe-inline'", "'unsafe-eval'"],
+				"script-src": scriptSrc,
 				"media-src": ["'self'", "https:", "data:", "blob:"],
 				"worker-src": ["'self'", "https:", "data:", "blob:"],
 				"img-src": ["'self'", "https:", "data:"],
