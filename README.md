@@ -83,16 +83,25 @@ ACCOUNT_VALIDATION (validation de l'inscription par email / 0 ou 1 / 0 par défa
 ### Démo
 https://digipad.app
 
+### Comment contribuer ?
+Tout d'abord, merci de vouloir contribuer ! Voici quelques idées :
+- faire une contribution avec contrepartie pour obtenir un [code d'invitation Digidrive](https://ladigitale.dev/blog/digidrive-pour-creer-et-gerer-les-contenus-generes-sur-la-digitale) ;
+- soutenir le projet sur [Open Collective](https://opencollective.com/ladigitale) ou [LiberaPay](https://liberapay.com/ladigitale/) ;
+- signaler des bogues ou proposer des fonctionnalités en ouvrant un ticket ;
+- faire la promotion des services libres de La Digitale auprès de vos collègues, lors d'événements éducatifs, etc. ;
+- publier des articles avec des pistes pédagogiques / des idées d'activités pour proposer des exemples concrets d'utilisation des outils ;
+- participer à la traduction des services multilingues sur [Codeberg Translate](https://translate.codeberg.org/projects/la-digitale/#components).
+
+Les demandes d'ajouts (Pull Requests) ne sont pas acceptées pour le moment. En effet, une contribution au code nécessite souvent plusieurs heures pour être révisée et commentée et ce n'est pas toujours compatible avec les priorités et le temps que je peux consacrer au projet.
+
+N'hésitez pas à me contacter si vous avez des questions.
+
 ### Remerciements et crédits
-Traduction en italien par Paolo Mauri (https://gitlab.com/maupao) et @nilocram (Roberto Marcolin)
+Traduction en italien par [Paolo Mauri](https://gitlab.com/maupao) et @nilocram (Roberto Marcolin)
 
-Traduction en espagnol par Fernando S. Delgado Trujillo (https://gitlab.com/fersdt)
+Traduction en espagnol par [Fernando S. Delgado Trujillo](https://gitlab.com/fersdt)
 
-Traduction en croate par Ksenija Lekić (https://gitlab.com/Ksenija66L)
+Traduction en croate par [Ksenija Lekić](https://gitlab.com/Ksenija66L)
 
 Traduction en allemand par Alexander Weller (ZUM.de)
 
-### Soutien
-Open Collective : https://opencollective.com/ladigitale
-
-Liberapay : https://liberapay.com/ladigitale/
