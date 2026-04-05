@@ -5,31 +5,31 @@ Digipad est une application en ligne pour créer des murs collaboratifs.
 Elle est publiée sous licence GNU AGPLv3.
 Sauf les fontes Roboto Slab et Material Icons (Apache License Version 2.0) et la fonte Mona Sans Expanded (Sil Open Font Licence 1.1), jsPanel4 (https://github.com/Flyer53/jsPanel4 - MIT), pdf.js (https://github.com/mozilla/pdf.js - Apache License Version 2.0), JavaScript-flexImages (https://github.com/Pixabay/JavaScript-flexImages - MIT), panzoom (https://github.com/timmywil/panzoom - MIT)
 
-### Prérequis
+## Prérequis
 Node.js 20+, Redis 6+, GraphicsMagick, Ghostscript, Libre Office
 
-### Préparation et installation des dépendances
+## Préparation et installation des dépendances
 ```
 npm install
 ```
 
-### Lancement du serveur de développement sur localhost:3000
+## Lancement du serveur de développement sur localhost:3000
 ```
 npm run dev
 ```
 
-### Compilation, minification des fichiers et lancement du serveur de production
+## Compilation, minification des fichiers et lancement du serveur de production
 ```
 npm run prod
 ```
 
-### Avec PM2
+## Avec PM2
 ```
 npm run build
 pm2 start ecosystem.config.cjs --env production
 ```
 
-### Variables d'environnement pour la mise en production (fichier .env à créer à la racine du dossier)
+## Variables d'environnement pour la mise en production (fichier .env à créer à la racine du dossier)
 ```
 DOMAIN (protocole + domaine. ex : https://digipad.app / seulement utilisée en production)
 PORT (port du serveur local / 3000 par défaut)
@@ -78,25 +78,23 @@ VITE_LEGAL_TERMS_LINK (lien vers les mentions légales)
 ACCOUNT_VALIDATION (validation de l'inscription par email / 0 ou 1 / 0 par défaut)
 ```
 
-### Projet Vue (Vue.js 3 et Vike) avec serveur Node.js (Express) et base de données Redis
+## Projet Vue (Vue.js 3 et Vike) avec serveur Node.js (Express) et base de données Redis
 
-### Démo
+## Démo
 https://digipad.app
 
-### Comment contribuer ?
-Tout d'abord, merci de vouloir contribuer ! Voici quelques idées :
-- faire une contribution avec contrepartie pour obtenir un [code d'invitation Digidrive](https://ladigitale.dev/blog/digidrive-pour-creer-et-gerer-les-contenus-generes-sur-la-digitale) ;
-- soutenir le projet sur [Open Collective](https://opencollective.com/ladigitale) ou [LiberaPay](https://liberapay.com/ladigitale/) ;
-- signaler des bogues ou proposer des fonctionnalités en ouvrant un ticket ;
-- faire la promotion des services libres de La Digitale auprès de vos collègues, lors d'événements éducatifs, etc. ;
-- publier des articles avec des pistes pédagogiques / des idées d'activités pour proposer des exemples concrets d'utilisation des outils ;
-- participer à la traduction des services multilingues sur [Codeberg Translate](https://translate.codeberg.org/projects/la-digitale/#components).
+## Comment contribuer ?
+Pour signaler des bugs, proposer des améliorations ou de nouvelles fonctionnalités, vous pouvez ouvrir un ticket sur ce dépôt, publier un message sur [ce mur](https://digipad.app/p/8/64dab892e6eab) ou m'envoyer un e-mail.
 
 Les demandes d'ajouts (Pull Requests) ne sont pas acceptées pour le moment. En effet, une contribution au code nécessite souvent plusieurs heures pour être révisée et commentée et ce n'est pas toujours compatible avec les priorités et le temps que je peux consacrer au projet.
 
-N'hésitez pas à me contacter si vous avez des questions.
+Il est possible de soutenir financièrement le projet via [Liberapay](https://liberapay.com/ladigitale/), [Open Collective](https://opencollective.com/ladigitale) ou [Stripe](https://donate.stripe.com/4gweWveqf2sc6KAcMO).
 
-### Remerciements et crédits
+Vous trouverez d'autres idées de contribution sur [cette page](https://ladigitale.dev/contribuer.html).
+
+Merci pour votre soutien ! N'hésitez pas à me contacter si vous avez des questions.
+
+## Remerciements et crédits
 Traduction en italien par [Paolo Mauri](https://gitlab.com/maupao) et @nilocram (Roberto Marcolin)
 
 Traduction en espagnol par [Fernando S. Delgado Trujillo](https://gitlab.com/fersdt)
@@ -104,4 +102,3 @@ Traduction en espagnol par [Fernando S. Delgado Trujillo](https://gitlab.com/fer
 Traduction en croate par [Ksenija Lekić](https://gitlab.com/Ksenija66L)
 
 Traduction en allemand par Alexander Weller (ZUM.de)
-
