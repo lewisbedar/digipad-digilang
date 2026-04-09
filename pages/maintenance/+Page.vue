@@ -20,6 +20,7 @@ export default {
 	data () {
 		return {
 			chargementPage: true,
+			langues: this.$pageContext.pageProps.langues,
 			langue: this.$pageContext.pageProps.langue
 		}
 	},

@@ -21,11 +21,27 @@ export default {
 	data () {
 		return {
 			chargementPage: true,
+			langues: this.$pageContext.pageProps.langues,
 			langue: this.$pageContext.pageProps.langue
 		}
 	},
 	created () {
+		const params = this.$pageContext.pageProps.params
+		const langueNav = navigator.language.substring(0, 2)
+		const langueParam = params.lang
+		if (langueParam && langueParam !== '' && this.langues.includes(langueParam) === true) {
+			this.langue = langueParam
+			localStorage.setItem('digipad_lang', langueParam)
+		} else if (!langueParam && langueNav !== '' && this.langues.includes(langueNav) === true) {
+			this.langue = langueNav
+		} 
+		if (localStorage.getItem('digipad_lang')) {
+			this.langue = localStorage.getItem('digipad_lang')
+		}
 		this.$i18n.locale = this.langue
+		if (this.langue !== this.$pageContext.pageProps.langue) {
+			this.$socket.emit('modifierlangue', this.langue)
+		}
 	},
 	mounted () {
 		document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)

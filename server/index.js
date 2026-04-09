@@ -68,6 +68,7 @@ async function demarrerServeur () {
 		hote = 'http://localhost:' + process.env.PORT
 	}
 	const hoteTeleversement = process.env.UPLOAD_HOST || hote
+	const langues = ['fr', 'es', 'it', 'de', 'en', 'hr']
 	let stockage = 'fs'
 	const lienPublicS3 = process.env.VITE_S3_PUBLIC_LINK
 	let s3Client = ''
@@ -247,7 +248,7 @@ async function demarrerServeur () {
 				urlOriginal: req.originalUrl,
 				params: req.query,
 				hote: hote,
-				langues: ['fr', 'es', 'it', 'de', 'en', 'hr'],
+				langues: langues,
 				langue: langue
 			}
 			const pageContext = await renderPage(pageContextInit)
@@ -441,7 +442,7 @@ async function demarrerServeur () {
 							urlOriginal: req.originalUrl,
 							params: req.query,
 							hote: hote,
-							langues: ['fr', 'es', 'it', 'de', 'en', 'hr'],
+							langues: langues,
 							identifiant: req.session.identifiant,
 							nom: req.session.nom,
 							email: req.session.email,
@@ -535,7 +536,7 @@ async function demarrerServeur () {
 			hote: hote,
 			hoteTeleversement: hoteTeleversement,
 			userAgent: userAgent,
-			langues: ['fr', 'es', 'it', 'de', 'en', 'hr'],
+			langues: langues,
 			identifiant: req.session.identifiant,
 			nom: req.session.nom,
 			email: req.session.email,
@@ -574,7 +575,9 @@ async function demarrerServeur () {
 		}
 		const pageContextInit = {
 			urlOriginal: req.originalUrl,
+			params: req.query,
 			hote: hote,
+			langues: langues,
 			langue: langue
 		}
 		const pageContext = await renderPage(pageContextInit)
@@ -604,7 +607,9 @@ async function demarrerServeur () {
 		}
 		const pageContextInit = {
 			urlOriginal: req.originalUrl,
+			params: req.query,
 			hote: hote,
+			langues: langues,
 			langue: langue
 		}
 		const pageContext = await renderPage(pageContextInit)
@@ -746,7 +751,9 @@ async function demarrerServeur () {
 					.exec()
 					const pageContextInit = {
 						urlOriginal: req.originalUrl,
+						params: req.query,
 						hote: hote,
+						langues: langues,
 						langue: langue
 					}
 					const pageContext = await renderPage(pageContextInit)

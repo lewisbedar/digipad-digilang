@@ -229,11 +229,27 @@ export default {
 			suppressionFichiers: true,
 			elementPrecedent: null,
 			hote: this.$pageContext.pageProps.hote,
+			langues: this.$pageContext.pageProps.langues,
 			langue: this.$pageContext.pageProps.langue
 		}
 	},
 	created () {
+		const params = this.$pageContext.pageProps.params
+		const langueNav = navigator.language.substring(0, 2)
+		const langueParam = params.lang
+		if (langueParam && langueParam !== '' && this.langues.includes(langueParam) === true) {
+			this.langue = langueParam
+			localStorage.setItem('digipad_lang', langueParam)
+		} else if (!langueParam && langueNav !== '' && this.langues.includes(langueNav) === true) {
+			this.langue = langueNav
+		} 
+		if (localStorage.getItem('digipad_lang')) {
+			this.langue = localStorage.getItem('digipad_lang')
+		}
 		this.$i18n.locale = this.langue
+		if (this.langue !== this.$pageContext.pageProps.langue) {
+			this.$socket.emit('modifierlangue', this.langue)
+		}
 		this.$socket.emit('verifiermaintenance')
 		this.$socket.on('verifiermaintenance', function (valeur) {
 			this.maintenance = valeur
@@ -250,6 +266,7 @@ export default {
 					this.acces = true
 					this.admin = motdepasse
 					document.addEventListener('keydown', this.gererClavier, false)
+					document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)
 				}
 			}.bind(this))
 		}
@@ -268,6 +285,7 @@ export default {
 					document.getElementsByTagName('html')[0].setAttribute('lang', langue)
 					this.langue = langue
 					this.notification = this.$t('langueModifiee')
+					localStorage.setItem('digipad_lang', langue)
 				}.bind(this)).catch(function () {
 					this.message = this.$t('erreurCommunicationServeur')
 				}.bind(this))
