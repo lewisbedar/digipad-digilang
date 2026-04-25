@@ -410,5 +410,6 @@
 	"supprimerEvaluation": "Delete rating",
 	"selectionnerImageRecherche": "Select image {image}",
 	"mettreCorbeille": "Move to trash",
-	"classer": "Sort"
+	"classer": "Sort",
+	"supprimerFormatage": "Remove formatting"
 }

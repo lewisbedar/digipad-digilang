@@ -410,5 +410,6 @@
 	"supprimerEvaluation": "Supprimer l'évaluation",
 	"selectionnerImageRecherche": "Sélectionner l'image {image}",
 	"mettreCorbeille": "Mettre à la corbeille",
-	"classer": "Classer"
+	"classer": "Classer",
+	"supprimerFormatage": "Supprimer le formatage"
 }

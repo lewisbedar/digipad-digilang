@@ -903,24 +903,41 @@ export default {
 						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
 						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte" type="color" style="display: none;">', result: () => {
+							let i = 0
+							let couleurActuelle = ''
+							let element = window.getSelection().focusNode.parentNode
+							while (i < 6 && couleurActuelle === '') {
+								if (element.tagName === 'FONT' && element.color !== null) {
+									couleurActuelle = element.color
+								} else {
+									element = element.parentNode
+								}
+								i++
+							}
+							if (couleurActuelle !== '') {
+								document.querySelector('#couleur-texte').value = couleurActuelle
+							} else {
+								document.querySelector('#couleur-texte').value = '#001d1d'
+							}
+						} },
 						{ name: 'listeordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
 						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
-						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte" type="color">', result: () => undefined },
 						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 							let i = 0
 							let lienActuel = ''
-							let fragment = window.getSelection().focusNode.parentNode
+							let element = window.getSelection().focusNode.parentNode
 							while (i < 6 && lienActuel === '') {
-								if (fragment.href && fragment.href !== null) {
-									lienActuel = fragment.href
+								if (element.href && element.href !== null) {
+									lienActuel = element.href
 								} else {
-									fragment = fragment.parentNode
+									element = element.parentNode
 								}
 								i++
 							}
 							if (lienActuel !== '') {
 								const range = document.createRange()
-								range.selectNodeContents(fragment)
+								range.selectNodeContents(element)
 								const selection = window.getSelection()
 								selection.removeAllRanges()
 								selection.addRange(range)
@@ -931,6 +948,9 @@ export default {
 							} else if (url === '') {
 								pell.exec('unlink')
 							}
+						} },
+						{ name: 'supprimer-formatage', title: this.$t('supprimerFormatage'), icon: '<i class="material-icons" aria-hidden="true">format_clear</i>', result: () => {
+							pell.exec('removeFormat')
 						} }
 					],
 					classes: { actionbar: 'boutons-editeur', button: 'bouton-editeur', content: 'contenu-editeur', selected: 'bouton-actif' }
@@ -950,6 +970,7 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}.bind(this)
+				document.querySelector('#couleur-texte').addEventListener('input', this.modifierCouleurTexte)
 				document.querySelector('#couleur-texte').addEventListener('change', this.modifierCouleurTexte)
 			}.bind(this))
 		},
@@ -965,12 +986,6 @@ export default {
 			return html
 		},
 		modifierCouleurTexte (event) {
-			pell.exec('foreColor', event.target.value)
-		},
-		modifierCouleurCommentaire (event) {
-			pell.exec('foreColor', event.target.value)
-		},
-		modifierCouleurCommentaireModifie (event) {
 			pell.exec('foreColor', event.target.value)
 		},
 		ajouterFichier (champ) {
@@ -2299,7 +2314,8 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}.bind(this)
-				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('change', this.modifierCouleurCommentaireModifie)
+				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('input', this.modifierCouleurTexte)
+				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('change', this.modifierCouleurTexte)
 				document.querySelector('#commentaire-' + this.commentaireId + ' .action span').focus()
 			}.bind(this))
 		},
@@ -2369,7 +2385,8 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}.bind(this)
-				document.querySelector('#couleur-texte-commentaire').addEventListener('change', this.modifierCouleurCommentaire)
+				document.querySelector('#couleur-texte-commentaire').addEventListener('input', this.modifierCouleurTexte)
+				document.querySelector('#couleur-texte-commentaire').addEventListener('change', this.modifierCouleurTexte)
 			}
 		},
 		definirActionsEditeur (type) {
@@ -2378,22 +2395,39 @@ export default {
 				{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
 				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color">', result: () => undefined },
+				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color" style="display: none;">', result: () => {
+					let i = 0
+					let couleurActuelle = ''
+					let element = window.getSelection().focusNode.parentNode
+					while (i < 6 && couleurActuelle === '') {
+						if (element.tagName === 'FONT' && element.color !== null) {
+							couleurActuelle = element.color
+						} else {
+							element = element.parentNode
+						}
+						i++
+					}
+					if (couleurActuelle !== '') {
+						document.querySelector('#couleur-texte-' + type).value = couleurActuelle
+					} else {
+						document.querySelector('#couleur-texte-' + type).value = '#001d1d'
+					}
+				} },
 				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 					let i = 0
 					let lienActuel = ''
-					let fragment = window.getSelection().focusNode.parentNode
+					let element = window.getSelection().focusNode.parentNode
 					while (i < 6 && lienActuel === '') {
-						if (fragment.href && fragment.href !== null) {
-							lienActuel = fragment.href
+						if (element.href && element.href !== null) {
+							lienActuel = element.href
 						} else {
-							fragment = fragment.parentNode
+							element = element.parentNode
 						}
 						i++
 					}
 					if (lienActuel !== '') {
 						const range = document.createRange()
-						range.selectNodeContents(fragment)
+						range.selectNodeContents(element)
 						const selection = window.getSelection()
 						selection.removeAllRanges()
 						selection.addRange(range)
@@ -2405,7 +2439,10 @@ export default {
 						pell.exec('unlink')
 					}
 				} },
-				{ name: 'emojis', title: this.$t('emoticones'), icon: '<i class="material-icons" aria-hidden="true">insert_emoticon</i>', result: function () { this.afficherEmojis(type) }.bind(this) }
+				{ name: 'emojis', title: this.$t('emoticones'), icon: '<i class="material-icons" aria-hidden="true">insert_emoticon</i>', result: function () { this.afficherEmojis(type) }.bind(this) },
+				{ name: 'supprimer-formatage', title: this.$t('supprimerFormatage'), icon: '<i class="material-icons" aria-hidden="true">format_clear</i>', result: () => {
+					pell.exec('removeFormat')
+				} }
 			]
 			return actions
 		},

@@ -410,5 +410,6 @@
 	"supprimerEvaluation": "Elimina la valutazione",
 	"selectionnerImageRecherche": "Seleziona l'immagine {image}",
 	"mettreCorbeille": "Sposta nel cestino",
-	"classer": "Ordinare"
+	"classer": "Ordinare",
+	"supprimerFormatage": "Rimuovi formattazione"
 }

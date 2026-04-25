@@ -410,5 +410,6 @@
 	"supprimerEvaluation": "Bewertung löschen",
 	"selectionnerImageRecherche": "Bild {image} auswählen",
 	"mettreCorbeille": "In den Papierkorb verschieben",
-	"classer": "Ordnen"
+	"classer": "Ordnen",
+	"supprimerFormatage": "Formatierung entfernen"
 }

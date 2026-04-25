@@ -410,5 +410,6 @@
 	"supprimerEvaluation": "Izbriši ocjenu",
 	"selectionnerImageRecherche": "Odaberi sliku {image}",
 	"mettreCorbeille": "Prebaci u smeće",
-	"classer": "Sortiraj"
+	"classer": "Sortiraj",
+	"supprimerFormatage": "Ukloni formatiranje"
 }
