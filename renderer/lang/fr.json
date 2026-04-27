@@ -411,5 +411,6 @@
 	"selectionnerImageRecherche": "Sélectionner l'image {image}",
 	"mettreCorbeille": "Mettre à la corbeille",
 	"classer": "Classer",
-	"supprimerFormatage": "Supprimer le formatage"
+	"supprimerFormatage": "Supprimer le formatage",
+	"exposant": "Exposant"
 }

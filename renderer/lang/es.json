@@ -411,5 +411,6 @@
 	"selectionnerImageRecherche": "Seleccionar la imagen {image}",
 	"mettreCorbeille": "Mover a la papelera",
 	"classer": "Ordenar",
-	"supprimerFormatage": "Eliminar el formato"
+	"supprimerFormatage": "Eliminar el formato",
+	"exposant": "Exponente"
 }

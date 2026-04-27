@@ -411,5 +411,6 @@
 	"selectionnerImageRecherche": "Select image {image}",
 	"mettreCorbeille": "Move to trash",
 	"classer": "Sort",
-	"supprimerFormatage": "Remove formatting"
+	"supprimerFormatage": "Remove formatting",
+	"exposant": "Exponent"
 }

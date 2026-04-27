@@ -777,18 +777,21 @@ label.bouton-bleu {
 .boutons-editeur {
 	position: sticky;
 	top: 45px;
+	display: flex;
 	background: #fff;
 	padding: 0.5rem 1.2rem;
 	border-bottom: 1px solid #ddd;
 	line-height: 1;
+	overflow: auto;
 }
 
 .boutons-editeur-commentaire {
+	display: flex;
 	background: #fff;
 	padding: 0.5rem 1.2rem;
 	border-bottom: 1px solid #ddd;
 	line-height: 1;
-	z-index: 1;
+	overflow: auto;
 }
 
 .boutons-editeur-commentaire button,

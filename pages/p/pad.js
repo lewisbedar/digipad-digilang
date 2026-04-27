@@ -903,6 +903,7 @@ export default {
 						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
 						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+						{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
 						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte" type="color" style="display: none;">', result: () => {
 							let i = 0
 							let couleurActuelle = ''
@@ -921,7 +922,7 @@ export default {
 								document.querySelector('#couleur-texte').value = '#001d1d'
 							}
 						} },
-						{ name: 'listeordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
+						{ name: 'liste-ordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
 						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
 						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 							let i = 0
@@ -2395,6 +2396,7 @@ export default {
 				{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
 				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
+				{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
 				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color" style="display: none;">', result: () => {
 					let i = 0
 					let couleurActuelle = ''

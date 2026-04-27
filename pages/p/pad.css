@@ -925,7 +925,7 @@
 }
 
 #commentaire-modifie {
-	width: 100%;
+	width: calc(100% - 5rem);
 	max-height: 11rem;
 	font-size: 1.7rem;
 }
@@ -971,7 +971,7 @@
 }
 
 #commentaire {
-	width: 100%;
+	width: calc(100% - 5rem);
 	height: 100%;
 }
 
