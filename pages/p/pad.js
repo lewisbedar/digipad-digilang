@@ -624,9 +624,9 @@ export default {
 			if (item.hasOwnProperty('vignetteGeneree')) {
 				vignetteGeneree = item.vignetteGeneree
 			}
-			if (item.vignette && item.vignette !== '' && typeof item.vignette === 'string' && (item.vignette.substring(0, 5) === '/img/' || (this.verifierURL(item.vignette) === true && !item.vignette.includes(this.lienPublicS3)))) {
+			if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string' && (item.vignette.substring(0, 5) === '/img/' || (this.verifierURL(item.vignette) === true && !item.vignette.includes(this.lienPublicS3)))) {
 				vignette = item.vignette
-			} else if (item.vignette && item.vignette !== '' && typeof item.vignette === 'string') {
+			} else if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string') {
 				vignette = this.definirCheminFichiers() + '/' + this.pad.id + '/' + this.definirNomLienFichier(item.vignette)
 			} else if (vignetteGeneree === true && this.modale === 'bloc') {
 				vignette = item.fichier.replace(/\.[^/.]+$/, '') + '.jpg'
@@ -654,9 +654,7 @@ export default {
 					vignette = '/img/lien.png'
 					break
 				case 'embed':
-					if (item.source === 'peertube') {
-						vignette = item.media.replace('/videos/watch/', '/static/thumbnails/') + '.jpg'
-					} else if (item.source === 'h5p') {
+					if (item.source === 'h5p') {
 						vignette = '/img/h5p.png'
 					} else if (item.source === 'digiview') {
 						vignette = '/img/digiview.png'
@@ -714,6 +712,42 @@ export default {
 				}
 			}
 			return vignette
+		},
+		async recupererVignettePeertube (lien) {
+			const url = new URL(lien)
+			const domaine = url.hostname
+			let id = null
+			let rechercheId = lien.match(/\/w\/([a-zA-Z0-9\-_]+)/)
+			if (!rechercheId) {
+				rechercheId = lien.match(/\/videos\/watch\/([a-zA-Z0-9\-_]+)/)
+				if (!rechercheId) {
+					rechercheId = lien.match(/\/videos\/embed\/([a-zA-Z0-9\-_]+)/)
+					if (rechercheId) {
+						id = rechercheId[1]
+					}
+				} else {
+					id = rechercheId[1]
+				}
+			} else {
+				id = rechercheId[1]
+			}
+			if (id !== null) {    
+				const lienApi = 'https://' + domaine + '/api/v1/videos/' + id
+				const reponse = await fetch(lienApi)
+				if (reponse.ok) {
+					const donnees = await reponse.json()
+					const vignette = donnees.thumbnailPath
+					if (!vignette) {
+						return '/img/video.png'
+					} else {
+						return 'https://' + domaine + vignette
+					}
+				} else {
+					return '/img/video.png'
+				}
+			} else {
+				return '/img/video.png'
+			}
 		},
 		definirIconeMedia (item) {
 			let icone
@@ -1165,10 +1199,10 @@ export default {
 				fileReader.readAsArrayBuffer(this.blob)
 			}.bind(this))
 		},
-		ajouterLien () {
+		async ajouterLien () {
 			if (this.lien !== '') {
-				const regex = /<iframe(.+)<\/iframe>/g
-				if (regex.test(this.lien) === true) {
+				const regexIframe = /<iframe(.+)<\/iframe>/g
+				if (regexIframe.test(this.lien) === true) {
 					const regexDigiview = /\/digiview\/inc\/video(.*?)vignette=/g
 					if (regexDigiview.test(this.lien) === true) {
 						this.vignette = this.lien.match(/https:\/\/i.ytimg(.*)hqdefault.jpg/g)[0]
@@ -1176,7 +1210,18 @@ export default {
 					}
 					this.lien = this.lien.match(/<iframe [^>]*src="[^"]*"[^>]*>/g).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0]
 				}
-				if (this.verifierURL(this.lien) === true && this.lien.match(/\.(jpeg|jpg|gif|png)$/) === null) {
+				if (this.verifierURL(this.lien) === true && !this.lien.match(/\.(jpeg|jpg|gif|png)$/) && (this.lien.match(/\/videos\/watch\/([a-zA-Z0-9\-_]+)/) || this.lien.match(/\/videos\/embed\/([a-zA-Z0-9\-_]+)/) || (this.lien.match(/\/w\/([a-zA-Z0-9\-_]+)/) && !this.lien.includes('digiwall.app')))) {
+					const vignette = await this.recupererVignettePeertube(this.lien)
+					this.iframe = this.lien
+					this.$nextTick(function () {
+						this.media = this.lien
+						this.source = 'peertube'
+						this.type = 'embed'
+						this.vignette = vignette
+						this.vignetteDefaut = vignette
+						this.chargementLien = false
+					}.bind(this))
+				} else if (this.verifierURL(this.lien) === true && !this.lien.match(/\.(jpeg|jpg|gif|png)$/)) {
 					this.chargementLien = true
 					axios.get('https://noembed.com/embed?url=' + this.lien).then(function (reponse) {
 						let donnees = reponse.data
@@ -1185,9 +1230,7 @@ export default {
 							this.$nextTick(function () {
 								this.media = this.lien
 								this.source = 'web'
-								if (this.lien.includes('tube.ac-lyon.fr')) {
-									this.source = 'peertube'
-								} else if (this.lien.includes('ladigitale.dev/digiquiz/')) {
+								if (this.lien.includes('ladigitale.dev/digiquiz/')) {
 									this.source = 'h5p'
 								} else if (this.lien.includes('ladigitale.dev/digiview/')) {
 									this.source = 'digiview'
@@ -1245,7 +1288,7 @@ export default {
 							if (donnees.provider_name.toLowerCase() === 'learningapps.org') {
 								donnees.html = donnees.html.replace('http://LearningApps.org', 'https://learningapps.org')
 							}
-							if (regex.test(donnees.html) === true) {
+							if (regexIframe.test(donnees.html) === true) {
 								this.iframe = donnees.html.match(/<iframe [^>]*src="[^"]*"[^>]*>/g).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0]
 							} else {
 								this.iframe = donnees.html
@@ -1272,7 +1315,7 @@ export default {
 						this.lien = ''
 						this.message = this.$t('erreurRecuperationContenu')
 					}.bind(this))
-				} else if (this.verifierURL(this.lien) === true && this.lien.match(/\.(jpeg|jpg|gif|png)$/) !== null) {
+				} else if (this.verifierURL(this.lien) === true && this.lien.match(/\.(jpeg|jpg|gif|png)$/)) {
 					this.chargementMedia = true
 					this.media = this.lien
 					this.type = 'lien-image'
