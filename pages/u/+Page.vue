@@ -530,7 +530,7 @@ export default {
 				})
 				const padsTous = this.padsCrees.concat(this.padsRejoints, this.padsAdmins)
 				padsTous.forEach(function (pad) {
-					if (listePads.includes(pad.id)) {
+					if (listePads.includes(pad.id) && !pads.map(function (e) { return e.id }).includes(pad.id)) {
 						pads.push(pad)
 					}
 				})
