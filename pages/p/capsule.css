@@ -282,7 +282,6 @@
 #blocs .bloc .media img {
 	border-top-left-radius: 4px;
 	border-top-right-radius: 4px;
-	outline: 0;
 }
 
 #blocs .bloc .texte + .media img,
@@ -299,7 +298,13 @@
 	display: block;
     text-align: center;
 	padding: 1rem;
-	outline: 0;
+}
+
+#blocs .bloc .media span a:focus,
+#blocs .bloc .media span:focus,
+#blocs .bloc .media img:focus {
+	outline: 2px solid #ed5b00;
+	outline-offset: -2px;
 }
 
 #blocs .bloc .media span img.vignette {
@@ -315,7 +320,6 @@
 
 #blocs .bloc .media span a {
 	display: block;
-	outline: 0;
 }
 
 #blocs .bloc .titre + .media {
