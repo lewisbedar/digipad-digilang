@@ -416,6 +416,7 @@ export default {
 
 				setTimeout(function () {
 					this.chargementPage = false
+					this.afficherBlocURL()
 				}.bind(this), 300)
 
 				if (!this.mobile) {
@@ -2178,6 +2179,20 @@ export default {
 				this.chargerDiapositive()
 			}
 		},
+		activerActionBloc (event) {
+			if (event.target.querySelector('.media') && event.target.querySelector('.media').firstElementChild) {
+				event.target.querySelector('.media').firstElementChild.click()
+			}
+		},
+		definirAriaLabelBloc (item) {
+			if (item.media !== '' && (item.type === 'image' || item.type === 'lien-image' || item.type === 'audio' || item.type === 'video' || (item.type === 'document' && this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) || item.type === 'pdf' || (item.type === 'office' && this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) || item.type === 'embed')) {
+				return this.$t('afficherDansVisionneuse')
+			} else if (item.media !== '' && item.type === 'lien') {
+				return this.$t('ouvrirLienNouvelOnglet')
+			} else if (item.media !== '') {
+				return this.$t('telecharger')
+			}
+		},
 		definirBlocActif (bloc) {
 			const blocActif = document.querySelector('.bloc.actif')
 			if (blocActif) {
@@ -2206,6 +2221,7 @@ export default {
 						this.genererEditeur()
 					}
 					document.querySelector('#diapositive .fermer').focus()
+					this.definirParametreURL(this.donneesBloc.bloc)
 				}.bind(this))
 			}.bind(this)
 			if (document.querySelector('#diapositive')) {
@@ -2245,6 +2261,23 @@ export default {
 				this.chargement = false
 			}
 		},
+		afficherBlocURL () {
+			const params = this.$pageContext.pageProps.params
+			const caps = params.caps
+			if (caps && caps !== '' && this.blocs.find(b => b.bloc === 'bloc-id-' + caps)) {
+				this.definirBlocActif('bloc-id-' + caps)
+				this.afficherModaleDiaporama()
+			}
+		},
+		definirParametreURL (bloc) {
+			const page = new URL(window.location.href)
+			if (page.searchParams.has('caps')) {
+				page.searchParams.set('caps', bloc.replace('bloc-id-', ''))
+			} else {
+				page.searchParams.append('caps', bloc.replace('bloc-id-', ''))
+			}
+			window.history.pushState(null, '', '?' + page.searchParams.toString())
+		},
 		fermerModaleDiaporama () {
 			document.querySelector('#diapositive').removeEventListener('keydown', this.activerClavierDiaporama)
 			document.querySelector('#diapositive').removeEventListener('click', this.gererFocusCommentaires)
@@ -2257,6 +2290,7 @@ export default {
 			this.focusId = ''
 			this.emojis = ''
 			this.donneesBloc = {}
+			window.history.replaceState({}, document.title, window.location.href.split('?')[0])
 			this.gererFocus()
 		},
 		ouvrirModaleAdmins () {
@@ -2858,14 +2892,18 @@ export default {
 			this.modificationCode = false
 			this.codeVisible = false
 			this.$nextTick(function () {
-				document.querySelector('.modale .icone').focus()
+				if (document.querySelector('.modale .icone')) {
+					document.querySelector('.modale .icone').focus()
+				}
 			})
 		},
 		afficherModifierCodeAcces () {
 			this.codeVisible = true
 			this.modificationCode = true
 			this.$nextTick(function () {
-				document.querySelector('.modale .icone').focus()
+				if (document.querySelector('.modale .icone')) {
+					document.querySelector('.modale .icone').focus()
+				}
 			})
 		},
 		annulerModifierCodeAcces () {
@@ -2909,6 +2947,7 @@ export default {
 								}.bind(this))
 							}
 						}
+						this.afficherBlocURL()
 						this.$socket.emit('connexion', { pad: this.pad.id, identifiant: this.identifiant, nom: this.nom })
 						this.fermerModaleCodeAcces()
 					}
@@ -3281,6 +3320,7 @@ export default {
 								}.bind(this))
 							}
 						}
+						this.afficherBlocURL()
 					}
 					this.notification = this.$t('padDebloque')
 				}
@@ -3658,6 +3698,7 @@ export default {
 							}.bind(this))
 						}
 					}
+					this.afficherBlocURL()
 					this.$socket.emit('connexion', { pad: this.pad.id, identifiant: this.identifiant, nom: this.nom })
 				} else {
 					this.modale = 'code-acces'
