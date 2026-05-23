@@ -186,27 +186,14 @@
 }
 
 #blocs .bloc .media img {
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
+	max-height: 40rem;
 }
 
-#blocs .bloc .texte + .media img,
-#blocs .bloc .titre + .media img {
-	border-top-left-radius: 0;
-	border-top-right-radius: 0;
-}
-
+#blocs .bloc .media a,
 #blocs .bloc .media span {
 	display: block;
     text-align: center;
 	padding: 1rem;
-}
-
-#blocs .bloc .media span a:focus,
-#blocs .bloc .media span:focus,
-#blocs .bloc .media img:focus {
-	outline: 2px solid #ed5b00;
-	outline-offset: -2px;
 }
 
 #blocs .bloc .media span img.vignette {
@@ -214,14 +201,18 @@
 	border-radius: 1rem;
 }
 
+#blocs .bloc .media a img,
 #blocs .bloc .media span img:not(.vignette) {
 	max-width: 128px;
 	max-height: 128px;
 	border-radius: 1rem;
 }
 
-#blocs .bloc .media span a {
-	display: block;
+#blocs .bloc .media a:focus,
+#blocs .bloc .media span:focus,
+#blocs .bloc .media img:focus {
+	outline: 2px solid #ed5b00;
+	outline-offset: -2px;
 }
 
 #blocs .bloc .titre + .media {
