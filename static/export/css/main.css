@@ -2,7 +2,7 @@
 	font-family: 'Roboto-Slab';
 	font-style: normal;
 	font-weight: 500;
-	src: local('Roboto Slab Medium'), local('Roboto-Slab-Medium'), url('../fonts/Roboto-Slab-Medium.woff2') format('woff2');
+	src: url('../fonts/Roboto-Slab-Medium.woff2') format('woff2');
 }
 
 @font-face {
