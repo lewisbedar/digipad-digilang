@@ -45,6 +45,8 @@ import { Agent } from 'https'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { S3Client, CopyObjectCommand, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { renderPage, createDevMiddleware } from 'vike/server'
+import genererHTML from './genererHTML.js'
+import genererXML from './genererXML.js'
 
 const production = process.env.NODE_ENV === 'production'
 let cluster = false
@@ -564,6 +566,63 @@ async function demarrerServeur () {
 		res.status(statusCode).send(body)
   	})
 
+	app.get('/p/:id/:token/rss', async function (req, res, next) {
+		if (maintenance === true) {
+			res.redirect('/maintenance')
+			return false
+		}
+		const id = req.params.id
+		const token = req.params.token
+		const identifiant = req.session.identifiant
+		const statut = req.session.statut
+		const pads = req.session.pads
+		const resultat = await db.EXISTS('pads:' + id)
+		if (resultat === null) { res.redirect('/') }
+		let pad = await db.HGETALL('pads:' + id)
+		pad = Object.assign({}, pad)
+		if (resultat === 1 && pad !== null) {
+			const donneesBlocs = await recupererDonneesBlocs(id, token, identifiant, statut, pads)
+			if (typeof donneesBlocs === 'object' && donneesBlocs !== null) {
+				const titre = pad.titre
+				const lien = hote + '/p/' + id + '/' + token
+				const langue = req.session.langue || 'fr-fr'
+				const xml = genererXML(hote, id, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
+				if (xml === null || xml === '') {
+					res.redirect('/p/' + id + '/' + token)
+				} else {
+					res.type('application/rss+xml; charset=utf-8')
+					res.send(xml)
+				}
+			} else {
+				res.redirect('/')
+			}
+		} else if ((resultat !== 1 || pad === null) && isNaN(parseInt(id)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
+			const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/' + id + '.json'))
+			if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('pad') && donnees.hasOwnProperty('blocs') && donnees.hasOwnProperty('activite')) {
+				await ajouterPadDansDb(id, donnees)
+				const donneesBlocs = await recupererDonneesBlocs(id, token, identifiant, statut, pads)
+				if (typeof donneesBlocs === 'object' && donneesBlocs !== null) {
+					const titre = pad.titre
+					const lien = hote + '/p/' + id + '/' + token
+					const langue = req.session.langue || 'fr-fr'
+					const xml = genererXML(hote, id, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
+					if (xml === null || xml === '') {
+						res.redirect('/p/' + id + '/' + token)
+					} else {
+						res.type('application/rss+xml; charset=utf-8')
+						res.send(xml)
+					}
+				} else {
+					res.redirect('/')
+				}
+			} else {
+				res.redirect('/')
+			}
+		} else {
+			res.redirect('/')
+		}
+  	})
+
 	app.get('/maintenance', async function (req, res, next) {
 		if (maintenance === false) {
 			res.redirect('/')
@@ -931,12 +990,22 @@ async function demarrerServeur () {
 		let pad = await db.HGETALL('pads:' + id)
 		pad = Object.assign({}, pad)
 		if (resultat === 1 && pad !== null) {
-			recupererDonneesPad(id, token, identifiant, statut, pads, res)
+			const donneesPad = await recupererDonneesPad(id, token, identifiant, statut, pads)
+			if (typeof donneesPad === 'object' && donneesPad !== null && donneesPad.hasOwnProperty('pad') && donneesPad.hasOwnProperty('blocs') && donneesPad.hasOwnProperty('activite')) {
+				res.json(donneesPad)
+			} else {
+				res.send('erreur')
+			}
 		} else if ((resultat !== 1 || pad === null) && isNaN(parseInt(id)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
 			const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/' + id + '.json'))
 			if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('pad') && donnees.hasOwnProperty('blocs') && donnees.hasOwnProperty('activite')) {
 				await ajouterPadDansDb(id, donnees)
-				recupererDonneesPad(id, token, identifiant, statut, pads, res)
+				const donneesPad = await recupererDonneesPad(id, token, identifiant, statut, pads)
+				if (typeof donneesPad === 'object' && donneesPad !== null && donneesPad.hasOwnProperty('pad') && donneesPad.hasOwnProperty('blocs') && donneesPad.hasOwnProperty('activite')) {
+					res.json(donneesPad)
+				} else {
+					res.send('erreur')
+				}
 			} else {
 				res.send('erreur')
 			}
@@ -1288,7 +1357,7 @@ async function demarrerServeur () {
 									const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 									if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 										for (let i = 0; i < liste.Contents.length; i++) {
-											await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), CopySource: '/' + bucket + '/' + liste.Contents[i].Key, ACL: 'public-read' }))
+											await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), '/' + bucket + '/' + liste.Contents[i].Key)))
 										}
 									}
 								}
@@ -1414,7 +1483,7 @@ async function demarrerServeur () {
 											const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 											if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 												for (let i = 0; i < liste.Contents.length; i++) {
-													await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), CopySource: '/' + bucket + '/' + liste.Contents[i].Key, ACL: 'public-read' }))
+													await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), '/' + bucket + '/' + liste.Contents[i].Key)))
 												}
 											}
 										}
@@ -1571,13 +1640,13 @@ async function demarrerServeur () {
 													await fs.copy(path.normalize(cible + '/fichiers/' + bloc.media), path.normalize(chemin + '/' + bloc.media, { overwrite: true }))
 												} else if (stockage === 's3' && bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien' && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.media))) {
 													const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + bloc.media))
-													await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + bloc.media, Body: buffer, ACL: 'public-read' }))
+													await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + bloc.media, buffer)))
 												}
 												if (stockage === 'fs' && bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.vignette))) {
 													await fs.copy(path.normalize(cible + '/fichiers/' + bloc.vignette), path.normalize(chemin + '/' + bloc.vignette, { overwrite: true }))
 												} else if (stockage === 's3' && bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.vignette))) {
 													const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + bloc.vignette))
-													await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + bloc.vignette, Body: buffer, ACL: 'public-read' }))
+													await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + bloc.vignette, buffer)))
 												}
 												resolve({ bloc: bloc.bloc, blocId: blocId })
 											} else {
@@ -1638,7 +1707,7 @@ async function demarrerServeur () {
 											await fs.copy(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)), path.normalize(chemin + '/' + path.basename(donnees.pad.fond), { overwrite: true }))
 										} else if (stockage === 's3' && !donnees.pad.fond.includes('/img/') && donnees.pad.fond.substring(0, 1) !== '#' && donnees.pad.fond !== '' && typeof donnees.pad.fond === 'string' && await fs.pathExists(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)))) {
 											const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)))
-											await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + path.basename(donnees.pad.fond), Body: buffer, ACL: 'public-read' }))
+											await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + path.basename(donnees.pad.fond), buffer)))
 										}
 										await db
 										.multi()
@@ -1797,7 +1866,7 @@ async function demarrerServeur () {
 							const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 							if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 								for (let i = 0; i < liste.Contents.length; i++) {
-									await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+									await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 								}
 							}
 						}
@@ -1874,7 +1943,7 @@ async function demarrerServeur () {
 								const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 								if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 									for (let i = 0; i < liste.Contents.length; i++) {
-										await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+										await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 									}
 								}
 							}
@@ -2392,7 +2461,7 @@ async function demarrerServeur () {
 								const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 								if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 									for (let i = 0; i < liste.Contents.length; i++) {
-										await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+										await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 									}
 								}
 							}
@@ -2416,7 +2485,7 @@ async function demarrerServeur () {
 								const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 								if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 									for (let i = 0; i < liste.Contents.length; i++) {
-										await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+										await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 									}
 								}
 							}
@@ -2915,7 +2984,7 @@ async function demarrerServeur () {
 									withoutEnlargement: true
 								}).toBuffer()
 								if (buffer !== null) {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: buffer, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, buffer)))
 									res.json({ fichier: nom, mimetype: mimetype })
 								} else {
 									res.send('erreur_televersement')
@@ -2930,7 +2999,7 @@ async function demarrerServeur () {
 									withoutEnlargement: true
 								}).toBuffer()
 								if (buffer !== null) {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: buffer, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, buffer)))
 									res.json({ fichier: nom, mimetype: mimetype })
 								} else {
 									res.send('erreur_televersement')
@@ -2939,17 +3008,17 @@ async function demarrerServeur () {
 								res.send('erreur_televersement')
 							}
 						} else {
-							await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+							await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 							res.json({ fichier: nom, mimetype: mimetype })
 						}
 					} else if (mimetype === 'application/pdf') {
 						gm(bufferFichier).setFormat('jpg').resize(450).quality(80).toBuffer(async function (erreur, buffer) {
 							if (erreur) {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + path.parse(nom).name + '.pdf', Body: bufferFichier, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + path.parse(nom).name + '.pdf', bufferFichier)))
 								res.json({ fichier: nom, mimetype: 'pdf', vignetteGeneree: false })
 							} else {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + path.parse(nom).name + '.pdf', Body: bufferFichier, ACL: 'public-read' }))
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + path.parse(nom).name + '.jpg', Body: buffer, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + path.parse(nom).name + '.pdf', bufferFichier)))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + path.parse(nom).name + '.jpg', buffer)))
 								res.json({ fichier: nom, mimetype: 'pdf', vignetteGeneree: true })
 							}
 						})
@@ -2964,16 +3033,16 @@ async function demarrerServeur () {
 						if (pdfBuffer && pdfBuffer !== 'erreur') {
 							gm(pdfBuffer).setFormat('jpg').resize(450).quality(80).toBuffer(async function (erreur, buffer) {
 								if (erreur) {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 									res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: false })
 								} else {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + path.parse(nom).name + '.jpg', Body: buffer, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + path.parse(nom).name + '.jpg', buffer)))
 									res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: true })
 								}
 							})
 						} else {
-							await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+							await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 							res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: false })
 						}
 					} else if (mimetype === 'application/msword' || mimetype === 'application/vnd.ms-powerpoint' || mimetype === 'application/vnd.ms-excel' || mimetype.includes('officedocument') === true) {
@@ -2987,20 +3056,20 @@ async function demarrerServeur () {
 						if (pdfBuffer && pdfBuffer !== 'erreur') {
 							gm(pdfBuffer).setFormat('jpg').resize(450).quality(80).toBuffer(async function (erreur, buffer) {
 								if (erreur) {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 									res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: false })
 								} else {
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
-									await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + path.parse(nom).name + '.jpg', Body: buffer, ACL: 'public-read' }))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
+									await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + path.parse(nom).name + '.jpg', buffer)))
 									res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: true })
 								}
 							})
 						} else {
-							await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+							await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 							res.json({ fichier: nom, mimetype: mimetype, vignetteGeneree: false })
 						}
 					} else {
-						await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+						await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, bufferFichier)))
 						res.json({ fichier: nom, mimetype: mimetype })
 					}
 				} else {
@@ -3132,7 +3201,7 @@ async function demarrerServeur () {
 				const bufferFichier = Buffer.concat(buffers)
 				if (bufferFichier !== null && nom !== null) {
 					const pad = formData.get('pad')
-					await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: pad + '/' + nom, Body: bufferFichier, ACL: 'public-read' }))
+					await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(pad + '/' + nom, bufferFichier)))
 					res.send(nom)
 				} else {
 					res.send('erreur_televersement')
@@ -3174,7 +3243,7 @@ async function demarrerServeur () {
 								withoutEnlargement: true
 							}).toBuffer()
 							if (buffer !== null) {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: buffer, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, buffer)))
 								res.send(nom)
 							} else {
 								res.send('erreur_televersement')
@@ -3189,7 +3258,7 @@ async function demarrerServeur () {
 								withoutEnlargement: true
 							}).toBuffer()
 							if (buffer !== null) {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: 'temp/' + nom, Body: buffer, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nom, buffer)))
 								res.send(nom)
 							} else {
 								res.send('erreur_televersement')
@@ -3275,7 +3344,7 @@ async function demarrerServeur () {
 								withoutEnlargement: true
 							}).toBuffer()
 							if (buffer !== null) {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: pad + '/' + nom, Body: buffer, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(pad + '/' + nom, buffer)))
 								res.send(nom)
 							} else {
 								res.send('erreur_televersement')
@@ -3290,7 +3359,7 @@ async function demarrerServeur () {
 								withoutEnlargement: true
 							}).toBuffer()
 							if (buffer !== null) {
-								await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: pad + '/' + nom, Body: buffer, ACL: 'public-read' }))
+								await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(pad + '/' + nom, buffer)))
 								res.send(nom)
 							} else {
 								res.send('erreur_televersement')
@@ -3760,7 +3829,7 @@ async function demarrerServeur () {
 										const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 										if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 											for (let i = 0; i < liste.Contents.length; i++) {
-												await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), CopySource: '/' + bucket + '/' + liste.Contents[i].Key, ACL: 'public-read' }))
+												await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(id + '/' + liste.Contents[i].Key.replace(pad + '/', ''), '/' + bucket + '/' + liste.Contents[i].Key)))
 											}
 										}
 									}
@@ -3891,7 +3960,7 @@ async function demarrerServeur () {
 							const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 							if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 								for (let i = 0; i < liste.Contents.length; i++) {
-									await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+									await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 								}
 							}
 						}
@@ -3942,7 +4011,7 @@ async function demarrerServeur () {
 									const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
 									if (liste !== null && liste.hasOwnProperty('Contents') && liste.Contents instanceof Array) {
 										for (let i = 0; i < liste.Contents.length; i++) {
-											await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: liste.Contents[i].Key }))
+											await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(liste.Contents[i].Key)))
 										}
 									}
 								}
@@ -4057,13 +4126,13 @@ async function demarrerServeur () {
 													await fs.copy(path.normalize(cible + '/fichiers/' + bloc.media), path.normalize(chemin + '/' + bloc.media, { overwrite: true }))
 												} else if (stockage === 's3' && bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien' && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.media))) {
 													const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + bloc.media))
-													await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + bloc.media, Body: buffer, ACL: 'public-read' }))
+													await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + bloc.media, buffer)))
 												}
 												if (stockage === 'fs' && bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.vignette))) {
 													await fs.copy(path.normalize(cible + '/fichiers/' + bloc.vignette), path.normalize(chemin + '/' + bloc.vignette, { overwrite: true }))
 												} else if (stockage === 's3' && bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true && await fs.pathExists(path.normalize(cible + '/fichiers/' + bloc.vignette))) {
 													const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + bloc.vignette))
-													await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + bloc.vignette, Body: buffer, ACL: 'public-read' }))
+													await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + bloc.vignette, buffer)))
 												}
 												resolve({ bloc: bloc.bloc, blocId: blocId })
 											} else {
@@ -4124,7 +4193,7 @@ async function demarrerServeur () {
 											await fs.copy(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)), path.normalize(chemin + '/' + path.basename(donnees.pad.fond), { overwrite: true }))
 										} else if (stockage === 's3' && !donnees.pad.fond.includes('/img/') && donnees.pad.fond.substring(0, 1) !== '#' && donnees.pad.fond !== '' && typeof donnees.pad.fond === 'string' && await fs.pathExists(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)))) {
 											const buffer = await fs.readFile(path.normalize(cible + '/fichiers/' + path.basename(donnees.pad.fond)))
-											await s3Client.send(new PutObjectCommand({ Bucket: bucket, Key: id + '/' + path.basename(donnees.pad.fond), Body: buffer, ACL: 'public-read' }))
+											await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(id + '/' + path.basename(donnees.pad.fond), buffer)))
 										}
 										await db
 										.multi()
@@ -4337,8 +4406,8 @@ async function demarrerServeur () {
 						try {
 							const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: 'temp/' + media }))
 							if (fichierMeta.hasOwnProperty('ContentLength')) {
-								await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + media, CopySource: '/' + bucket + '/temp/' + media, ACL: 'public-read' }))
-								await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: 'temp/' + media }))
+								await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + media, '/' + bucket + '/temp/' + media)))
+								await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3('temp/' + media)))
 							}
 						} catch (e) {}
 					}
@@ -4349,8 +4418,8 @@ async function demarrerServeur () {
 						try {
 							const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: 'temp/' + vignette }))
 							if (fichierMeta.hasOwnProperty('ContentLength')) {
-								await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + vignette, CopySource: '/' + bucket + '/temp/' + vignette, ACL: 'public-read' }))
-								await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: 'temp/' + vignette }))
+								await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + vignette, '/' + bucket + '/temp/' + vignette)))
+								await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3('temp/' + vignette)))
 							}
 						} catch (e) {}
 					}
@@ -4417,8 +4486,8 @@ async function demarrerServeur () {
 								try {
 									const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: 'temp/' + media }))
 									if (fichierMeta.hasOwnProperty('ContentLength')) {
-										await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + media, CopySource: '/' + bucket + '/temp/' + media, ACL: 'public-read' }))
-										await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: 'temp/' + media }))
+										await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + media, '/' + bucket + '/temp/' + media)))
+										await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3('temp/' + media)))
 									}
 								} catch (e) {}
 							}
@@ -4432,8 +4501,8 @@ async function demarrerServeur () {
 								try {
 									const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: 'temp/' + vignette }))
 									if (fichierMeta.hasOwnProperty('ContentLength')) {
-										await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + vignette, CopySource: '/' + bucket + '/temp/' + vignette, ACL: 'public-read' }))
-										await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: 'temp/' + vignette }))
+										await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + vignette, '/' + bucket + '/temp/' + vignette)))
+										await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3('temp/' + vignette)))
 									}
 								} catch (e) {}
 							}
@@ -4492,7 +4561,7 @@ async function demarrerServeur () {
 						try {
 							const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: padOrigine + '/' + media }))
 							if (fichierMeta.hasOwnProperty('ContentLength')) {
-								await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + media, CopySource: '/' + bucket + '/' + padOrigine + '/' + media, ACL: 'public-read' }))
+								await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + media, '/' + bucket + '/' + padOrigine + '/' + media)))
 							}
 						} catch (e) {}
 					}
@@ -4502,7 +4571,7 @@ async function demarrerServeur () {
 						try {
 							const fichierMeta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: padOrigine + '/' + vignette }))
 							if (fichierMeta.hasOwnProperty('ContentLength')) {
-								await s3Client.send(new CopyObjectCommand({ Bucket: bucket, Key: pad + '/' + vignette, CopySource: '/' + bucket + '/' + padOrigine + '/' + vignette, ACL: 'public-read' }))
+								await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + vignette, '/' + bucket + '/' + padOrigine + '/' + vignette)))
 							}
 						} catch (e) {}
 					}
@@ -6475,10 +6544,10 @@ async function demarrerServeur () {
 		return Promise.all([donneesPadsCrees, donneesPadsAdmins])
 	}
 
-	async function recupererDonneesPad (id, token, identifiant, statut, pads, res) {
+	async function recupererDonneesPad (id, token, identifiant, statut, pads) {
 		let pad = await db.HGETALL('pads:' + id)
 		pad = Object.assign({}, pad)
-		if (pad === null) { res.send('erreur'); return false }
+		if (pad === null) { return 'erreur' }
 		if (pad !== null && pad.hasOwnProperty('id') && pad.id === id && pad.hasOwnProperty('token') && pad.token === token) {
 			// Pour homogénéité des paramètres de pad avec coadministration
 			if (!pad.hasOwnProperty('admins') || (pad.hasOwnProperty('admins') && pad.admins.substring(0, 2) === '"\\')) { // fix bug update 0.9.0
@@ -6725,7 +6794,7 @@ async function demarrerServeur () {
 			// Ajouter dans pads rejoints
 			if (pad.identifiant !== identifiant && statut === 'utilisateur') {
 				const padsRejoints = await db.SMEMBERS('pads-rejoints:' + identifiant)
-				if (padsRejoints === null) { res.send('erreur'); return false }
+				if (padsRejoints === null) { return 'erreur' }
 				let padDejaRejoint = false
 				for (const padRejoint of padsRejoints) {
 					if (padRejoint === id) {
@@ -6751,31 +6820,21 @@ async function demarrerServeur () {
 				pad.notification.splice(pad.notification.indexOf(identifiant), 1)
 				await db.HSET('pads:' + id, 'notification', JSON.stringify(pad.notification))
 			}
-			res.json({ pad: pad, blocs: donneesBlocs, activite: donneesEntrees })
+			return { pad: pad, blocs: donneesBlocs, activite: donneesEntrees }
 		} else {
-			res.send('erreur')
+			return 'erreur'
 		}
 	}
 
 	async function recupererDonneesPadProtege (pad, id, identifiant) {
-		return new Promise(async function (resolveData) {
-			let nombreColonnes = 0
-			if (pad.hasOwnProperty('colonnes')) {
-				nombreColonnes = JSON.parse(pad.colonnes).length
-				pad.colonnes = JSON.parse(pad.colonnes)
-			}
-			if (pad.hasOwnProperty('affichageColonnes')) {
-				pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
-				if ((pad.hasOwnProperty('colonnes') && pad.affichageColonnes.length === 0) || (pad.hasOwnProperty('colonnes') && pad.affichageColonnes.length < pad.colonnes.length)) { // fix bug update 0.9.11
-					const affichageColonnes = []
-					if (pad.hasOwnProperty('colonnes')) {
-						pad.colonnes.forEach(function () {
-							affichageColonnes.push(true)
-						})
-					}
-					pad.affichageColonnes = affichageColonnes
-				}
-			} else {
+		let nombreColonnes = 0
+		if (pad.hasOwnProperty('colonnes')) {
+			nombreColonnes = JSON.parse(pad.colonnes).length
+			pad.colonnes = JSON.parse(pad.colonnes)
+		}
+		if (pad.hasOwnProperty('affichageColonnes')) {
+			pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
+			if ((pad.hasOwnProperty('colonnes') && pad.affichageColonnes.length === 0) || (pad.hasOwnProperty('colonnes') && pad.affichageColonnes.length < pad.colonnes.length)) { // fix bug update 0.9.11
 				const affichageColonnes = []
 				if (pad.hasOwnProperty('colonnes')) {
 					pad.colonnes.forEach(function () {
@@ -6784,159 +6843,259 @@ async function demarrerServeur () {
 				}
 				pad.affichageColonnes = affichageColonnes
 			}
-			// Récupérer les données de tous les blocs
-			const listeBlocs = []
-			let donneesBlocs = []
-			const blocs = await db.ZRANGE('blocs:' + id, 0, -1)
-			if (blocs !== null) {
-				for (const bloc of blocs) {
-					let donneesBloc = await db.HGETALL('pad-' + id + ':' + bloc)
-					donneesBloc = Object.assign({}, donneesBloc)
-					if (Object.keys(donneesBloc).length > 0) {
-						// Ne pas ajouter les capsules en attente de modération ou privées
-						if (((pad.contributions === 'moderees' && donneesBloc.visibilite === 'masquee') || donneesBloc.visibilite === 'privee') && donneesBloc.identifiant !== identifiant) {
-							donneesBloc = {}
+		} else {
+			const affichageColonnes = []
+			if (pad.hasOwnProperty('colonnes')) {
+				pad.colonnes.forEach(function () {
+					affichageColonnes.push(true)
+				})
+			}
+			pad.affichageColonnes = affichageColonnes
+		}
+		// Récupérer les données de tous les blocs
+		const listeBlocs = []
+		let donneesBlocs = []
+		const blocs = await db.ZRANGE('blocs:' + id, 0, -1)
+		if (blocs !== null) {
+			for (const bloc of blocs) {
+				let donneesBloc = await db.HGETALL('pad-' + id + ':' + bloc)
+				donneesBloc = Object.assign({}, donneesBloc)
+				if (Object.keys(donneesBloc).length > 0) {
+					// Ne pas ajouter les capsules en attente de modération ou privées
+					if (((pad.contributions === 'moderees' && donneesBloc.visibilite === 'masquee') || donneesBloc.visibilite === 'privee') && donneesBloc.identifiant !== identifiant) {
+						donneesBloc = {}
+					}
+					// Ne pas ajouter les capsules dans les colonnes masquées
+					else if (pad.affichage === 'colonnes' && pad.affichageColonnes[donneesBloc.colonne] === false) {
+						donneesBloc = {}
+					} else {
+						// Ajouter dans la liste des blocs
+						listeBlocs.push(bloc)
+						// Pour résoudre le problème des capsules qui sont référencées dans une colonne inexistante
+						if (parseInt(donneesBloc.colonne) >= nombreColonnes) {
+							donneesBloc.colonne = nombreColonnes - 1
 						}
-						// Ne pas ajouter les capsules dans les colonnes masquées
-						else if (pad.affichage === 'colonnes' && pad.affichageColonnes[donneesBloc.colonne] === false) {
-							donneesBloc = {}
+						// Pour compatibilité avec les anciens chemins
+						if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
+							donneesBloc.vignette = path.basename(donneesBloc.vignette)
+						}
+						// Pour homogénéité des paramètres du bloc avec modération activée
+						if (!donneesBloc.hasOwnProperty('visibilite')) {
+							donneesBloc.visibilite = 'visible'
+						}
+						// Pour résoudre le problème lié au changement de domaine de digidoc
+						if (donneesBloc.hasOwnProperty('iframe') && donneesBloc.iframe.includes('env-7747481.jcloud-ver-jpe.ik-server.com') === true) {
+							donneesBloc.iframe = donneesBloc.iframe.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+						}
+						// Pour résoudre le problème lié au changement de domaine de digidoc
+						if (donneesBloc.hasOwnProperty('media') && donneesBloc.media.includes('env-7747481.jcloud-ver-jpe.ik-server.com') === true) {
+							donneesBloc.media = donneesBloc.media.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+						}
+						// Ajouter couleur
+						if (!donneesBloc.hasOwnProperty('couleur') || donneesBloc.couleur === null || typeof donneesBloc.couleur !== 'string') {
+							donneesBloc.couleur = '#242f3d'
+						}
+						// Filtrer HTML
+						let html = donneesBloc.texte
+						html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
+						html = html.replace(/style=".*?"/mg, '')
+						html = html.replace(/class=".*?"/mg, '')
+						donneesBloc.texte = html
+						// Commentaires
+						const commentaires = await db.ZCARD('commentaires:' + bloc)
+						if (commentaires === null) {
+							donneesBloc.commentaires = []
 						} else {
-							// Ajouter dans la liste des blocs
-							listeBlocs.push(bloc)
-							// Pour résoudre le problème des capsules qui sont référencées dans une colonne inexistante
-							if (parseInt(donneesBloc.colonne) >= nombreColonnes) {
-								donneesBloc.colonne = nombreColonnes - 1
-							}
-							// Pour compatibilité avec les anciens chemins
-							if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
-								donneesBloc.vignette = path.basename(donneesBloc.vignette)
-							}
-							// Pour homogénéité des paramètres du bloc avec modération activée
-							if (!donneesBloc.hasOwnProperty('visibilite')) {
-								donneesBloc.visibilite = 'visible'
-							}
-							// Pour résoudre le problème lié au changement de domaine de digidoc
-							if (donneesBloc.hasOwnProperty('iframe') && donneesBloc.iframe.includes('env-7747481.jcloud-ver-jpe.ik-server.com') === true) {
-								donneesBloc.iframe = donneesBloc.iframe.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
-							}
-							// Pour résoudre le problème lié au changement de domaine de digidoc
-							if (donneesBloc.hasOwnProperty('media') && donneesBloc.media.includes('env-7747481.jcloud-ver-jpe.ik-server.com') === true) {
-								donneesBloc.media = donneesBloc.media.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
-							}
-							// Ajouter couleur
-							if (!donneesBloc.hasOwnProperty('couleur') || donneesBloc.couleur === null || typeof donneesBloc.couleur !== 'string') {
-								donneesBloc.couleur = '#242f3d'
-							}
-							// Filtrer HTML
-							let html = donneesBloc.texte
-							html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
-							html = html.replace(/style=".*?"/mg, '')
-							html = html.replace(/class=".*?"/mg, '')
-							donneesBloc.texte = html
-							// Commentaires
-							const commentaires = await db.ZCARD('commentaires:' + bloc)
-							if (commentaires === null) {
-								donneesBloc.commentaires = []
-							} else {
-								donneesBloc.commentaires = commentaires
-							}
-							// Evaluations
-							const evaluations = await db.ZRANGE('evaluations:' + bloc, 0, -1)
-							if (evaluations === null) {
-								donneesBloc.evaluations = []
-							} else {
-								const donneesEvaluations = []
-								evaluations.forEach(function (evaluation) {
-									donneesEvaluations.push(JSON.parse(evaluation))
-								})
-								donneesBloc.evaluations = donneesEvaluations
-							}
-							// Utilisateurs
-							const utilisateurExiste = await db.EXISTS('utilisateurs:' + donneesBloc.identifiant)
-							if (utilisateurExiste === null) {
+							donneesBloc.commentaires = commentaires
+						}
+						// Evaluations
+						const evaluations = await db.ZRANGE('evaluations:' + bloc, 0, -1)
+						if (evaluations === null) {
+							donneesBloc.evaluations = []
+						} else {
+							const donneesEvaluations = []
+							evaluations.forEach(function (evaluation) {
+								donneesEvaluations.push(JSON.parse(evaluation))
+							})
+							donneesBloc.evaluations = donneesEvaluations
+						}
+						// Utilisateurs
+						const utilisateurExiste = await db.EXISTS('utilisateurs:' + donneesBloc.identifiant)
+						if (utilisateurExiste === null) {
+							donneesBloc.nom = ''
+						} else if (utilisateurExiste === 1) {
+							let donneesUtilisateur = await db.HGETALL('utilisateurs:' + donneesBloc.identifiant)
+							donneesUtilisateur = Object.assign({}, donneesUtilisateur)
+							if (donneesUtilisateur === null) {
 								donneesBloc.nom = ''
-							} else if (utilisateurExiste === 1) {
-								let donneesUtilisateur = await db.HGETALL('utilisateurs:' + donneesBloc.identifiant)
-								donneesUtilisateur = Object.assign({}, donneesUtilisateur)
-								if (donneesUtilisateur === null) {
+							} else {
+								donneesBloc.nom = donneesUtilisateur.nom
+							}
+						} else {
+							const nomExiste = await db.EXISTS('noms:' + donneesBloc.identifiant)
+							if (nomExiste === null) {
+								donneesBloc.nom = ''
+							} else if (nomExiste === 1) {
+								const donneesNom = await db.HGET('noms:' + donneesBloc.identifiant, 'nom')
+								if (donneesNom === null) {
 									donneesBloc.nom = ''
 								} else {
-									donneesBloc.nom = donneesUtilisateur.nom
+									donneesBloc.nom = donneesNom
 								}
 							} else {
-								const nomExiste = await db.EXISTS('noms:' + donneesBloc.identifiant)
-								if (nomExiste === null) {
-									donneesBloc.nom = ''
-								} else if (nomExiste === 1) {
-									const donneesNom = await db.HGET('noms:' + donneesBloc.identifiant, 'nom')
-									if (donneesNom === null) {
-										donneesBloc.nom = ''
-									} else {
-										donneesBloc.nom = donneesNom
-									}
-								} else {
-									donneesBloc.nom = ''
-								}
+								donneesBloc.nom = ''
 							}
 						}
 					}
-					donneesBlocs.push(donneesBloc)
+				}
+				donneesBlocs.push(donneesBloc)
+			}
+		}
+		donneesBlocs = donneesBlocs.filter(function (element) {
+			return Object.keys(element).length > 0
+		})
+		if (pad.ordre === 'decroissant') {
+			donneesBlocs.reverse()
+		}
+		// Récupérer les entrées du registre d'activité
+		let donneesEntrees = []
+		const entrees = await db.ZRANGE('activite:' + id, 0, -1)
+		if (entrees !== null) {
+			for (let entree of entrees) {
+				let donneesEntree = JSON.parse(entree)
+				const utilisateurEntreeExiste = await db.EXISTS('utilisateurs:' + donneesEntree.identifiant)
+				if (utilisateurEntreeExiste === null) {
+					donneesEntree.nom = ''
+				} else if (utilisateurEntreeExiste === 1) {
+					let donneesUtilisateurEntree = await db.HGETALL('utilisateurs:' + donneesEntree.identifiant)
+					donneesUtilisateurEntree = Object.assign({}, donneesUtilisateurEntree)
+					if (donneesUtilisateurEntree === null) {
+						donneesEntree.nom = ''
+					} else {
+						donneesEntree.nom = donneesUtilisateurEntree.nom
+					}
+				} else {
+					const nomEntreeExiste = await db.EXISTS('noms:' + donneesEntree.identifiant)
+					if (nomEntreeExiste === null) {
+						donneesEntree.nom = ''
+					} else if (nomEntreeExiste === 1) {
+						const nomUtilisateurEntree = await db.HGET('noms:' + donneesEntree.identifiant, 'nom')
+						if (nomUtilisateurEntree === null) {
+							donneesEntree.nom = ''
+						} else {
+							donneesEntree.nom = nomUtilisateurEntree
+						}
+					} else {
+						donneesEntree.nom = ''
+					}
+				}
+				donneesEntrees.push(donneesEntree)
+			}
+		}
+		donneesEntrees = donneesEntrees.filter(function (element) {
+			return Object.keys(element).length > 0 && ((element.hasOwnProperty('type') && element.type.includes('colonne')) || (element.hasOwnProperty('bloc') && listeBlocs.includes(element.bloc)))
+		})
+		donneesEntrees.reverse()
+		// Vérifier notification mise à jour pad
+		if (pad.hasOwnProperty('notification') && pad.notification.includes(identifiant) && Array.isArray(pad.notification)) {
+			pad.notification.splice(pad.notification.indexOf(identifiant), 1)
+			await db.HSET('pads:' + id, 'notification', JSON.stringify(pad.notification))
+		}
+		return { pad: pad, blocs: donneesBlocs, activite: donneesEntrees }
+	}
+
+	async function recupererDonneesBlocs (id, token, identifiant, statut, pads) {
+		let pad = await db.HGETALL('pads:' + id)
+		pad = Object.assign({}, pad)
+		if (pad === null) { return 'erreur' }
+		if (pad !== null && pad.hasOwnProperty('id') && pad.id === id && pad.hasOwnProperty('token') && pad.token === token) {
+			// Pour homogénéité des paramètres de pad avec coadministration
+			if (!pad.hasOwnProperty('admins') || (pad.hasOwnProperty('admins') && pad.admins.substring(0, 2) === '"\\')) { // fix bug update 0.9.0
+				pad.admins = []
+			} else if (pad.hasOwnProperty('admins') && pad.admins.substring(0, 1) === '"') { // fix bug update 0.9.0
+				pad.admins = JSON.parse(JSON.parse(pad.admins))
+			} else if (pad.hasOwnProperty('admins')) {
+				pad.admins = JSON.parse(pad.admins)
+			}
+			// Vérifier si admin
+			let admin = false
+			if ((statut === 'utilisateur' && (pad.admins.includes(identifiant) || pad.identifiant === identifiant)) || (statut === 'auteur' && pads && pads.includes(parseInt(id)))) {
+				admin = true
+			}
+			// Vérifier accès
+			let accesCode = false
+			if (pad.hasOwnProperty('code') && pad.acces === 'code') {
+				accesCode = true
+			}
+			let accesPrive = false
+			if (pad.acces === 'prive') {
+				accesPrive = true
+			}
+			// Récupérer les données de tous les blocs
+			let donneesBlocs = []
+			if (admin || (!accesCode && !accesPrive)) {
+				const blocs = await db.ZRANGE('blocs:' + id, 0, -1)
+				if (blocs !== null) {
+					for (const bloc of blocs) {
+						let donneesBloc = await db.HGETALL('pad-' + id + ':' + bloc)
+						donneesBloc = Object.assign({}, donneesBloc)
+						if (Object.keys(donneesBloc).length > 0) {
+							// Ne pas ajouter les capsules en attente de modération ou privées
+							if (((pad.contributions === 'moderees' && donneesBloc.visibilite === 'masquee') || donneesBloc.visibilite === 'privee') && donneesBloc.identifiant !== identifiant && !admin) {
+								donneesBloc = {}
+							}
+							// Ne pas ajouter les capsules dans les colonnes masquées
+							else if (pad.affichage === 'colonnes' && pad.affichageColonnes[donneesBloc.colonne] === false && !admin) {
+								donneesBloc = {}
+							} else {
+								// Pour compatibilité avec les anciens chemins
+								if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
+									donneesBloc.vignette = path.basename(donneesBloc.vignette)
+								}
+								// Pour homogénéité des paramètres du bloc avec modération activée
+								if (!donneesBloc.hasOwnProperty('visibilite')) {
+									donneesBloc.visibilite = 'visible'
+								}
+								// Utilisateurs
+								const utilisateurExiste = await db.EXISTS('utilisateurs:' + donneesBloc.identifiant)
+								if (utilisateurExiste === null) {
+									donneesBloc.nom = ''
+								} else if (utilisateurExiste === 1) {
+									let donneesUtilisateur = await db.HGETALL('utilisateurs:' + donneesBloc.identifiant)
+									donneesUtilisateur = Object.assign({}, donneesUtilisateur)
+									if (donneesUtilisateur === null) {
+										donneesBloc.nom = ''
+									} else {
+										donneesBloc.nom = donneesUtilisateur.nom
+									}
+								} else {
+									const nomExiste = await db.EXISTS('noms:' + donneesBloc.identifiant)
+									if (nomExiste === null) {
+										donneesBloc.nom = ''
+									} else if (nomExiste === 1) {
+										const donneesNom = await db.HGET('noms:' + donneesBloc.identifiant, 'nom')
+										if (donneesNom === null) {
+											donneesBloc.nom = ''
+										} else {
+											donneesBloc.nom = donneesNom
+										}
+									} else {
+										donneesBloc.nom = ''
+									}
+								}
+							}
+						}
+						donneesBlocs.push(donneesBloc)
+					}
 				}
 			}
 			donneesBlocs = donneesBlocs.filter(function (element) {
 				return Object.keys(element).length > 0
 			})
-			if (pad.ordre === 'decroissant') {
-				donneesBlocs.reverse()
-			}
-			// Récupérer les entrées du registre d'activité
-			let donneesEntrees = []
-			const entrees = await db.ZRANGE('activite:' + id, 0, -1)
-			if (entrees !== null) {
-				for (let entree of entrees) {
-					let donneesEntree = JSON.parse(entree)
-					const utilisateurEntreeExiste = await db.EXISTS('utilisateurs:' + donneesEntree.identifiant)
-					if (utilisateurEntreeExiste === null) {
-						donneesEntree.nom = ''
-					} else if (utilisateurEntreeExiste === 1) {
-						let donneesUtilisateurEntree = await db.HGETALL('utilisateurs:' + donneesEntree.identifiant)
-						donneesUtilisateurEntree = Object.assign({}, donneesUtilisateurEntree)
-						if (donneesUtilisateurEntree === null) {
-							donneesEntree.nom = ''
-						} else {
-							donneesEntree.nom = donneesUtilisateurEntree.nom
-						}
-					} else {
-						const nomEntreeExiste = await db.EXISTS('noms:' + donneesEntree.identifiant)
-						if (nomEntreeExiste === null) {
-							donneesEntree.nom = ''
-						} else if (nomEntreeExiste === 1) {
-							const nomUtilisateurEntree = await db.HGET('noms:' + donneesEntree.identifiant, 'nom')
-							if (nomUtilisateurEntree === null) {
-								donneesEntree.nom = ''
-							} else {
-								donneesEntree.nom = nomUtilisateurEntree
-							}
-						} else {
-							donneesEntree.nom = ''
-						}
-					}
-					donneesEntrees.push(donneesEntree)
-				}
-			}
-			donneesEntrees = donneesEntrees.filter(function (element) {
-				return Object.keys(element).length > 0 && ((element.hasOwnProperty('type') && element.type.includes('colonne')) || (element.hasOwnProperty('bloc') && listeBlocs.includes(element.bloc)))
-			})
-			donneesEntrees.reverse()
-			// Vérifier notification mise à jour pad
-			if (pad.hasOwnProperty('notification') && pad.notification.includes(identifiant) && Array.isArray(pad.notification)) {
-				pad.notification.splice(pad.notification.indexOf(identifiant), 1)
-				await db.HSET('pads:' + id, 'notification', JSON.stringify(pad.notification))
-				resolveData({ pad: pad, blocs: donneesBlocs, activite: donneesEntrees })
-			} else {
-				resolveData({ pad: pad, blocs: donneesBlocs, activite: donneesEntrees })
-			}
-		})
+			return { blocs: donneesBlocs, admin: admin }
+		} else {
+			return 'erreur'
+		}
 	}
 
 	async function verifierAcces (pad, identifiant, motdepasse) {
@@ -7043,7 +7202,7 @@ async function demarrerServeur () {
 			parametres.pad = donneesPad
 			parametres.blocs = donneesBlocs
 			parametres.activite = donneesEntrees
-			const html = genererHTML(donneesPad, donneesBlocs)
+			const html = genererHTML(donneesPad, donneesBlocs, req.session.langue)
 			const chemin = path.join(__dirname, '..', '/static/temp')
 			await fs.mkdirp(path.normalize(chemin + '/' + id))
 			await fs.mkdirp(path.normalize(chemin + '/' + id + '/fichiers'))
@@ -7121,7 +7280,7 @@ async function demarrerServeur () {
 	}
 
 	async function exporterPadJson (res, id, donnees) {
-		const html = genererHTML(donnees.pad, donnees.blocs)
+		const html = genererHTML(donnees.pad, donnees.blocs, req.session.langue)
 		const chemin = path.join(__dirname, '..', '/static/temp')
 		await fs.mkdirp(path.normalize(chemin + '/' + id))
 		await fs.mkdirp(path.normalize(chemin + '/' + id + '/fichiers'))
@@ -7330,6 +7489,18 @@ async function demarrerServeur () {
 		}
 	}
 
+	function definirParametresTeleverserS3 (cle, buffer) {
+		return { Bucket: bucket, Key: cle, Body: buffer, ACL: 'public-read' }
+	}
+
+	function definirParametresCopierS3 (cle, source) {
+		return { Bucket: bucket, Key: cle, CopySource: source, ACL: 'public-read' }
+	}
+
+	function definirParametresSupprimerS3 (cle) {
+		return { Bucket: bucket, Key: cle }
+	}
+
 	async function telechargerFichierS3 (cle, fichier) {
 		return new Promise(async function (resolve) {
 			const donnees = await s3Client.send(new GetObjectCommand({ Bucket: bucket, Key: cle }))
@@ -7352,7 +7523,7 @@ async function demarrerServeur () {
 					await fs.remove(chemin)
 				}
 			} else if (stockage === 's3' && fichier !== '') {
-				await s3Client.send(new DeleteObjectCommand({ Bucket: bucket, Key: pad + '/' + fichier }))
+				await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(pad + '/' + fichier)))
 			}
 			resolve()
 		})
@@ -7482,435 +7653,5 @@ async function demarrerServeur () {
 			break
 		}
 		return dateFormattee
-	}
-
-	function genererHTML (pad, blocs) {
-		return `
-		<!DOCTYPE html>
-		<html lang="fr">
-			<head>
-				<meta charset="utf-8">
-				<meta name="viewport" content="width=device-width, height=device-height, viewport-fit=cover, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-				<meta name="description" content="Digipad permet de créer des murs multimédias collaboratifs.">
-				<meta name="robots" content="index, no-follow">
-				<meta name="theme-color" content="#00ced1">
-				<meta property="og:title" content="Digipad by La Digitale">
-				<meta property="og:description" content="Digipad permet de créer des murs multimédias collaboratifs.">
-				<meta property="og:type" content="website" />
-				<meta property="og:locale" content="fr_FR" />
-				<title>Digipad by La Digitale</title>
-				<link rel="icon" type="image/png" href="./static/img/favicon.png">
-				<link rel="stylesheet" href="./static/css/destyle.css">
-				<link rel="stylesheet" href="./static/css/main.css">
-				<link rel="stylesheet" href="./static/css/pad.css">
-				<script src="./static/js/vue.js" type="text/javascript"></script>
-				<script src="./static/js/vue-masonry-css.js" type="text/javascript"></script>
-			</head>
-			<body>
-				<noscript>
-					<strong>Veuillez activer Javascript dans votre navigateur pour utiliser <i>Digipad</i>.</strong>
-				</noscript>
-				<div id="app">
-					<main id="page" :class="pad.affichage">
-						<header v-if="!chargement">
-							<span id="titre">{{ pad.titre }}</span>
-						</header>
-
-						<div id="pad" :class="{'fond-personnalise': pad.fond.substring(0, 1) !== '#' && !pad.fond.includes('/img/') && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.fond.substring(0, 1) !== '#' && !pad.fond.includes('/img/') && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active'}" :style="definirFond(pad.fond)" v-if="!chargement">
-							<!-- Affichage mur -->
-							<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-if="pad.affichage === 'mur'">
-								<div :id="item.bloc" class="bloc" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" :key="'bloc' + indexItem">
-									<div class="contenu">
-										<div class="titre" v-if="item.titre !== ''" :style="{'background': eclaircirCouleur(item.couleur)}">
-											<span>{{ item.titre }}</span>
-										</div>
-										<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
-										<div class="media" v-if="item.media !== ''">
-											<img role="button" tabindex="0" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-											<img role="button" tabindex="0" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-											<span role="button" tabindex="0" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'document' || item.type === 'pdf' || item.type === 'office' || item.type === 'embed'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-											<span v-else-if="item.type === 'lien'"><a :href="item.media" target="_blank"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-											<span v-else><a :href="'./fichiers/' + item.media" download><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-										</div>
-										<div class="evaluation" v-if="pad.evaluations === 'activees'">
-											<span class="etoiles">
-												<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
-												<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
-												<span>({{ item.listeEvaluations.length }})</span>
-											</span>
-										</div>
-										<div class="action" :style="{'color': item.couleur}">
-											<span role="button" tabindex="0" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-											<span role="button" tabindex="0" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
-											<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
-										</div>
-									</div>
-								</div>
-							</masonry>
-							<!-- Affichage flux vertical -->
-							<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical'">
-								<div :id="item.bloc" class="bloc" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" :key="'bloc' + indexItem">
-									<div class="contenu">
-										<div class="titre" v-if="item.titre !== ''" :style="{'background': eclaircirCouleur(item.couleur)}">
-											<span>{{ item.titre }}</span>
-										</div>
-										<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
-										<div class="media" v-if="item.media !== ''">
-											<img role="button" tabindex="0" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-											<img role="button" tabindex="0" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-											<span role="button" tabindex="0" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'document' || item.type === 'pdf' || item.type === 'office' || item.type === 'embed'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-											<span v-else-if="item.type === 'lien'"><a :href="item.media" target="_blank"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-											<span v-else><a :href="'./fichiers/' + item.media" download><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-										</div>
-										<div class="evaluation" v-if="pad.evaluations === 'activees'">
-											<span class="etoiles">
-												<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
-												<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
-												<span>({{ item.listeEvaluations.length }})</span>
-											</span>
-										</div>
-										<div class="action" :style="{'color': item.couleur}">
-											<span role="button" tabindex="0" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-											<span role="button" tabindex="0" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
-											<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
-										</div>
-									</div>
-								</div>
-							</div>
-							<!-- Affichage colonne -->
-							<div id="blocs" class="colonnes" v-else-if="pad.affichage === 'colonnes'">
-								<section :id="'colonne' + indexCol" class="colonne" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-for="(col, indexCol) in pad.colonnes" :key="'colonne' + indexCol">
-									<div class="bloc haut">
-										<div class="titre-colonne">
-											<span>{{ col }}</span>
-										</div>
-									</div>
-									<div class="conteneur-colonne ascenseur" v-if="colonnes[indexCol].length > 0">
-										<div :id="item.bloc" class="bloc" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" :key="'bloc' + indexItem">
-											<div class="contenu">
-												<div class="titre" v-if="item.titre !== ''" :style="{'background': eclaircirCouleur(item.couleur)}">
-													<span>{{ item.titre }}</span>
-												</div>
-												<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
-												<div class="media" v-if="item.media !== ''">
-													<img role="button" tabindex="0" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-													<img role="button" tabindex="0" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)">
-													<span role="button" tabindex="0" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'document' || item.type === 'pdf' || item.type === 'office' || item.type === 'embed'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-													<span v-else-if="item.type === 'lien'"><a :href="item.media" target="_blank"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-													<span v-else><a :href="'./fichiers/' + item.media" download><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a></span>
-												</div>
-												<div class="evaluation" v-if="pad.evaluations === 'activees'">
-													<span class="etoiles">
-														<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
-														<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
-														<span>({{ item.listeEvaluations.length }})</span>
-													</span>
-												</div>
-												<div class="action" :style="{'color': item.couleur}">
-													<span role="button" tabindex="0" class="bouton" @click="ouvrirModaleCommentaires(item.bloc)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-													<span role="button" tabindex="0" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
-													<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
-												</div>
-											</div>
-										</div>
-									</div>
-								</section>
-							</div>
-						</div>
-
-						<div class="conteneur-modale" v-if="modaleCommentaires">
-							<div id="discussion" class="modale" role="dialog">
-								<div class="en-tete">
-									<span class="titre">{{ titre }}</span>
-									<span role="button" tabindex="0" class="fermer" @click="fermerModaleCommentaires" @keydown.enter.space.prevent="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
-								</div>
-								<ul class="commentaires ascenseur">
-									<li v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" :key="indexEntreeCommentaire">
-										<span class="meta">// {{ noms[entreeCommentaire.identifiant] }}</span>
-										<div class="texte" v-html="entreeCommentaire.texte"></div>
-									</li>
-								</ul>
-							</div>
-						</div>
-						
-						<div id="conteneur-chargement" v-if="chargement">
-							<div id="chargement">
-								<div class="spinner">
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-									<div></div>
-								</div>
-							</div>
-						</div>
-					</main>
-				</div>
-				
-				<script type="text/javascript">
-					var vm = new Vue({
-						el: '#app',
-						data: {
-							chargement: true,
-							modaleCommentaires: false,
-							pad: ` + JSON.stringify(pad) + `,
-							blocs: ` + JSON.stringify(blocs) + `,
-							colonnes: [],
-							commentaires: [],
-							noms: {},
-							titre: '',
-							defilement: false,
-							depart: 0,
-							distance: 0
-						},
-						methods: {
-							ouvrirModaleCommentaires (bloc) {
-								let commentaires = []
-								let titre = ''
-								this.blocs.forEach(function (item) {
-									if (item.bloc === bloc) {
-										commentaires = item.listeCommentaires
-										titre = item.titre
-									}
-								})
-								if (commentaires.length > 0) {
-									this.commentaires = commentaires
-									this.titre = titre
-									this.modaleCommentaires = true
-									this.$nextTick(function () {
-										document.querySelector('.modale .fermer').focus()
-									})
-								}
-							},
-							fermerModaleCommentaires () {
-								this.modaleCommentaires = false
-								this.commentaires = []
-								this.titre = ''
-							},
-							definirFond (fond) {
-								if (fond.substring(0, 1) === '#') {
-									return { backgroundColor: fond }
-								} else if (fond.includes('/img/')) {
-									return { backgroundImage: 'url(./static/' + fond + ')' }
-								} else {
-									return { backgroundImage: 'url(./fichiers/' + fond.split('/').pop() + ')' }
-								}
-							},
-							definirLargeurCapsules () {
-								let donnees
-								switch (this.pad.largeur) {
-								case 'large':
-									donnees = { default: 4, 1729: 4, 1449: 3, 1365: 2, 899: 2, 499: 1 }
-									break
-								case 'normale':
-									donnees = { default: 5, 1729: 5, 1449: 4, 1365: 3, 899: 2, 499: 1 }
-									break
-								}
-								return donnees
-							},
-							definirColonnes (blocs) {
-								const colonnes = []
-								if (this.pad.colonnes && JSON.parse(this.pad.colonnes).length > 0) {
-									this.pad.colonnes = JSON.parse(this.pad.colonnes)
-									this.pad.colonnes.forEach(function () {
-										colonnes.push([])
-									})
-									blocs.forEach(function (bloc, index) {
-										if (bloc.colonne !== undefined) {
-											colonnes[parseInt(bloc.colonne)].push(bloc)
-										} else {
-											blocs[index].colonne = 0
-											colonnes[bloc.colonne].push(bloc)
-										}
-									})
-								} else {
-									this.pad.colonnes.push('Colonne sans titre')
-									colonnes.push([])
-									blocs.forEach(function (bloc, index) {
-										blocs[index].colonne = 0
-										colonnes[0].push(bloc)
-									})
-								}
-								this.blocs = blocs
-								this.colonnes = colonnes
-							},
-							afficherMedia (item) {
-								let lien
-								if (this.verifierURL(item.media) === true) {
-									lien = item.media
-								} else {
-									lien = './fichiers/' + item.media
-								}
-								window.open(lien, '_blank')
-							},
-							definirVignette (item) {
-								let vignette
-								if (item.vignette && item.vignette !== '' && this.verifierURL(item.vignette) === false && String(item.vignette).includes('/img/')) {
-									vignette = './static/img/' + item.vignette.split('/').pop()
-								} else if (item.vignette && item.vignette !== '' && this.verifierURL(item.vignette) === false && !String(item.vignette).includes('/img/')) {
-									vignette = './fichiers/' + item.vignette.split('/').pop()
-								} else if (item.vignette && item.vignette !== '' && this.verifierURL(item.vignette) === true) {
-									vignette = item.vignette
-								}
-								return vignette
-							},
-							definirIconeMedia (item) {
-								let icone
-								switch (item.type) {
-								case 'image':
-								case 'lien-image':
-									icone = 'image'
-									break
-								case 'audio':
-									icone = 'volume_up'
-									break
-								case 'video':
-									icone = 'movie'
-									break
-								case 'pdf':
-								case 'document':
-								case 'office':
-									icone = 'description'
-									break
-								case 'lien':
-									icone = 'link'
-									break
-								case 'embed':
-									if (item.source === 'youtube' || item.source === 'vimeo' || item.source === 'dailymotion' || item.source === 'digiview') {
-										icone = 'movie'
-									} else if (item.source === 'slideshare' || item.media.includes('wikipedia.org') || item.media.includes('drive.google.com') || item.media.includes('docs.google.com')) {
-										icone = 'description'
-									} else if (item.source === 'flickr') {
-										icone = 'image'
-									} else if (item.source === 'soundcloud' || item.media.includes('vocaroo.com') || item.media.includes('voca.ro')) {
-										icone = 'volume_up'
-									} else if (item.media.includes('google.com/maps')) {
-										icone = 'place'
-									} else if (item.source === 'etherpad' || item.media.includes('framapad.org')) {
-										icone = 'group_work'
-									} else {
-										icone = 'web'
-									}
-									break
-								default:
-									icone = 'save_alt'
-									break
-								}
-								return icone
-							},
-							definirEvaluationCapsule (evaluations) {
-								if (evaluations && evaluations.length > 0) {
-									let note = 0
-									evaluations.forEach(function (evaluation) {
-										note = note + evaluation.etoiles
-									})
-									if (note > 0) {
-										return Math.round(note / evaluations.length)
-									} else {
-										return 0
-									}
-								} else {
-									return 0
-								}
-							},
-							verifierURL (lien) {
-								let url
-								try {
-									url = new URL(lien)
-								} catch (_) {
-									return false
-								}
-								return url.protocol === 'http:' || url.protocol === 'https:'
-							},
-							genererPseudo () {
-								const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-								const nom = caracteres.charAt(Math.floor(Math.random() * caracteres.length)) + caracteres.charAt(Math.floor(Math.random() * caracteres.length)) + Math.floor(Math.random() * (9999 - 1000) + 1000)
-								return nom
-							},
-							eclaircirCouleur (hex) {
-								if (hex && hex.substring(0, 1) === '#') {
-									const r = parseInt(hex.slice(1, 3), 16)
-									const v = parseInt(hex.slice(3, 5), 16)
-									const b = parseInt(hex.slice(5, 7), 16)
-									return 'rgba(' + r + ', ' + v + ', ' + b + ', ' + 0.15 + ')'
-								} else {
-									return 'transparent'
-								}
-							},
-							activerDefilementHorizontal () {
-								const pad = document.querySelector('#pad')
-								pad.addEventListener('mousedown', this.defilementHorizontalDebut)
-								pad.addEventListener('mouseleave', this.defilementHorizontalFin)
-								pad.addEventListener('mouseup', this.defilementHorizontalFin)
-								pad.addEventListener('mousemove', this.defilementHorizontalEnCours)
-							},
-							desactiverDefilementHorizontal () {
-								const pad = document.querySelector('#pad')
-								pad.removeEventListener('mousedown', this.defilementHorizontalDebut)
-								pad.removeEventListener('mouseleave', this.defilementHorizontalFin)
-								pad.removeEventListener('mouseup', this.defilementHorizontalFin)
-								pad.removeEventListener('mousemove', this.defilementHorizontalEnCours)
-							},
-							defilementHorizontalDebut (event) {
-								const pad = document.querySelector('#pad')
-								this.defilement = true
-								this.depart = event.pageX - pad.offsetLeft
-								this.distance = pad.scrollLeft
-							},
-							defilementHorizontalFin () {
-								this.defilement = false
-							},
-							defilementHorizontalEnCours (event) {
-								if (!this.defilement) { return }
-								event.preventDefault()
-								const pad = document.querySelector('#pad')
-								const x = event.pageX - pad.offsetLeft
-								const delta = (x - this.depart) * 1.5
-								pad.scrollLeft = this.distance - delta
-							}
-						},
-						created () {
-							if (this.pad.ordre === 'decroissant') {
-								this.blocs.reverse()
-							}
-							if (this.pad.affichage === 'colonnes') {
-								this.definirColonnes(this.blocs)
-							}
-						},
-						mounted () {
-							const noms = {}
-							this.blocs.forEach(function (bloc) {
-								if (bloc.hasOwnProperty('couleur') === false || bloc.couleur === null || typeof bloc.couleur !== 'string') {
-									bloc.couleur = '#242f3d'
-								}
-								if (noms.hasOwnProperty(bloc.identifiant) === false) {
-									noms[bloc.identifiant] = bloc.nom
-								}
-								bloc.listeCommentaires.forEach(function (commentaire) {
-									if (noms.hasOwnProperty(commentaire.identifiant) === false) {
-										noms[commentaire.identifiant] = this.genererPseudo()
-									}
-								}.bind(this))
-							}.bind(this))
-							this.noms = noms
-							document.title = this.pad.titre + ' - Digipad by La Digitale'
-							this.chargement = false
-							if (this.pad.affichage === 'colonnes') {
-								this.$nextTick(function () {
-									this.activerDefilementHorizontal()
-								}.bind(this))
-							}
-						}
-					})
-				</script>
-			</body>
-		</html>`
 	}
 }

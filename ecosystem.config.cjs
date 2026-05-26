@@ -1,7 +1,7 @@
 module.exports = {
 	apps: [{
 		name: 'Digipad',
-		script: './server/index.js',
+		script: './server/app.js',
 		node_args: [
 			'--expose-gc'
 		],
