@@ -585,7 +585,7 @@ async function demarrerServeur () {
 			if (typeof donneesBlocs === 'object' && donneesBlocs !== null) {
 				const titre = pad.titre
 				const lien = hote + '/p/' + id + '/' + token
-				const langue = req.session.langue || 'fr-fr'
+				const langue = req.session.langue || 'fr'
 				const xml = genererXML(hote, id, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
 				if (xml === null || xml === '') {
 					res.redirect('/p/' + id + '/' + token)
