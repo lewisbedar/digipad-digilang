@@ -412,5 +412,6 @@
 	"mettreCorbeille": "Mover a la papelera",
 	"classer": "Ordenar",
 	"supprimerFormatage": "Eliminar el formato",
-	"exposant": "Exponente"
+	"exposant": "Exponente",
+	"ouvrirLienNouvelOnglet": "Abrir el enlace en una nueva pestaña"
 }

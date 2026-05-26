@@ -412,5 +412,6 @@
 	"mettreCorbeille": "Move to trash",
 	"classer": "Sort",
 	"supprimerFormatage": "Remove formatting",
-	"exposant": "Exponent"
+	"exposant": "Exponent",
+	"ouvrirLienNouvelOnglet": "Open link in a new tab"
 }

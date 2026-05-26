@@ -412,5 +412,6 @@
 	"mettreCorbeille": "Mettre à la corbeille",
 	"classer": "Classer",
 	"supprimerFormatage": "Supprimer le formatage",
-	"exposant": "Exposant"
+	"exposant": "Exposant",
+	"ouvrirLienNouvelOnglet": "Ouvrir le lien dans un nouvel onglet"
 }
