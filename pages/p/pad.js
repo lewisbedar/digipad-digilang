@@ -542,7 +542,7 @@ export default {
 			}
 		},
 		definirTabIndex () {
-			return this.modale === '' && this.message === '' && !this.modaleConfirmer && !this.modaleDiaporama && !this.transcodage && !this.progressionEnregistrement ? 0 : -1
+			return this.modale === '' && this.message === '' && !this.modaleConfirmer && !this.modaleDiaporama && !this.transcodage && !this.progressionEnregistrement && this.panneaux.length === 0 ? 0 : -1
 		},
 		definirTabIndexModale () {
 			return this.message === '' && !this.modaleConfirmer && !this.transcodage && !this.progressionEnregistrement ? 0 : -1
