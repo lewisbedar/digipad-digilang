@@ -1628,11 +1628,13 @@ export default {
 					this.donneesUtilisateur.padsAdmins = padsAdmins
 				}
 			}
-			this.elementPrecedent = (document.activeElement || document.body)
-			this.modale = 'copier-bloc'
-			this.$nextTick(function () {
-				document.querySelector('.modale .fermer').focus()
-			})
+			if (this.donneesUtilisateur.hasOwnProperty('padsCrees') || this.donneesUtilisateur.hasOwnProperty('padsAdmins')) {
+				this.elementPrecedent = (document.activeElement || document.body)
+				this.modale = 'copier-bloc'
+				this.$nextTick(function () {
+					document.querySelector('.modale .fermer').focus()
+				})
+			}
 		},
 		verifierColonnesDestination () {
 			if (this.padDestination !== '') {
