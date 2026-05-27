@@ -939,11 +939,12 @@ async function demarrerServeur () {
 		donnees = Object.assign({}, donnees)
 		if (donnees === null || !donnees.hasOwnProperty('identifiant')) { res.send('erreur'); return false }
 		if (req.session.identifiant === identifiant && await verifierAdmin(pad, donnees, req.session) === true) {
-			recupererDonneesAuteur(identifiant).then(function (pads) {
-				let padsCrees = pads[0].filter(function (element) {
+			const pads = await recupererDonneesAuteur(identifiant)
+			if (pads.hasOwnProperty('padsCrees') && pads.hasOwnProperty('padsAdmins')) {
+				let padsCrees = pads.padsCrees.filter(function (element) {
 					return element !== '' && Object.keys(element).length > 0
 				})
-				let padsAdmins = pads[1].filter(function (element) {
+				let padsAdmins = pads.padsAdmins.filter(function (element) {
 					return element !== '' && Object.keys(element).length > 0
 				})
 				// Vérification des données des pads
@@ -973,7 +974,9 @@ async function demarrerServeur () {
 					))
 				)
 				res.json({ padsCrees: padsCrees, padsAdmins: padsAdmins })
-			})
+			} else {
+				res.send('erreur')
+			}
 		} else {
 			res.send('non_autorise')
 		}
@@ -4533,7 +4536,11 @@ async function demarrerServeur () {
 				let donnees = await db.HGETALL('pads:' + pad)
 				donnees = Object.assign({}, donnees)
 				if (donnees === null || !donnees.hasOwnProperty('id') || !donnees.hasOwnProperty('token') || !donnees.hasOwnProperty('identifiant')) { socket.emit('erreur'); return false }
-				if (donnees.id === pad && donnees.token === token && await verifierAdmin(pad, donnees, req.session) === true) {
+				let admins = []
+				if (donnees.hasOwnProperty('admins')) {
+					admins = donnees.admins
+				}
+				if (donnees.id === pad && donnees.token === token && (admins.includes(identifiant) || donnees.identifiant === identifiant)) {
 					const id = parseInt(donnees.bloc) + 1
 					const date = dayjs().format()
 					const activiteId = parseInt(donnees.activite) + 1
@@ -6479,69 +6486,44 @@ async function demarrerServeur () {
 		return Promise.all([donneesPadsCrees, donneesPadsSupprimes, donneesPadsRejoints, donneesPadsAdmins, donneesPadsFavoris])
 	}
 
-	function recupererDonneesAuteur (identifiant) {
+	async function recupererDonneesAuteur (identifiant) {
 		// Pads créés
-		const donneesPadsCrees = new Promise(async function (resolveMain) {
-			const pads = await db.SMEMBERS('pads-crees:' + identifiant)
-			const donneesPads = []
-			if (pads === null) { resolveMain(donneesPads) }
-			for (const pad of pads) {
-				const donneePad = new Promise(async function (resolve) {
-					const resultat = await db.EXISTS('pads:' + pad)
-					if (resultat === null) { resolve({}); return false }
-					if (resultat === 1) {
-						let donnees = await db.HGETALL('pads:' + pad)
-						donnees = Object.assign({}, donnees)
-						resolve(donnees)
-					} else if (resultat !== 1 && isNaN(parseInt(pad)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
-						const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
-						if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('identifiant')) {
-							resolve(donnees)
-						} else {
-							resolve({})
-						}
-					} else {
-						resolve({})
+		const donneesPadsCrees = []
+		const padsCrees = await db.SMEMBERS('pads-crees:' + identifiant)
+		if (padsCrees !== null) {
+			for (const pad of padsCrees) {
+				const padExiste = await db.EXISTS('pads:' + pad)
+				if (padExiste === 1) {
+					let donnees = await db.HGETALL('pads:' + pad)
+					donnees = Object.assign({}, donnees)
+					donneesPadsCrees.push(donnees)
+				} else if (padExiste !== 1 && isNaN(parseInt(pad)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+					const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
+					if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('identifiant')) {
+						donneesPadsCrees.push(donnees)
 					}
-				})
-				donneesPads.push(donneePad)
+				}
 			}
-			Promise.all(donneesPads).then(function (resultat) {
-				resolveMain(resultat)
-			})
-		})
+		}
 		// Pads administrés
-		const donneesPadsAdmins = new Promise(async function (resolveMain) {
-			const pads = await db.SMEMBERS('pads-admins:' + identifiant)
-			const donneesPads = []
-			if (pads === null) { resolveMain(donneesPads) }
-			for (const pad of pads) {
-				const donneePad = new Promise(async function (resolve) {
-					const resultat = await db.EXISTS('pads:' + pad)
-					if (resultat === null) { resolve({}); return false }
-					if (resultat === 1) {
-						let donnees = await db.HGETALL('pads:' + pad)
-						donnees = Object.assign({}, donnees)
-						if (donnees === null) { resolve({}); return false }
-						resolve(donnees)
-					} else if (resultat !== 1 && isNaN(parseInt(pad)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
-						const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
-						if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('identifiant')) {
-							resolve(donnees)
-						} else {
-							resolve({})
-						}
-					} else {
-						resolve({})
-					}
-				})
-				donneesPads.push(donneePad)
+		const donneesPadsAdmins = []
+		const padsAdmins = await db.SMEMBERS('pads-admins:' + identifiant)
+		if (padsAdmins !== null) {
+			for (const pad of padsAdmins) {
+				const padExiste = await db.EXISTS('pads:' + pad)
+				if (padExiste === 1) {
+					let donnees = await db.HGETALL('pads:' + pad)
+					donnees = Object.assign({}, donnees)
+					donneesPadsAdmins.push(donnees)
+				} else if (padExiste !== 1 && isNaN(parseInt(pad)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+					const donnees = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
+					if (typeof donnees === 'object' && donnees !== null && donnees.hasOwnProperty('identifiant')) {
+						donneesPadsAdmins.push(donnees)
+					} 
+				}
 			}
-			Promise.all(donneesPads).then(function (resultat) {
-				resolveMain(resultat)
-			})
-		})
-		return Promise.all([donneesPadsCrees, donneesPadsAdmins])
+		}
+		return { padsCrees: donneesPadsCrees, padsAdmins: donneesPadsAdmins }
 	}
 
 	async function recupererDonneesPad (id, token, identifiant, statut, pads) {
