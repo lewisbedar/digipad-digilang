@@ -1,0 +1,18 @@
+# Override de test local : docker-compose.yml suppose un domaine public (TRAEFIK_HOST) et un certificat Let's Encrypt, donc inutilisable tel quel en local.
+# Ce fichier est chargé automatiquement par `docker compose` en plus de docker-compose.yml (aucune option nécessaire) :
+#
+#   docker compose up --build
+#
+# -> digipad disponible sur http://localhost:3000
+
+services:
+  traefik:
+    profiles:
+      - with-traefik
+
+  app:
+    ports:
+      - "3000:3000"
+    environment:
+      - COOKIE_SECURE=0
+      - DOMAIN=http://localhost:3000

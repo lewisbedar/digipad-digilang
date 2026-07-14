@@ -1,0 +1,16 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+logs
+*.log
+npm-debug.log*
+static/fichiers/*
+static/temp/*
+_resources
+.idea
+.vscode
+*.md

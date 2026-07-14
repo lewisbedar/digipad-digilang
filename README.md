@@ -6,11 +6,11 @@ Elle est publiée sous licence GNU AGPLv3.
 Sauf les fontes Roboto Slab et Material Icons (Apache License Version 2.0) et la fonte Mona Sans Expanded (Sil Open Font Licence 1.1), jsPanel4 (https://github.com/Flyer53/jsPanel4 - MIT), pdf.js (https://github.com/mozilla/pdf.js - Apache License Version 2.0), JavaScript-flexImages (https://github.com/Pixabay/JavaScript-flexImages - MIT), panzoom (https://github.com/timmywil/panzoom - MIT)
 
 ## Prérequis
-Node.js 20+, Redis 6+, GraphicsMagick, Ghostscript, Libre Office
+Node.js 22+, Redis 7+, GraphicsMagick, Ghostscript, Libre Office
 
 ## Préparation et installation des dépendances
 ```
-npm install
+npm install --allow-git=root
 ```
 
 ## Lancement du serveur de développement sur localhost:3000
@@ -18,22 +18,11 @@ npm install
 npm run dev
 ```
 
-## Compilation, minification des fichiers et lancement du serveur de production
-```
-npm run prod
-```
-
-## Avec PM2
-```
-npm run build
-pm2 start ecosystem.config.cjs --env production
-```
-
-## Variables d'environnement pour la mise en production (fichier .env à créer à la racine du dossier)
+## Variables d'environnement (fichier .env à créer à la racine du dossier)
 ```
 DOMAIN (protocole + domaine. ex : https://digipad.app / seulement utilisée en production)
 PORT (port du serveur local / 3000 par défaut)
-REVERSE_PROXY (utilisation d'un reverse proxy / 0 ou 1 / 0 par défaut)
+REVERSE_PROXY (utilisation d'un reverse proxy qui permet de servir les fichiers à la place d'Express (Nginx par exemple) / 0 ou 1 / 0 par défaut)
 NODE_CLUSTER (utilisation de node.js en cluster / 0 ou 1 / 0 par défaut)
 EARLY_HINTS (utilisation par le serveur des early hints et du code de statut 103 / 0 ou 1 / 0 par défaut)
 DB_HOST (IP du serveur de base de données Redis / localhost par défaut)
@@ -41,10 +30,11 @@ DB_PWD (mot de passe de la base de données Redis)
 DB_PORT (port de la base de données Redis / 6379 par défaut)
 SESSION_KEY (clé de session Express Session)
 SESSION_DURATION (durée de la session de connexion des utilisateurs en millisecondes)
+COOKIE_SECURE (cookie de session en Secure + SameSite=None en production / 0 ou 1 / 1 par défaut / mettre à 0 uniquement pour tester en HTTP local avec Docker)
 VITE_ETHERPAD (lien vers un serveur Etherpad pour les documents collaboratifs)
-VITE_ETHERPAD_API_KEY (clé API Etherpad)
+ETHERPAD_API_KEY (clé API Etherpad)
 VITE_PIXABAY_API_KEY (clé API Pixabay)
-VITE_UPLOAD_LIMIT (taille maximale de téléversement des fichiers en Mo)
+VITE_UPLOAD_LIMIT (taille maximale de téléversement des fichiers en Mo / 20 Mo par défaut)
 VITE_UPLOAD_FILE_TYPES (types de fichiers autorisés pour le téléversement / par défaut : .jpg,.jpeg,.png,.gif,.mp4,.m4v,.mp3,.m4a,.ogg,.wav,.pdf,.ppt,.pptx,.odp,.doc,.docx,.odt,.ods,.odg,.xls,.xlsx)
 VITE_PAD_LIMIT (nombre maximum de pads par compte utilisateur)
 VITE_PAD_WITHOUT_ACCOUNT (0 ou 1 / pour autoriser la création de pads sans compte)
@@ -55,7 +45,7 @@ EMAIL_HOST (hôte pour l'envoi d'e-mails)
 EMAIL_ADDRESS (adresse pour l'envoi d'e-mails)
 EMAIL_PASSWORD (mot de passe de l'adresse email)
 EMAIL_PORT (port pour l'envoi d'e-mails)
-EMAIL_SECURE (true ou false)
+EMAIL_SECURE (1 ou 0)
 VITE_MATOMO (lien vers un serveur Matomo pour l'analyse de trafic)
 VITE_MATOMO_SITE_ID (id de site sur le serveur Matomo / 1 par défaut)
 UMAMI_SCRIPT_URL (lien vers le script fourni par Umami pour l'analyse de trafic)
@@ -78,7 +68,42 @@ VITE_LEGAL_TERMS_LINK (lien vers les mentions légales)
 ACCOUNT_VALIDATION (validation de l'inscription par email / 0 ou 1 / 0 par défaut)
 ```
 
-## Projet Vue (Vue.js 3 et Vike) avec serveur Node.js (Express) et base de données Redis
+## Compilation et minification des fichiers pour la production
+```
+npm run build
+```
+
+## Avec PM2
+```
+pm2 start ecosystem.config.cjs --env production
+```
+
+## Avec Docker
+
+Le dépôt fournit un `Dockerfile` (build multi-étapes : compilation Vite/Vike puis image de production) ainsi que deux fichiers `docker-compose` : `docker-compose.yml` (Traefik + app + Redis) et `docker-compose.override.yml`, chargé automatiquement en complément pour adapter la configuration à un test en local.
+
+Dans les deux cas, un fichier `.env` doit être créé à la racine du dossier avec au minimum les variables `DB_PWD` et `SESSION_KEY` pour un test en local et `DOMAIN`, `DB_PWD`, `SESSION_KEY` et `ACME_EMAIL` (adresse e-mail utilisée pour la génération des certificats Let's Encrypt) pour un déploiement en production.
+
+### Test local
+
+```
+docker compose up --build
+```
+
+L'override désactive Traefik, expose directement l'application sur `http://localhost:3000` et force `COOKIE_SECURE=0` pour permettre de tester la connexion à un compte en HTTP local.
+
+### Production
+
+En production, Traefik gère les certificats HTTPS (Let's Encrypt) et dirige les requêtes vers l'application.
+
+Lancer le déploiement avec le profil Traefik activé :
+```
+./docker-production.sh
+```
+
+Les fichiers utilisateurs (`static/fichiers`) et les données Redis sont conservés dans les volumes Docker `digipad_fichiers` et `digipad_redis`, qui persistent entre les redéploiements.
+
+Les variables `VITE_*` utilisées côté client sont injectées au moment de la construction de l'image : toute modification de ces variables dans `.env` nécessite de reconstruire l'image pour être prise en compte.
 
 ## Démo
 https://digipad.app
