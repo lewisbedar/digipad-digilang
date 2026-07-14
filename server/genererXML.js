@@ -2,16 +2,18 @@ import 'dotenv/config'
 import { convert } from 'html-to-text'
 import t from './lang.js'
 
-function echapperXML (str) {
-	if (typeof str !== 'string') {
-		str = String(str || '')
-	}
-	return str
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&apos;')
+function echapperXML(str) {
+    if (typeof str !== 'string') {
+        str = String(str || '')
+    }
+    return str
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+        .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/g, '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
 }
 
 function verifierURL (s, protocoles) {
@@ -54,7 +56,7 @@ function genererXML (hote, id, titre, lien, blocs, admin, langue) {
 				titre = t[langue].capsuleSansTitre
 			}
 			if (blocs[i].nom !== '') {
-				rss += '      <title>' + echapperXML(titre) + ' (' + t[langue].par + ' ' + blocs[i].nom + ')</title>\n'
+				rss += '      <title>' + echapperXML(titre) + ' (' + t[langue].par + ' ' + echapperXML(blocs[i].nom) + ')</title>\n'
 			} else {
 				rss += '      <title>' + echapperXML(titre) + '</title>\n'
 			}
