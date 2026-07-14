@@ -299,7 +299,7 @@
 	"editionNom": "Uređivanje imena",
 	"modeOrganiserAutreUtilisateur": "Način organiziranja koristi drugi administrator.",
 	"modeOrganiserProprietaire": "Vlasnik podloge upravo je aktivirao način organiziranja.",
-	"capsuleEnCoursModification": "Ovu objavu već mijenja drugi korisnik.",
+	"capsuleEnCoursModification": "⚠️ Ovu objavu već mijenja drugi korisnik.",
 	"ordreCapsules": "Redoslijed objava",
 	"croissant": "uzlazni",
 	"decroissant": "silazni",
@@ -413,5 +413,8 @@
 	"classer": "Sortiraj",
 	"supprimerFormatage": "Ukloni formatiranje",
 	"exposant": "Eksponentom",
-	"ouvrirLienNouvelOnglet": "Otvorite poveznicu u novoj kartici"
+	"ouvrirLienNouvelOnglet": "Otvorite poveznicu u novoj kartici",
+	"erreurTranscodage": "Došlo je do pogreške tijekom transkodiranja datoteke.",
+	"capsuleSupprimeeUtilisateur": "Kapsula koju ste uređivali upravo je izbrisana.",
+	"erreurTentativesNombreuses": "Unijeli ste pogrešne podatke previše puta. Molimo pričekajte neko vrijeme prije nego što ponovno pokušate."
 }

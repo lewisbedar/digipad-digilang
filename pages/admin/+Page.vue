@@ -2,62 +2,62 @@
 	<div id="page" v-if="acces">
 		<div id="accueil">
 			<div id="langues">
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter.space.prevent="modifierLangue('fr')">FR</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter.space.prevent="modifierLangue('es')">ES</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter.space.prevent="modifierLangue('it')">IT</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter.space.prevent="modifierLangue('de')">DE</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter.space.prevent="modifierLangue('en')">EN</span>
-				<span class="bouton" role="button" :tabindex="definirTabIndex()" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter.space.prevent="modifierLangue('hr')">HR</span>
+				<button type="button" class="bouton" :disabled="disabled" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+				<button type="button" class="bouton" :disabled="disabled" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 			</div>
 			<div id="conteneur">
 				<h1>
 					<span>{{ $t('maintenance') }}</span>
 				</h1>
 				<div class="conteneur actions">
-					<span class="bouton maintenance" role="button" :tabindex="definirTabIndex()" @click="activerMaintenance" @keydown.enter.space.prevent="activerMaintenance" v-if="maintenance === false">{{ $t('activerMaintenance') }}</span>
-					<span class="bouton maintenance" role="button" :tabindex="definirTabIndex()" @click="desactiverMaintenance" @keydown.enter.space.prevent="desactiverMaintenance" v-else>{{ $t('desactiverMaintenance') }}</span>
+					<button type="button" class="bouton maintenance" :disabled="disabled" @click="activerMaintenance" v-if="maintenance === false">{{ $t('activerMaintenance') }}</button>
+					<button type="button" class="bouton maintenance" :disabled="disabled" @click="desactiverMaintenance" v-else>{{ $t('desactiverMaintenance') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('modifierMotDePasseUtilisateur') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-identifiant">{{ $t('identifiant') }}</label>
-					<input id="champ-identifiant" type="text" :value="identifiant" @input="identifiant = $event.target.value">
+					<input id="champ-identifiant" type="text" :value="identifiant" :disabled="disabled" @input="identifiant = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ-email">{{ $t('email') }}</label>
-					<input id="champ-email" type="text" :value="email" @input="email = $event.target.value">
+					<input id="champ-email" type="email" :value="email" :disabled="disabled" @input="email = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ-motdepasse">{{ $t('motDePasse') }}</label>
-					<input id="champ-motdepasse" type="text" maxlength="48" :value="motdepasse" @input="motdepasse = $event.target.value" @keydown.enter="modifierMotDePasse">
+					<input id="champ-motdepasse" type="text" maxlength="48" :value="motdepasse" :disabled="disabled" @input="motdepasse = $event.target.value" @keydown.enter="modifierMotDePasse">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="modifierMotDePasse" @keydown.enter.space.prevent="modifierMotDePasse">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="modifierMotDePasse">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('recupererDonneesPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad" type="number" :value="padId" @input="padId = $event.target.value" @keydown.enter="recupererDonneesPad">
+					<input id="champ-numero-pad" type="number" :value="padId" :disabled="disabled" @input="padId = $event.target.value" @keydown.enter="recupererDonneesPad">
 				</div>
 				<div class="conteneur" v-if="donneesPad !== ''">
 					<span class="donnees">{{ donneesPad }}</span>
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="recupererDonneesPad" @keydown.enter.space.prevent="recupererDonneesPad">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="recupererDonneesPad">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('modifierDonneesPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-m">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-m" type="number" :value="padIdM" @input="padIdM = $event.target.value">
+					<input id="champ-numero-pad-m" type="number" :value="padIdM" :disabled="disabled" @input="padIdM = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ">{{ $t('champ') }}</label>
-					<select id="champ" @change="champ = $event.target.value">
+					<select id="champ" :disabled="disabled" @change="champ = $event.target.value">
 						<option value="" :selected="champ === ''">-</option>
 						<option value="code" :selected="champ === 'code'">{{ $t('codeAcces') }}</option>
 						<option value="motdepasse" :selected="champ === 'motdepasse'">{{ $t('motDePasse') }}</option>
@@ -65,98 +65,98 @@
 				</div>
 				<div class="conteneur">
 					<label for="champ-valeur">{{ $t('valeur') }}</label>
-					<input id="champ-valeur" type="text" :value="valeur" :maxlength="18" @input="valeur = $event.target.value" v-if="champ === 'code'">
-					<input id="champ-valeur" type="text" :value="valeur" @input="valeur = $event.target.value" v-else>
+					<input id="champ-valeur" type="text" :value="valeur" :disabled="disabled" :maxlength="18" @input="valeur = $event.target.value" v-if="champ === 'code'">
+					<input id="champ-valeur" type="text" :value="valeur" :disabled="disabled" @input="valeur = $event.target.value" v-else>
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="modifierDonneesPad" @keydown.enter.space.prevent="modifierDonneesPad">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="modifierDonneesPad">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('exporterPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-e">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-e" type="number" :value="padIdE" @input="padIdE = $event.target.value" @keydown.enter="exporterPad">
+					<input id="champ-numero-pad-e" type="number" :value="padIdE" :disabled="disabled" @input="padIdE = $event.target.value" @keydown.enter="exporterPad">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="exporterPad" @keydown.enter.space.prevent="exporterPad">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="exporterPad">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('rattacherPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-r">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-r" type="number" :value="padIdR" @input="padIdR = $event.target.value">
+					<input id="champ-numero-pad-r" type="number" :value="padIdR" :disabled="disabled" @input="padIdR = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ-destination">{{ $t('identifiantDestination') }}</label>
-					<input id="champ-destination" type="text" :value="identifiantR" @input="identifiantR = $event.target.value">
+					<input id="champ-destination" type="text" :value="identifiantR" :disabled="disabled" @input="identifiantR = $event.target.value">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleRattacher" @keydown.enter.space.prevent="afficherModaleRattacher">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="afficherModaleRattacher">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('transfererPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-n">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-n" type="number" :value="padIdN" @input="padIdN = $event.target.value">
+					<input id="champ-numero-pad-n" type="number" :value="padIdN" :disabled="disabled" @input="padIdN = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ-identifiant-n">{{ $t('identifiantDestination') }}</label>
-					<input id="champ-identifiant-n" type="text" :value="identifiantN" @input="identifiantN = $event.target.value">
+					<input id="champ-identifiant-n" type="text" :value="identifiantN" :disabled="disabled" @input="identifiantN = $event.target.value">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleTransfererPad" @keydown.enter.space.prevent="afficherModaleTransfererPad">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="afficherModaleTransfererPad">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('supprimerPad') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-s">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-s" type="number" :value="padIdS" @input="padIdS = $event.target.value">
+					<input id="champ-numero-pad-s" type="number" :value="padIdS" :disabled="disabled" @input="padIdS = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<div class="conteneur-interrupteur">
 						<span>{{ $t('supprimerFichiersServeur') }}</span>
-						<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('suppression-fichier')">
-							<input id="suppression-fichier" type="checkbox" :checked="suppressionFichiers" @change="modifierSuppressionFichiers">
+						<label class="bouton-interrupteur" :tabindex="tabIndex" :aria-disabled="disabled" @keydown.enter.space.prevent="activerInput('suppression-fichier')">
+							<input id="suppression-fichier" type="checkbox" :checked="suppressionFichiers" :disabled="disabled" @change="modifierSuppressionFichiers">
 							<span class="barre" />
 						</label>
 					</div>
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleSupprimerPad" @keydown.enter.space.prevent="afficherModaleSupprimerPad">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="afficherModaleSupprimerPad">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('transfererCompte') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-identifiant-transferer">{{ $t('identifiantCompteATransferer') }}</label>
-					<input id="champ-identifiant-transferer" type="text" :value="identifiantO" @input="identifiantO = $event.target.value">
+					<input id="champ-identifiant-transferer" type="text" :value="identifiantO" :disabled="disabled" @input="identifiantO = $event.target.value">
 				</div>
 				<div class="conteneur">
 					<label for="champ-identifiant-destination">{{ $t('identifiantDestination') }}</label>
-					<input id="champ-identifiant-destination" type="text" :value="identifiantT" @input="identifiantT = $event.target.value">
+					<input id="champ-identifiant-destination" type="text" :value="identifiantT" :disabled="disabled" @input="identifiantT = $event.target.value">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleTransfererCompte" @keydown.enter.space.prevent="afficherModaleTransfererCompte">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="afficherModaleTransfererCompte">{{ $t('valider') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('supprimerCompte') }}</span>
 				</h1>
 				<div class="conteneur">
 					<label for="champ-identifiant-s">{{ $t('identifiant') }}</label>
-					<input id="champ-identifiant-s" type="text" :value="identifiantS" @input="identifiantS = $event.target.value">
+					<input id="champ-identifiant-s" type="text" :value="identifiantS" :disabled="disabled" @input="identifiantS = $event.target.value">
 				</div>
 				<div class="conteneur actions">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" @click="afficherModaleSupprimerCompte" @keydown.enter.space.prevent="afficherModaleSupprimerCompte">{{ $t('valider') }}</span>
+					<button type="button" class="bouton" :disabled="disabled" @click="afficherModaleSupprimerCompte">{{ $t('valider') }}</button>
 				</div>
 			</div>
 		</div>
 
 		<div id="conteneur-message" class="conteneur-modale" v-if="modale !== ''">
-			<div class="modale" role="dialog">
+			<div class="modale" role="dialog" aria-modal="true">
 				<div class="conteneur">
 					<div class="contenu">
 						<div class="message" v-html="$t('confirmationRattacherPad')" v-if="modale === 'rattacher-pad'" />
@@ -165,12 +165,12 @@
 						<div class="message" v-html="$t('confirmationTransfererCompte')" v-else-if="modale === 'transferer-compte'" />
 						<div class="message" v-html="$t('confirmationSupprimerCompteAdmin')" v-else-if="modale === 'supprimer-compte'" />
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModale" @keydown.enter.space.prevent="fermerModale">{{ $t('non') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="rattacherPad" @keydown.enter.space.prevent="rattacherPad" v-if="modale === 'rattacher-pad'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerPad" @keydown.enter.space.prevent="supprimerPad" v-else-if="modale === 'supprimer-pad'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="transfererPad" @keydown.enter.space.prevent="transfererPad" v-else-if="modale === 'transferer-pad'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="transfererCompte" @keydown.enter.space.prevent="transfererCompte" v-else-if="modale === 'transferer-compte'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerCompte" @keydown.enter.space.prevent="supprimerCompte" v-else-if="modale === 'supprimer-compte'">{{ $t('oui') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="fermerModale">{{ $t('non') }}</button>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="rattacherPad" v-if="modale === 'rattacher-pad'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="supprimerPad" v-else-if="modale === 'supprimer-pad'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="transfererPad" v-else-if="modale === 'transferer-pad'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="transfererCompte" v-else-if="modale === 'transferer-compte'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="supprimerCompte" v-else-if="modale === 'supprimer-compte'">{{ $t('oui') }}</button>
 						</div>
 					</div>
 				</div>
@@ -194,7 +194,7 @@ import Message from '#root/components/message.vue'
 import Notification from '#root/components/notification.vue'
 
 export default {
-	name: 'Admin',
+	name: 'DigipadAdmin',
 	components: {
 		Chargement,
 		Message,
@@ -233,6 +233,17 @@ export default {
 			langue: this.$pageContext.pageProps.langue
 		}
 	},
+	computed: {
+		tabIndex () {
+			return this.modale === '' && this.message === '' ? 0 : -1
+		},
+		disabled () {
+			return this.modale === '' && this.message === '' ? false : true
+		},
+		disabledModale () {
+			return this.message === '' ? false : true
+		}
+	},
 	created () {
 		const params = this.$pageContext.pageProps.params
 		const langueNav = navigator.language.substring(0, 2)
@@ -251,16 +262,16 @@ export default {
 			this.$socket.emit('modifierlangue', this.langue)
 		}
 		this.$socket.emit('verifiermaintenance')
-		this.$socket.on('verifiermaintenance', function (valeur) {
+		this.$socket.on('verifiermaintenance', (valeur) => {
 			this.maintenance = valeur
-		}.bind(this))
+		})
 	},
 	mounted () {
 		const motdepasse = prompt(this.$t('motDePasse'), '')
 		if (motdepasse) {
 			axios.post(this.hote + '/api/verifier-mot-de-passe-admin', {
 				admin: motdepasse
-			}).then(function (reponse) {
+			}).then((reponse) => {
 				const donnees = reponse.data
 				if (donnees === 'acces_verifie') {
 					this.acces = true
@@ -268,7 +279,15 @@ export default {
 					document.addEventListener('keydown', this.gererClavier, false)
 					document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)
 				}
-			}.bind(this))
+			}).catch((err) => {
+				if (err.response?.data === 'acces_invalide') {
+					alert(this.$t('motDePassePasCorrect'))
+				} else if (err.response?.status === 429) {
+					alert(this.$t('erreurTentativesNombreuses'))
+				} else {
+					alert(this.$t('erreurCommunicationServeur'))
+				}
+			})
 		}
 	},
 	beforeUnmount () {
@@ -277,25 +296,29 @@ export default {
 	methods: {
 		modifierLangue (langue) {
 			if (this.langue !== langue) {
+				this.chargement = true
 				axios.post(this.hote + '/api/modifier-langue', {
 					identifiant: this.identifiant,
 					langue: langue
-				}).then(function () {
+				}).then(() => {
+					this.chargement = false
 					this.$i18n.locale = langue
 					document.getElementsByTagName('html')[0].setAttribute('lang', langue)
 					this.langue = langue
 					this.notification = this.$t('langueModifiee')
 					localStorage.setItem('digipad_lang', langue)
-				}.bind(this)).catch(function () {
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		activerInput (id) {
-			document.querySelector('#' + id).click()
-		},
-		definirTabIndex () {
-			return this.modale === '' && this.message === '' ? 0 : -1
+			document.querySelector('#' + id)?.click()
 		},
 		activerMaintenance () {
 			this.$socket.emit('activermaintenance', this.admin)
@@ -311,28 +334,26 @@ export default {
 					identifiant: this.identifiant,
 					email: this.email,
 					motdepasse: this.motdepasse
-				}).then(function (reponse) {
+				}).then((reponse) => {
 					this.chargement = false
 					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'identifiant_non_valide') {
-						this.message = this.$t('identifiantNonValide')
-					} else if (donnees === 'email_non_valide') {
-						this.message = this.$t('erreurEmail')
-					} else {
-						this.notification = this.$t('motDePasseModifie')
-						if (donnees !== 'motdepasse_modifie') {
-							this.message = this.$t('identifiant') + ' : ' + donnees
-						}
+					this.notification = this.$t('motDePasseModifie')
+					if (donnees !== 'motdepasse_modifie') {
+						this.message = this.$t('identifiant') + ' : ' + donnees
 					}
 					this.identifiant = ''
 					this.motdepasse = ''
 					this.email = ''
-				}.bind(this)).catch(function () {
+				}).catch((err) => {
 					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+					if (err.response?.data === 'identifiant_non_valide') {
+						this.message = this.$t('identifiantNonValide')
+					} else if (err.response?.data === 'email_non_valide') {
+						this.message = this.$t('erreurEmail')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		recupererDonneesPad () {
@@ -341,23 +362,20 @@ export default {
 				axios.post(this.hote + '/api/recuperer-donnees-pad-admin', {
 					admin: this.admin,
 					padId: this.padId
-				}).then(function (reponse) {
+				}).then((reponse) => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'pad_inexistant') {
+					this.donneesPad = reponse.data
+					this.padId = ''
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'pad_inexistant') {
 						this.message = this.$t('padInexistant')
-					} else if (donnees === 'non_autorise') {
+					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.donneesPad = donnees
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-					this.padId = ''
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		modifierDonneesPad () {
@@ -368,25 +386,22 @@ export default {
 					padId: this.padIdM,
 					champ: this.champ,
 					valeur: this.valeur
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'pad_inexistant') {
-						this.message = this.$t('padInexistant')
-					} else if (donnees === 'non_autorise') {
-						this.message = this.$t('actionNonAutorisee')
-					} else {
-						this.notification = this.$t('donneesModifiees')
-					}
+					this.notification = this.$t('donneesModifiees')
 					this.padIdM = ''
 					this.champ = ''
 					this.valeur = ''
-				}.bind(this)).catch(function () {
+				}).catch((err) => {
 					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+					if (err.response?.data === 'pad_inexistant') {
+						this.message = this.$t('padInexistant')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		modifierSuppressionFichiers (event) {
@@ -403,31 +418,30 @@ export default {
 					padId: this.padIdE,
 					identifiant: '',
 					admin: this.admin
-				}).then(function (reponse) {
+				}).then((reponse) => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur_export') {
-						this.message = this.$t('erreurExportPad')
-					} else if (donnees === 'non_autorise') {
-						this.message = this.$t('actionNonAutorisee')
-					} else if (donnees === 'pad_inexistant') {
-						this.message = this.$t('padInexistant')
-					} else {
-						saveAs('/temp/' + donnees, 'pad-' + this.padIdE + '.zip')
-						this.padIdE = ''
-					}
-				}.bind(this)).catch(function () {
+					saveAs('/temp/' + reponse.data, 'pad-' + this.padIdE + '.zip')
+					this.padIdE = ''
+				}).catch((err) => {
 					this.chargement = false
 					this.padIdE = ''
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+					if (err.response?.data === 'erreur_export') {
+						this.message = this.$t('erreurExportPad')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data === 'pad_inexistant') {
+						this.message = this.$t('padInexistant')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		afficherModaleRattacher () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'rattacher-pad'
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		rattacherPad () {
@@ -438,36 +452,33 @@ export default {
 					admin: this.admin,
 					padId: this.padIdR,
 					identifiant: this.identifiantR
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'utilisateur_inexistant') {
+					this.notification = this.$t('padTransfere')
+					this.padIdR = ''
+					this.identifiantR = ''
+					this.gererFocus()
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'utilisateur_inexistant') {
 						this.message = this.$t('utilisateurInexistant')
-					} else if (donnees === 'pad_inexistant') {
+					} else if (err.response?.data === 'pad_inexistant') {
 						this.message = this.$t('padInexistant')
-					} else if (donnees === 'pad_cree_avec_compte') {
+					} else if (err.response?.data === 'pad_cree_avec_compte') {
 						this.message = this.$t('padCreeAvecCompte')
-					} else if (donnees === 'non_autorise') {
+					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.notification = this.$t('padTransfere')
-						this.padIdR = ''
-						this.identifiantR = ''
-						this.gererFocus()
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		afficherModaleSupprimerPad () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'supprimer-pad'
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		supprimerPad () {
@@ -477,56 +488,51 @@ export default {
 				axios.post(this.hote + '/api/recuperer-donnees-pad-admin', {
 					admin: this.admin,
 					padId: this.padIdS
-				}).then(function (reponse) {
-					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'pad_inexistant') {
-						this.message = this.$t('padInexistant')
-					} else if (donnees === 'non_autorise') {
-						this.message = this.$t('actionNonAutorisee')
-					} else {
-						const identifiant = donnees.identifiant
-						axios.post(this.hote + '/api/supprimer-pad', {
-							padId: this.padIdS,
-							type: 'pad',
-							identifiant: identifiant,
-							admin: this.admin,
-							suppressionFichiers: this.suppressionFichiers
-						}).then(function (reponse) {
-							this.chargement = false
-							const donnees = reponse.data
-							if (donnees === 'erreur_suppression') {
-								this.message = this.$t('erreurSuppressionMur')
-							} else if (donnees === 'non_autorise') {
-								this.message = this.$t('actionNonAutorisee')
-							} else {
-								this.notification = this.$t('padSupprime')
-								this.padIdS = ''
-								this.suppressionFichiers = true
-								this.gererFocus()
-							}
-						}.bind(this)).catch(function () {
-							this.chargement = false
-							this.padIdS = ''
-							this.suppressionFichiers = true
+				}).then((reponse) => {
+					const identifiant = reponse.data.identifiant
+					axios.post(this.hote + '/api/supprimer-pad', {
+						padId: this.padIdS,
+						type: 'pad',
+						identifiant: identifiant,
+						admin: this.admin,
+						suppressionFichiers: this.suppressionFichiers
+					}).then(() => {
+						this.chargement = false
+						this.notification = this.$t('padSupprime')
+						this.padIdS = ''
+						this.suppressionFichiers = true
+						this.gererFocus()
+					}).catch((err) => {
+						this.chargement = false
+						this.padIdS = ''
+						this.suppressionFichiers = true
+						if (err.response?.data === 'erreur_suppression') {
+							this.message = this.$t('erreurSuppressionMur')
+						} else if (err.response?.data === 'non_autorise') {
+							this.message = this.$t('actionNonAutorisee')
+						} else {
 							this.message = this.$t('erreurCommunicationServeur')
-						}.bind(this))
-					}
-				}.bind(this)).catch(function () {
+						}
+					})
+				}).catch((err) => {
 					this.chargement = false
 					this.padIdS = ''
 					this.suppressionFichiers = true
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+					if (err.response?.data === 'pad_inexistant') {
+						this.message = this.$t('padInexistant')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		afficherModaleTransfererPad () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'transferer-pad'
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		transfererPad () {
@@ -537,34 +543,31 @@ export default {
 					admin: this.admin,
 					nouvelIdentifiant: this.identifiantN,
 					padId: this.padIdN
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'utilisateur_inexistant') {
+					this.notification = this.$t('padTransfere')
+					this.identifiantN = ''
+					this.padIdN = ''
+					this.gererFocus()
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'utilisateur_inexistant') {
 						this.message = this.$t('utilisateurInexistant')
-					} else if (donnees === 'pad_inexistant') {
+					} else if (err.response?.data === 'pad_inexistant') {
 						this.message = this.$t('padInexistant')
-					} else if (donnees === 'non_autorise') {
+					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.notification = this.$t('padTransfere')
-						this.identifiantN = ''
-						this.padIdN = ''
-						this.gererFocus()
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		afficherModaleTransfererCompte () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'transferer-compte'
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		transfererCompte () {
@@ -575,32 +578,29 @@ export default {
 					admin: this.admin,
 					identifiant: this.identifiantO,
 					nouvelIdentifiant: this.identifiantT
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'utilisateur_inexistant') {
+					this.notification = this.$t('compteTransfere')
+					this.identifiantO = ''
+					this.identifiantT = ''
+					this.gererFocus()
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'utilisateur_inexistant') {
 						this.message = this.$t('utilisateursInexistants')
-					} else if (donnees === 'non_autorise') {
+					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.notification = this.$t('compteTransfere')
-						this.identifiantO = ''
-						this.identifiantT = ''
-						this.gererFocus()
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		afficherModaleSupprimerCompte () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'supprimer-compte'
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		supprimerCompte () {
@@ -610,22 +610,19 @@ export default {
 				axios.post(this.hote + '/api/supprimer-compte', {
 					identifiant: this.identifiantS,
 					admin: this.admin
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'erreur') {
-						this.message = this.$t('erreurActionServeur')
-					} else if (donnees === 'non_autorise') {
+					this.notification = this.$t('compteSupprime')
+					this.identifiantS = ''
+					this.gererFocus()
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.notification = this.$t('compteSupprime')
-						this.identifiantS = ''
-						this.gererFocus()
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		fermerModale () {
@@ -639,17 +636,44 @@ export default {
 		definirElementPrecedent (element) {
 			this.elementPrecedent = element
 		},
-		gererFocus () {
-			if (this.elementPrecedent) {
-				this.elementPrecedent.focus()
-				this.elementPrecedent = null
-			}
-		},
 		gererClavier (event) {
 			if (event.key === 'Escape' && this.message !== '') {
 				this.fermerMessage()
 			} else if (event.key === 'Escape' && this.modale !== '') {
 				this.fermerModale()
+			} else if (event.key === 'Tab') {
+				if (this.message !== '') {
+					const modale = document.querySelector('#message')
+					this.piegerFocus(event, modale)
+				}
+			}
+		},
+		gererFocus () {
+			this.$nextTick(() => {
+				if (this.elementPrecedent) {
+					this.elementPrecedent.focus()
+					this.elementPrecedent = null
+				}
+			})
+		},
+		piegerFocus (event, conteneur) {
+			if (!conteneur) return
+			const isVisible = el => el.offsetWidth || el.offsetHeight || el.getClientRects().length
+			const focusables = Array.from(conteneur.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'))
+			.filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
+			if (focusables.length === 0) return
+			const premier = focusables[0]
+			const dernier = focusables[focusables.length - 1]
+			if (event.shiftKey) {
+				if (document.activeElement === premier) {
+					event.preventDefault()
+					dernier.focus()
+				}
+			} else {
+				if (document.activeElement === dernier) {
+					event.preventDefault()
+					premier.focus()
+				}
 			}
 		}
 	}
@@ -675,7 +699,7 @@ export default {
 	z-index: 10;
 }
 
-#langues span {
+#langues button {
     display: flex;
     justify-content: center;
 	align-items: center;
@@ -689,7 +713,7 @@ export default {
 	cursor: pointer;
 }
 
-#langues span.selectionne {
+#langues button.selectionne {
     background: #242f3d;
     color: #fff;
     border: 1px solid #222;

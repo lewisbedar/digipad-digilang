@@ -9,12 +9,12 @@ function genererHTML (pad, blocs, langue) {
 			<meta charset="utf-8">
 			<meta name="viewport" content="width=device-width, height=device-height, viewport-fit=cover, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 			<meta name="description" content="Digipad permet de créer des murs multimédias collaboratifs.">
-			<meta name="robots" content="index, no-follow">
+			<meta name="robots" content="index, nofollow">
 			<meta name="theme-color" content="#00ced1">
 			<meta property="og:title" content="Digipad by La Digitale">
 			<meta property="og:description" content="Digipad permet de créer des murs multimédias collaboratifs.">
-			<meta property="og:type" content="website" />
-			<meta property="og:locale" content="fr_FR" />
+			<meta property="og:type" content="website">
+			<meta property="og:locale" content="fr_FR">
 			<title>Digipad by La Digitale</title>
 			<link rel="icon" type="image/png" href="./static/img/favicon.png">
 			<link rel="stylesheet" href="./static/css/destyle.css">
@@ -45,14 +45,14 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-										<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 									</div>
-									<div class="evaluation" v-if="pad.evaluations === 'activees'">
+									<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 										<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">
 											<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
 											<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
@@ -60,8 +60,8 @@ function genererHTML (pad, blocs, langue) {
 										</span>
 									</div>
 									<div class="action" :style="{'color': item.couleur}">
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 										<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 									</div>
 								</div>
@@ -76,14 +76,14 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-										<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 									</div>
-									<div class="evaluation" v-if="pad.evaluations === 'activees'">
+									<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 										<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">
 											<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
 											<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
@@ -91,8 +91,8 @@ function genererHTML (pad, blocs, langue) {
 										</span>
 									</div>
 									<div class="action" :style="{'color': item.couleur}">
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-										<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 										<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 									</div>
 								</div>
@@ -114,14 +114,14 @@ function genererHTML (pad, blocs, langue) {
 											</div>
 											<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 											<div class="media" v-if="item.media !== ''">
-												<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" :src="'./fichiers/' + item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-												<img role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" :src="item.media" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)">
-												<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)" @keydown.enter.space.prevent="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-												<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)" @keydown.enter.space.prevent="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></span>
-												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 												<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 											</div>
-											<div class="evaluation" v-if="pad.evaluations === 'activees'">
+											<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 												<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">
 													<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
 													<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - definirEvaluationCapsule(item.listeEvaluations))" :key="'etoilevide_' + etoile">star_outline</i>
@@ -129,8 +129,8 @@ function genererHTML (pad, blocs, langue) {
 												</span>
 											</div>
 											<div class="action" :style="{'color': item.couleur}">
-												<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc)" @keydown.enter.space.prevent="ouvrirModaleCommentaires(item.bloc)" v-if="pad.commentaires === 'actives'"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></span>
-												<span role="button" :tabindex="definirTabIndex()" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></span>
+												<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 												<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 											</div>
 										</div>
@@ -141,10 +141,10 @@ function genererHTML (pad, blocs, langue) {
 					</div>
 
 					<div class="conteneur-modale" v-if="modaleCommentaires">
-						<div id="discussion" class="modale" role="dialog">
+						<div id="discussion" class="modale" role="dialog" aria-modal="true" :aria-label="titre">
 							<div class="en-tete">
 								<span class="titre">{{ titre }}</span>
-								<span role="button" tabindex="0" title="` + t[langue].fermer + `" aria-label="` + t[langue].fermer + `" class="fermer" @click="fermerModaleCommentaires" @keydown.enter.space.prevent="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
+								<button type="button" title="` + t[langue].fermer + `" aria-label="` + t[langue].fermer + `" class="fermer" @click="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
 							</div>
 							<ul class="commentaires ascenseur">
 								<li v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" :key="indexEntreeCommentaire">
@@ -184,26 +184,67 @@ function genererHTML (pad, blocs, langue) {
 					data: {
 						chargement: true,
 						modaleCommentaires: false,
-						pad: ` + JSON.stringify(pad) + `,
-						blocs: ` + JSON.stringify(blocs) + `,
+						pad: ` + JSON.stringify(pad).replace(/<\//g, '<\\/') + `,
+						blocs: ` + JSON.stringify(blocs).replace(/<\//g, '<\\/') + `,
 						colonnes: [],
 						commentaires: [],
 						panneaux: [],
 						noms: {},
+						nom: '',
 						titre: '',
 						defilement: false,
 						depart: 0,
 						distance: 0,
 						elementPrecedent: null
 					},
+					computed: {
+						disabled () {
+							return this.modaleCommentaires ? true : false
+						}
+					},
+					created () {
+						if (this.pad.ordre === 'decroissant') {
+							this.blocs.reverse()
+						}
+						if (this.pad.affichage === 'colonnes') {
+							this.definirColonnes(this.blocs)
+						}
+					},
+					mounted () {
+						this.nom = this.genererPseudo()
+						const noms = {}
+						this.blocs.forEach((bloc) => {
+							if (bloc.hasOwnProperty('couleur') === false || bloc.couleur === null || typeof bloc.couleur !== 'string') {
+								bloc.couleur = '#242f3d'
+							}
+							if (noms.hasOwnProperty(bloc.identifiant) === false) {
+								noms[bloc.identifiant] = bloc.nom
+							}
+							bloc.listeCommentaires.forEach((commentaire) => {
+								if (noms.hasOwnProperty(commentaire.identifiant) === false) {
+									noms[commentaire.identifiant] = this.genererPseudo()
+								}
+							})
+						})
+						this.noms = noms
+						document.title = this.pad.titre + ' - Digipad by La Digitale'
+						this.chargement = false
+						if (this.pad.affichage === 'colonnes') {
+							this.$nextTick(() => {
+								this.activerDefilementHorizontal()
+							})
+						}
+						document.addEventListener('keydown', this.gererClavier, false)
+					},
+					beforeDestroy () {
+						this.desactiverDefilementHorizontal()
+						document.removeEventListener('keydown', this.gererClavier, false)
+					},
 					methods: {
-						definirTabIndex () {
-							return !this.modaleCommentaire && this.panneaux.length === 0 ? 0 : -1
-						},
 						ouvrirModaleCommentaires (bloc) {
 							let commentaires = []
 							let titre = ''
-							this.blocs.forEach(function (item) {
+							this.blocs.forEach((item) => {
 								if (item.bloc === bloc) {
 									commentaires = item.listeCommentaires
 									titre = item.titre
@@ -214,8 +255,8 @@ function genererHTML (pad, blocs, langue) {
 								this.commentaires = commentaires
 								this.titre = titre
 								this.modaleCommentaires = true
-								this.$nextTick(function () {
-									document.querySelector('.modale .fermer').focus()
+								this.$nextTick(() => {
+									document.querySelector('.modale .fermer')?.focus()
 								})
 							}
 						},
@@ -226,10 +267,12 @@ function genererHTML (pad, blocs, langue) {
 							this.gererFocus()
 						},
 						gererFocus () {
-							if (this.elementPrecedent) {
-								this.elementPrecedent.focus()
-								this.elementPrecedent = null
-							}
+							this.$nextTick(() => {
+								if (this.elementPrecedent) {
+									this.elementPrecedent.focus()
+									this.elementPrecedent = null
+								}
+							})
 						},
 						definirFond (fond) {
 							if (fond.substring(0, 1) === '#') {
@@ -241,27 +284,23 @@ function genererHTML (pad, blocs, langue) {
 							}
 						},
 						definirLargeurCapsules () {
-							let donnees
 							switch (this.pad.largeur) {
-							case 'large':
-								donnees = { default: 4, 1729: 4, 1449: 3, 1365: 2, 899: 2, 499: 1 }
-								break
-							case 'normale':
-								donnees = { default: 5, 1729: 5, 1449: 4, 1365: 3, 899: 2, 499: 1 }
-								break
+								case 'large':
+									return { default: 4, 1729: 4, 1449: 3, 1365: 2, 899: 2, 499: 1 }
+								default:
+									return { default: 5, 1729: 5, 1449: 4, 1365: 3, 899: 2, 499: 1 }
 							}
-							return donnees
 						},
 						definirColonnes (blocs) {
 							const colonnes = []
 							if (this.pad.colonnes && JSON.parse(this.pad.colonnes).length > 0) {
 								this.pad.colonnes = JSON.parse(this.pad.colonnes)
-								this.pad.colonnes.forEach(function () {
+								this.pad.colonnes.forEach(() => {
 									colonnes.push([])
 								})
-								blocs.forEach(function (bloc, index) {
+								blocs.forEach((bloc, index) => {
 									if (bloc.colonne !== undefined) {
-										colonnes[parseInt(bloc.colonne)].push(bloc)
+										colonnes[parseInt(bloc.colonne, 10)].push(bloc)
 									} else {
 										blocs[index].colonne = 0
 										colonnes[bloc.colonne].push(bloc)
@@ -270,7 +309,7 @@ function genererHTML (pad, blocs, langue) {
 							} else {
 								this.pad.colonnes.push('Colonne sans titre')
 								colonnes.push([])
-								blocs.forEach(function (bloc, index) {
+								blocs.forEach((bloc, index) => {
 									blocs[index].colonne = 0
 									colonnes[0].push(bloc)
 								})
@@ -301,76 +340,76 @@ function genererHTML (pad, blocs, langue) {
 						definirIconeMedia (item) {
 							let icone
 							switch (item.type) {
-							case 'image':
-							case 'lien-image':
-								icone = 'image'
-								break
-							case 'audio':
-								icone = 'volume_up'
-								break
-							case 'video':
-								icone = 'movie'
-								break
-							case 'pdf':
-							case 'document':
-							case 'office':
-								icone = 'description'
-								break
-							case 'lien':
-								icone = 'link'
-								break
-							case 'embed':
-								if (item.source === 'youtube' || item.source === 'vimeo' || item.source === 'dailymotion' || item.source === 'digiview') {
-									icone = 'movie'
-								} else if (item.source === 'slideshare' || item.media.includes('wikipedia.org') || item.media.includes('drive.google.com') || item.media.includes('docs.google.com')) {
-									icone = 'description'
-								} else if (item.source === 'flickr') {
+								case 'image':
+								case 'lien-image':
 									icone = 'image'
-								} else if (item.source === 'soundcloud' || item.media.includes('vocaroo.com') || item.media.includes('voca.ro')) {
+									break
+								case 'audio':
 									icone = 'volume_up'
-								} else if (item.media.includes('google.com/maps')) {
-									icone = 'place'
-								} else if (item.source === 'etherpad' || item.media.includes('framapad.org')) {
-									icone = 'group_work'
-								} else {
-									icone = 'web'
-								}
-								break
-							default:
-								icone = 'save_alt'
-								break
+									break
+								case 'video':
+									icone = 'movie'
+									break
+								case 'pdf':
+								case 'document':
+								case 'office':
+									icone = 'description'
+									break
+								case 'lien':
+									icone = 'link'
+									break
+								case 'embed':
+									if (item.source === 'youtube' || item.source === 'vimeo' || item.source === 'dailymotion' || item.source === 'digiview') {
+										icone = 'movie'
+									} else if (item.source === 'slideshare' || item.media.includes('wikipedia.org') || item.media.includes('drive.google.com') || item.media.includes('docs.google.com')) {
+										icone = 'description'
+									} else if (item.source === 'flickr') {
+										icone = 'image'
+									} else if (item.source === 'soundcloud' || item.media.includes('vocaroo.com') || item.media.includes('voca.ro')) {
+										icone = 'volume_up'
+									} else if (item.media.includes('google.com/maps')) {
+										icone = 'place'
+									} else if (item.source === 'etherpad' || item.media.includes('framapad.org')) {
+										icone = 'group_work'
+									} else {
+										icone = 'web'
+									}
+									break
+								default:
+									icone = 'save_alt'
+									break
 							}
 							return icone
 						},
 						afficherVisionneuse (item) {
-							if (this.panneaux.map(function (e) { return e.id }).includes('panneau_' + item.bloc) === false) {
+							if (this.panneaux.map((e) => { return e.id }).includes('panneau_' + item.bloc) === false) {
 								this.elementPrecedent = (document.activeElement || document.body)
-								const imageId = 'image-' + (new Date()).getTime()
-								let html
+								const imageId = 'image-' + Date.now()
+								let html = ''
 								switch (item.type) {
-								case 'image':
-									html = '<span id="' + imageId + '" class="image"><img src="./fichiers/' + item.media + '"></span>'
-									break
-								case 'lien-image':
-									html = '<span id="' + imageId + '" class="image"><img src="' + item.media + '"></span>'
-									break
-								case 'audio':
-									html = '<audio controls preload="metadata" src="./fichiers/' + item.media + '"></audio>'
-									break
-								case 'video':
-									html = '<video controls playsinline crossOrigin="anonymous" src="./fichiers/' + item.media + '"></video>'
-									break
-								case 'embed':
-									if (item.source === 'etherpad') {
-										html = '<iframe src="' + item.media + '?userName=' + this.nom + '" allowfullscreen></iframe>'
-									} else if (this.verifierURL(item.iframe) === true) {
-										html = '<iframe src="' + item.iframe + '" allowfullscreen></iframe>'
-									} else {
-										html = '<div class="html">' + item.iframe + '</div>'
-									}
-									break
+									case 'image':
+										html = '<span id="' + imageId + '" class="image"><img src="./fichiers/' + item.media + '"></span>'
+										break
+									case 'lien-image':
+										html = '<span id="' + imageId + '" class="image"><img src="' + item.media + '"></span>'
+										break
+									case 'audio':
+										html = '<audio controls preload="metadata" src="./fichiers/' + item.media + '"></audio>'
+										break
+									case 'video':
+										html = '<video controls playsinline crossOrigin="anonymous" src="./fichiers/' + item.media + '"></video>'
+										break
+									case 'embed':
+										if (item.source === 'etherpad') {
+											html = '<iframe src="' + item.media + '?userName=' + this.nom + '" allowfullscreen></iframe>'
+										} else if (this.verifierURL(item.iframe) === true) {
+											html = '<iframe src="' + item.iframe + '" allowfullscreen></iframe>'
+										} else {
+											html = '<div class="html">' + item.iframe + '</div>'
+										}
+										break
 								}
-								this.$nextTick(function () {
+								this.$nextTick(() => {
 									let largeurPanneau = '320px'
 									let hauteurPanneau = '312px'
 									let position = 'center'
@@ -381,16 +420,15 @@ function genererHTML (pad, blocs, langue) {
 									} else if (document.querySelector('#page').offsetWidth < 1024 && document.querySelector('#page').offsetWidth > 359) {
 										largeurPanneau = document.querySelector('#page').offsetWidth - this.convertirRem(3) + 'px'
 										hauteurPanneau = '500px'
-										if (parseInt(largeurPanneau) < 328) {
+										if (parseInt(largeurPanneau, 10) < 328) {
 											largeurPanneau = '328px'
 										}
 										position = { my: 'center', at: 'center', offsetX: 0, offsetY: this.convertirRem(2) }
 									}
-									if (parseInt(hauteurPanneau) > document.querySelector('#page').offsetHeight - this.convertirRem(7)) {
+									if (parseInt(hauteurPanneau, 10) > document.querySelector('#page').offsetHeight - this.convertirRem(7)) {
 										hauteurPanneau = document.querySelector('#page').offsetHeight - this.convertirRem(7) + 'px'
 									}
 									const snapOptions = this.definirOptionsSnap()
-									// eslint-disable-next-line no-undef
 									const panneau = jsPanel.create({
 										id: 'panneau_' + item.bloc,
 										animateIn: 'jsPanelFadeIn',
@@ -411,7 +449,7 @@ function genererHTML (pad, blocs, langue) {
 											height: hauteurPanneau
 										},
 										content: html,
-										callback: function (panel) {
+										callback: (panel) => {
 											panel.setControlStatus('normalize', 'hide')
 											panel.setControlStatus('minimize', 'remove')
 											document.querySelector('#masque').classList.add('ouvert')
@@ -426,8 +464,10 @@ function genererHTML (pad, blocs, langue) {
 											if (panel.querySelector('.jsPanel-btn-smallify')) {
 												panel.querySelector('.jsPanel-btn-smallify').title = '` + t[langue].plier + `'
 												panel.querySelector('.jsPanel-btn-smallify').ariaLabel = '` + t[langue].plier + `'
-												panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', function (e) {
+												panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', (e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault()
+														e.stopPropagation()
 														if (panel.status === 'smallified') {
 															panel.unsmallify()
 														} else {
@@ -439,60 +479,75 @@ function genererHTML (pad, blocs, langue) {
 											if (panel.querySelector('.jsPanel-btn-normalize')) {
 												panel.querySelector('.jsPanel-btn-normalize').title = '` + t[langue].normaliser + `'
 												panel.querySelector('.jsPanel-btn-normalize').ariaLabel = '` + t[langue].normaliser + `'
-												panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', function (e) {
+												panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', (e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault()
+														e.stopPropagation()
 														panel.normalize()
-														panel.querySelector('.jsPanel-btn-maximize').focus()
+														panel.querySelector('.jsPanel-btn-maximize')?.focus()
 													}
 												})
 											}
 											if (panel.querySelector('.jsPanel-btn-maximize')) {
 												panel.querySelector('.jsPanel-btn-maximize').title = '` + t[langue].maximiser + `'
 												panel.querySelector('.jsPanel-btn-maximize').ariaLabel = '` + t[langue].maximiser + `'
-												panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', function (e) {
+												panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', (e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault()
+														e.stopPropagation()
 														panel.maximize()
-														panel.querySelector('.jsPanel-btn-normalize').focus()
+														panel.querySelector('.jsPanel-btn-normalize')?.focus()
 													}
 												})
 											}
 											if (panel.querySelector('.jsPanel-btn-close')) {
 												panel.querySelector('.jsPanel-btn-close').title = '` + t[langue].fermer + `'
 												panel.querySelector('.jsPanel-btn-close').ariaLabel = '` + t[langue].fermer + `'
-												panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', function (e) {
+												panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', (e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault()
+														e.stopPropagation()
 														panel.close()
 													}
 												})
 											}
 										},
-										onmaximized: function (panel) {
+										onmaximized: (panel) => {
 											if (item.type === 'image' || item.type === 'lien-image') {
 												document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
 											}
 										},
-										onbeforeclose: function (panel) {
+										onbeforeclose: (panel) => {
 											const panneaux = document.querySelectorAll('.jsPanel')
 											if (document.querySelector('#masque') && panneaux.length === 1) {
 												document.querySelector('#masque').classList.remove('ouvert')
 											}
-											this.panneaux.forEach(function (panneau, index) {
-												if (panneau.id === panel.id) {
-													this.panneaux.splice(index, 1)
-												}
-											}.bind(this))
-											this.gererFocus()
+											const indexPanneau = this.panneaux.findIndex(panneau => panneau.id === panel.id)
+											if (indexPanneau !== -1) {
+												this.panneaux.splice(indexPanneau, 1)
+											}
+											if (this.panneaux.length === 0) {
+												this.gererFocus()
+											} else {
+												this.$nextTick(() => {
+													const id = this.panneaux[this.panneaux.length - 1].id
+													if (id) {
+														this.elementPrecedent = document.querySelector('#' + id.replace('panneau_', '') + ' .media')?.firstElementChild || document.body
+														document.querySelector('#' + id + ' .jsPanel-btn-close')?.focus()
+													}
+												})
+											}
 											return true
-										}.bind(this),
+										},
 										dragit: {
 											snap: snapOptions
 										}
 									})
 									this.panneaux.push(panneau)
-									this.$nextTick(function () {
-										document.querySelector('#panneau_' + item.bloc + ' .jsPanel-btn-close').focus()
+									this.$nextTick(() => {
+										document.querySelector('#panneau_' + item.bloc + ' .jsPanel-btn-close')?.focus()
 									})
-								}.bind(this))
+								})
 							}
 						},
 						definirOptionsSnap () {
@@ -502,16 +557,16 @@ function genererHTML (pad, blocs, langue) {
 									sensitivity: 40,
 									repositionOnSnap: true,
 									resizeToPreSnap: true,
-									snapLeftTop: function (panel) {
+									snapLeftTop: (panel) => {
 										panel.resize({ width: '50%', height: '100%' })
 									},
-									snapRightTop: function (panel) {
+									snapRightTop: (panel) => {
 										panel.resize({ width: '50%', height: '100%' })
 									},
-									snapLeftBottom: function (panel) {
+									snapLeftBottom: (panel) => {
 										panel.resize({ width: '50%', height: '100%' })
 									},
-									snapRightBottom: function (panel) {
+									snapRightBottom: (panel) => {
 										panel.resize({ width: '50%', height: '100%' })
 									},
 									snapCenterTop: false,
@@ -524,10 +579,10 @@ function genererHTML (pad, blocs, langue) {
 									sensitivity: 15,
 									repositionOnSnap: true,
 									resizeToPreSnap: true,
-									snapCenterTop: function (panel) {
+									snapCenterTop: (panel) => {
 										panel.resize({ width: '100%', height: '50%' })
 									},
-									snapCenterBottom: function (panel) {
+									snapCenterBottom: (panel) => {
 										panel.resize({ width: '100%', height: '50%' })
 									},
 									snapLeftTop: false,
@@ -550,7 +605,7 @@ function genererHTML (pad, blocs, langue) {
 						definirEvaluationCapsule (evaluations) {
 							if (evaluations && evaluations.length > 0) {
 								let note = 0
-								evaluations.forEach(function (evaluation) {
+								evaluations.forEach((evaluation) => {
 									note = note + evaluation.etoiles
 								})
 								if (note > 0) {
@@ -566,7 +621,7 @@ function genererHTML (pad, blocs, langue) {
 							let url
 							try {
 								url = new URL(lien)
-							} catch (_) {
+							} catch {
 								return false
 							}
 							return url.protocol === 'http:' || url.protocol === 'https:'
@@ -610,44 +665,47 @@ function genererHTML (pad, blocs, langue) {
 							this.defilement = false
 						},
 						defilementHorizontalEnCours (event) {
-							if (!this.defilement) { return }
+							if (!this.defilement) return
 							event.preventDefault()
 							const pad = document.querySelector('#pad')
 							const x = event.pageX - pad.offsetLeft
 							const delta = (x - this.depart) * 1.5
 							pad.scrollLeft = this.distance - delta
-						}
-					},
-					created () {
-						if (this.pad.ordre === 'decroissant') {
-							this.blocs.reverse()
-						}
-						if (this.pad.affichage === 'colonnes') {
-							this.definirColonnes(this.blocs)
-						}
-					},
-					mounted () {
-						const noms = {}
-						this.blocs.forEach(function (bloc) {
-							if (bloc.hasOwnProperty('couleur') === false || bloc.couleur === null || typeof bloc.couleur !== 'string') {
-								bloc.couleur = '#242f3d'
-							}
-							if (noms.hasOwnProperty(bloc.identifiant) === false) {
-								noms[bloc.identifiant] = bloc.nom
-							}
-							bloc.listeCommentaires.forEach(function (commentaire) {
-								if (noms.hasOwnProperty(commentaire.identifiant) === false) {
-									noms[commentaire.identifiant] = this.genererPseudo()
+						},
+						gererClavier (event) {
+							if (event.key === 'Escape' && this.modaleCommentaires) {
+								this.fermerModaleCommentaires()
+							} else if (event.key === 'Tab') {
+								if (this.modaleCommentaires) {
+									const modale = document.querySelector('.modale')
+									this.piegerFocus(event, modale)
+								} else if (this.panneaux.length > 0) {
+									const panneau = event.target.closest('.jsPanel') || document.body.querySelectorAll('.jsPanel')[0]
+									if (panneau) {
+										this.piegerFocus(event, panneau)
+									}
 								}
-							}.bind(this))
-						}.bind(this))
-						this.noms = noms
-						document.title = this.pad.titre + ' - Digipad by La Digitale'
-						this.chargement = false
-						if (this.pad.affichage === 'colonnes') {
-							this.$nextTick(function () {
-								this.activerDefilementHorizontal()
-							}.bind(this))
+							}
+						},
+						piegerFocus (event, conteneur) {
+							if (!conteneur) return
+							const isVisible = el => el.offsetWidth || el.offsetHeight || el.getClientRects().length
+							const focusables = Array.from(conteneur.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])'))
+								.filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
+							if (focusables.length === 0) return
+							const premier = focusables[0]
+							const dernier = focusables[focusables.length - 1]
+							if (event.shiftKey) {
+								if (document.activeElement === premier) {
+									event.preventDefault()
+									dernier.focus()
+								}
+							} else {
+								if (document.activeElement === dernier) {
+									event.preventDefault()
+									premier.focus()
+								}
+							}
 						}
 					}
 				})

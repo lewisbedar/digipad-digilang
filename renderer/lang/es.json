@@ -299,7 +299,7 @@
 	"editionNom": "Edición del nombre",
 	"modeOrganiserAutreUtilisateur": "El modo Organizar está siendo utilizado por otro administrador.",
 	"modeOrganiserProprietaire": "El propietario del pad acaba de activar el modo organizador.",
-	"capsuleEnCoursModification": "Esta cápsula ya está siendo modificada por otro usuario.",
+	"capsuleEnCoursModification": "⚠️ Esta cápsula ya está siendo modificada por otro usuario.",
 	"ordreCapsules": "Orden de las cápsulas",
 	"croissant": "ascendente",
 	"decroissant": "descendente",
@@ -413,5 +413,8 @@
 	"classer": "Ordenar",
 	"supprimerFormatage": "Eliminar el formato",
 	"exposant": "Exponente",
-	"ouvrirLienNouvelOnglet": "Abrir el enlace en una nueva pestaña"
+	"ouvrirLienNouvelOnglet": "Abrir el enlace en una nueva pestaña",
+	"erreurTranscodage": "Se ha producido un error al transcodificar el archivo.",
+	"capsuleSupprimeeUtilisateur": "La cápsula que estabas editando acaba de ser eliminada.",
+	"erreurTentativesNombreuses": "Se han introducido demasiados datos incorrectos. Por favor, espera un momento antes de volver a intentarlo."
 }

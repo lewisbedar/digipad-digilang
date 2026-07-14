@@ -10,11 +10,11 @@ app.use(compression())
 const httpServer = createServer(app)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-app.get('/', function (req, res) {
+app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', '/static/maintenance/maintenance.html'))
 })
 
-app.get('/*splat', function (req, res) {
+app.get('/*splat', (req, res) => {
     res.redirect('/')
 })
 

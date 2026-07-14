@@ -299,7 +299,7 @@
     "editionNom": "Namensbearbeitung",
     "modeOrganiserAutreUtilisateur": "Der Organisationsmodus wird von einem anderen Admin verwendet.",
     "modeOrganiserProprietaire": "Der Besitzer des Pads hat gerade den Organisationsmodus aktiviert.",
-    "capsuleEnCoursModification": "Dieser Beitrag wird bereits von einem anderen Benutzer bearbeitet.",
+    "capsuleEnCoursModification": "⚠️ Dieser Beitrag wird bereits von einem anderen Benutzer bearbeitet.",
     "ordreCapsules": "Reihenfolge der Beiträge",
     "croissant": "aufsteigend",
     "decroissant": "absteigend",
@@ -413,5 +413,8 @@
 	"classer": "Ordnen",
 	"supprimerFormatage": "Formatierung entfernen",
 	"exposant": "Exponent",
-	"ouvrirLienNouvelOnglet": "Link in einem neuen Tab öffnen"
+	"ouvrirLienNouvelOnglet": "Link in einem neuen Tab öffnen",
+	"erreurTranscodage": "Fehler beim Transkodieren der Datei.",
+	"capsuleSupprimeeUtilisateur": "Die Kapsel, die Sie gerade bearbeitet haben, wurde soeben gelöscht.",
+	"erreurTentativesNombreuses": "Die Anzahl der falschen Eingaben ist zu hoch. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen."
 }

@@ -1,18 +1,18 @@
 <template>
 	<div class="enregistrer audio">
-		<template v-if="!$parent.enregistrement && !chargement">
-			<span id="enregistrer" class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" @click="enregistrerAudio" @keydown.enter.space.prevent="enregistrerAudio"><i class="material-icons" aria-hidden="true">fiber_manual_record</i><span>{{ $t('enregistrerAudio') }}</span></span>
+		<template v-if="!parent.enregistrement && !chargement">
+			<button type="button" id="enregistrer" class="bouton" :disabled="parent.disabledModale" @click="enregistrerAudio"><i class="material-icons" aria-hidden="true">fiber_manual_record</i><span>{{ $t('enregistrerAudio') }}</span></button>
 		</template>
-		<div id="enregistrement" v-else-if="$parent.enregistrement && !chargement">
+		<div id="enregistrement" v-else-if="parent.enregistrement && !chargement">
 			<canvas id="visualisation" width="360" height="60" />
 			<div class="enregistrement">
-				<span class="bouton" :class="{'stopper': !pause}" role="button" :tabindex="$parent.definirTabIndexModale()" :title="$t('stopper')" :aria-label="$t('stopper')" @click="arreterEnregistrementAudio" @keydown.enter.space.prevent="arreterEnregistrementAudio">
+				<button type="button" class="bouton" :class="{'stopper': !pause}" :disabled="parent.disabledModale" :title="$t('stopper')" :aria-label="$t('stopper')" @click="arreterEnregistrementAudio">
 					<i class="material-icons" aria-hidden="true">stop</i>
-				</span>
-				<span class="bouton" role="button" :tabindex="$parent.definirTabIndexModale()" :title="$t('pause')" :aria-label="$t('pause')" @click="mettreEnPauseEnregistrementAudio" @keydown.enter.space.prevent="mettreEnPauseEnregistrementAudio">
+				</button>
+				<button type="button" class="bouton" :disabled="parent.disabledModale" :title="$t('pause')" :aria-label="$t('pause')" @click="mettreEnPauseEnregistrementAudio">
 					<i class="material-icons" aria-hidden="true" v-if="!pause">pause</i>
 					<i class="material-icons" aria-hidden="true" v-else>play_arrow</i>
-				</span>
+				</button>
 				<span class="duree">{{ dureeEnregistrement }}</span>
 			</div>
 		</div>
@@ -24,18 +24,22 @@
 
 <script>
 export default {
-	name: 'Enregistrement',
+	name: 'DigipadEnregistrement',
+	inject: ['parent'],
 	data () {
 		return {
 			chargement: false,
 			enregistrementSupporte: true,
 			entreeAudio: false,
-			mediaRecorder: '',
-			flux: '',
+			mediaRecorder: null,
+			flux: null,
 			pause: false,
 			delta: '',
-			contexte: '',
-			intervalle: '',
+			contexte: null,
+			sourceAudio: null,
+			analyseurAudio: null,
+			animationFrameId: null,
+			intervalle: null,
 			dureeEnregistrement: '00:00',
 			safari: false
 		}
@@ -44,7 +48,7 @@ export default {
 		if (!navigator.mediaDevices || !navigator.mediaDevices?.enumerateDevices) {
 			this.enregistrementSupporte = false
 		} else {
-			navigator.mediaDevices.enumerateDevices().then(function (devices) {
+			navigator.mediaDevices.enumerateDevices().then((devices) => {
 				for (const device of devices) {
 					if (device.kind === 'audioinput') {
 						this.entreeAudio = true
@@ -56,7 +60,9 @@ export default {
 						this.enregistrementSupporte = false
 					}
 				}
-			}.bind(this))
+			}).catch(() => {
+				this.enregistrementSupporte = false
+			})
 		}
 		
 		const ua = window.navigator.userAgent
@@ -65,34 +71,50 @@ export default {
 		this.safari = apple && webkit && !ua.match(/CriOS/i) && !ua.match(/EdgiOS/i) && !ua.match(/Chrome/i) && !ua.match(/Edg/i)
 	},
 	beforeUnmount () {
-		if (this.flux !== '') {
-			this.flux.stop()
-			this.flux = ''
+		if (this.flux) {
+			this.flux?.getTracks?.()?.forEach(t => {
+				try {
+					t.stop()
+				} catch {}
+			})
+			this.flux = null
 		}
-		if (this.contexte !== '') {
+		if (this.sourceAudio) {
+			this.sourceAudio.disconnect()
+			this.sourceAudio = null
+		}
+		if (this.analyseurAudio) {
+			this.analyseurAudio.disconnect()
+			this.analyseurAudio = null
+		}
+		if (this.contexte) {
 			this.contexte.close()
-			this.contexte = ''
+			this.contexte = null
 		}
-		if (this.intervalle !== '') {
+		if (this.intervalle) {
 			clearInterval(this.intervalle)
-			this.intervalle = ''
+			this.intervalle = null
 		}
-		if (this.mediaRecorder !== '') {
+		if (this.animationFrameId) {
+			cancelAnimationFrame(this.animationFrameId)
+			this.animationFrameId = null
+		}
+		if (this.mediaRecorder) {
 			if (this.safari) {
 				this.mediaRecorder.getInternalRecorder().clearRecordedData()
 			}
 			this.mediaRecorder.destroy()
-			this.mediaRecorder = ''
+			this.mediaRecorder = null
 		}
 	},
 	methods: {
 		enregistrerAudio () {
 			if (!this.enregistrementSupporte) {
-				this.$parent.notification = this.$t('enregistrementNonSupporte')
+				this.parent.notification = this.$t('enregistrementNonSupporte')
 			} else if (!this.entreeAudio) {
-				this.$parent.notification = this.$t('aucuneEntreeAudio')
+				this.parent.notification = this.$t('aucuneEntreeAudio')
 			} else {
-				navigator.mediaDevices.getUserMedia({ audio: true }).then(function (flux) {
+				navigator.mediaDevices.getUserMedia({ audio: true }).then((flux) => {
 					let options = { type: 'audio', mimeType: 'audio/wav', sampleRate: 44100, desiredSampRate: 44100 }
 					if (this.safari) {
 						options = { type: 'audio', recorderType: StereoAudioRecorder, sampleRate: 44100, desiredSampRate: 44100, bufferSize: 4096, numberOfAudioChannels: 2 }
@@ -100,15 +122,15 @@ export default {
 					this.flux = flux
 					this.mediaRecorder = RecordRTC(this.flux, options)
 					this.mediaRecorder.startRecording()
-					this.$nextTick(function () {
+					this.$nextTick(() => {
 						this.visualiser(flux)
-					}.bind(this))
-					this.$parent.enregistrement = true
+					})
+					this.parent.enregistrement = true
 					const temps = Date.now()
-					this.intervalle = setInterval(function () {
+					this.intervalle = setInterval(() => {
 						this.delta = Date.now() - temps
 						let secondes = Math.floor((this.delta / 1000) % 60)
-						let minutes = Math.floor((this.delta / 1000 / 60) << 0)
+						let minutes = Math.floor(this.delta / 1000 / 60)
 						if (secondes < 10) {
 							secondes = '0' + secondes
 						}
@@ -119,24 +141,36 @@ export default {
 						if (this.dureeEnregistrement === '09:00') {
 							this.arreterEnregistrementAudio()
 						}
-					}.bind(this), 100)
-				}.bind(this)).catch(function () {
-					this.$parent.enregistrement = false
-					this.mediaRecorder = ''
-					this.flux = ''
-					if (this.contexte !== '') {
-						this.contexte.close()
-						this.contexte = ''
+					}, 100)
+				}).catch(() => {
+					this.parent.enregistrement = false
+					this.mediaRecorder = null
+					this.flux = null
+					if (this.sourceAudio) {
+						this.sourceAudio.disconnect()
+						this.sourceAudio = null
 					}
-					this.$parent.notification = this.$t('erreurMicro')
-				}.bind(this))
+					if (this.analyseurAudio) {
+						this.analyseurAudio.disconnect()
+						this.analyseurAudio = null
+					}
+					if (this.contexte) {
+						this.contexte.close()
+						this.contexte = null
+					}
+					if (this.animationFrameId) {
+						cancelAnimationFrame(this.animationFrameId)
+						this.animationFrameId = null
+					}
+					this.parent.notification = this.$t('erreurMicro')
+				})
 			}
 		},
 		mettreEnPauseEnregistrementAudio () {
 			if (this.pause === false) {
-				if (this.intervalle !== '') {
+				if (this.intervalle) {
 					clearInterval(this.intervalle)
-					this.intervalle = ''
+					this.intervalle = null
 				}
 				this.pause = true
 				this.mediaRecorder.pauseRecording()
@@ -145,10 +179,10 @@ export default {
 				this.mediaRecorder.resumeRecording()
 				let temps = Date.now()
 				temps = temps - this.delta
-				this.intervalle = setInterval(function () {
+				this.intervalle = setInterval(() => {
 					this.delta = Date.now() - temps
 					let secondes = Math.floor((this.delta / 1000) % 60)
-					let minutes = Math.floor((this.delta / 1000 / 60) << 0)
+					let minutes = Math.floor(this.delta / 1000 / 60)
 					if (secondes < 10) {
 						secondes = '0' + secondes
 					}
@@ -156,83 +190,93 @@ export default {
 						minutes = '0' + minutes
 					}
 					this.dureeEnregistrement = minutes + ':' + secondes
-				}.bind(this), 100)
+				}, 100)
 			}
 		},
 		arreterEnregistrementAudio () {
 			if (this.safari) {
 				this.chargement = true
 			}
-			this.mediaRecorder.stopRecording(function () {
+			this.mediaRecorder.stopRecording(() => {
 				const blob = this.mediaRecorder.getBlob()
 				this.delta = ''
 				this.pause = false
 				this.dureeEnregistrement = '00:00'
-				if (this.flux !== '') {
-					this.flux.stop()
-					this.flux = ''
+				if (this.flux) {
+					this.flux?.getTracks?.()?.forEach(t => {
+						try {
+							t.stop()
+						} catch {}
+					})
+					this.flux = null
 				}
-				if (this.contexte !== '') {
+				if (this.sourceAudio) {
+					this.sourceAudio.disconnect()
+					this.sourceAudio = null
+				}
+				if (this.analyseurAudio) {
+					this.analyseurAudio.disconnect()
+					this.analyseurAudio = null
+				}
+				if (this.contexte) {
 					this.contexte.close()
-					this.contexte = ''
+					this.contexte = null
 				}
-				if (this.intervalle !== '') {
+				if (this.intervalle) {
 					clearInterval(this.intervalle)
-					this.intervalle = ''
+					this.intervalle = null
 				}
-				if (this.mediaRecorder !== '') {
+				if (this.animationFrameId) {
+					cancelAnimationFrame(this.animationFrameId)
+					this.animationFrameId = null
+				}
+				if (this.mediaRecorder) {
 					if (this.safari) {
 						this.mediaRecorder.getInternalRecorder().clearRecordedData()
 					}
 					this.mediaRecorder.destroy()
-					this.mediaRecorder = ''
+					this.mediaRecorder = null
 				}
-				this.$parent.blob = blob
-				this.$parent.media = URL.createObjectURL(blob)
-				this.$parent.type = 'enregistrement'
+				this.parent.blob = blob
+				this.parent.media = URL.createObjectURL(blob)
+				this.parent.type = 'enregistrement'
 				const donnees = {}
 				donnees.type = 'enregistrement'
-				const vignette = this.$parent.definirVignette(donnees)
-				this.$parent.vignette = vignette
-				this.$parent.vignetteDefaut = vignette
+				const vignette = this.parent.definirVignette(donnees)
+				this.parent.vignette = vignette
+				this.parent.vignetteDefaut = vignette
 				this.chargement = false
-				this.$parent.enregistrement = false
-			}.bind(this))
+				this.parent.enregistrement = false
+			})
 		},
 		visualiser (flux) {
-			if (this.contexte === '') {
+			if (this.contexte === null) {
 				this.contexte = new AudioContext()
 			}
 			const source = this.contexte.createMediaStreamSource(flux)
 			const analyser = this.contexte.createAnalyser()
+			this.sourceAudio = source
+			this.analyseurAudio = analyser
 			analyser.fftSize = 2048
 			const bufferLength = analyser.frequencyBinCount
 			const dataArray = new Uint8Array(bufferLength)
 			source.connect(analyser)
-
-			this.$nextTick(function () {
-				draw()
-			})
-
-			function draw () {
+			const draw = () => {
 				if (document.querySelector('#visualisation')) {
 					const canvas = document.querySelector('#visualisation')
 					const canvasCtx = canvas.getContext('2d')
 					const largeur = document.querySelector('#enregistrement').offsetWidth
 					const hauteur = canvas.height
 					canvas.width = largeur
-					requestAnimationFrame(draw)
+					this.animationFrameId = requestAnimationFrame(draw)
 					analyser.getByteTimeDomainData(dataArray)
-
 					canvasCtx.fillStyle = '#eeeeee'
 					canvasCtx.fillRect(0, 0, largeur, hauteur)
 					canvasCtx.lineWidth = 2
 					canvasCtx.strokeStyle = '#000000'
 					canvasCtx.beginPath()
-
 					const sliceWidth = largeur * 1.0 / bufferLength
 					let x = 0
-
 					for (let i = 0; i < bufferLength; i++) {
 						const v = dataArray[i] / 128.0
 						const y = v * hauteur / 2
@@ -245,8 +289,13 @@ export default {
 					}
 					canvasCtx.lineTo(canvas.width, canvas.height / 2)
 					canvasCtx.stroke()
+				} else {
+					this.animationFrameId = null
 				}
 			}
+			this.$nextTick(() => {
+				draw()
+			})
 		}
 	}
 }

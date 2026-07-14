@@ -65,7 +65,7 @@
 	justify-content: flex-start;
     align-content: flex-start;
     align-items: flex-start;
-	width: 30rem;
+	width: 35rem;
 	height: 100%;
 }
 
@@ -190,26 +190,37 @@
 }
 
 #blocs .bloc .media a,
-#blocs .bloc .media span {
+#blocs .bloc .media button {
 	display: block;
     text-align: center;
 	padding: 1rem;
+	margin: auto;
 }
 
-#blocs .bloc .media span img.vignette {
+#blocs .bloc .media button.bouton-image {
+	padding: 0;
+}
+
+#blocs .bloc .media button.bouton-image img {
+	max-width: 100%;
+	max-height: 40rem;
+}
+
+#blocs .bloc .media a img.vignette,
+#blocs .bloc .media button img.vignette {
 	max-width: 100%;
 	border-radius: 1rem;
 }
 
-#blocs .bloc .media a img,
-#blocs .bloc .media span img:not(.vignette) {
+#blocs .bloc .media a img:not(.vignette),
+#blocs .bloc .media button:not(.bouton-image) img:not(.vignette) {
 	max-width: 128px;
 	max-height: 128px;
 	border-radius: 1rem;
 }
 
 #blocs .bloc .media a:focus,
-#blocs .bloc .media span:focus,
+#blocs .bloc .media button:focus,
 #blocs .bloc .media img:focus {
 	outline: 2px solid #ed5b00;
 	outline-offset: -2px;

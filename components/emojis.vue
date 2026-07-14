@@ -2,52 +2,46 @@
 	<div id="emojis" :class="definirClasses()">
 		<h5>{{ $t('emoticones') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(emoticone, indexEmoticone) in emoticones" @click="insererEmoji(emoticone)" @keydown.enter.space.prevent="insererEmoji(emoticone)" :key="'emoticone_' + indexEmoticone">{{ emoticone }}</span>
+			<button type="button" :disabled="disabled" v-for="(emoticone, indexEmoticone) in emoticones" @click="insererEmoji(emoticone)" :key="'emoticone_' + indexEmoticone">{{ emoticone }}</button>
 		</div>
 		<h5>{{ $t('gestesEtCorps') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(geste, indexGeste) in gestes" @click="insererEmoji(geste)" @keydown.enter.space.prevent="insererEmoji(geste)" :key="'geste_' + indexGeste">{{ geste }}</span>
+			<button type="button" :disabled="disabled" v-for="(geste, indexGeste) in gestes" @click="insererEmoji(geste)" :key="'geste_' + indexGeste">{{ geste }}</button>
 		</div>
 		<h5>{{ $t('nature') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(nature, indexNature) in natures" @click="insererEmoji(nature)" @keydown.enter.space.prevent="insererEmoji(nature)" :key="'nature_' + indexNature">{{ nature }}</span>
+			<button type="button" :disabled="disabled" v-for="(nature, indexNature) in natures" @click="insererEmoji(nature)" :key="'nature_' + indexNature">{{ nature }}</button>
 		</div>
 		<h5>{{ $t('aliments') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(aliment, indexAliment) in aliments" @click="insererEmoji(aliment)" @keydown.enter.space.prevent="insererEmoji(aliment)" :key="'aliment_' + indexAliment">{{ aliment }}</span>
+			<button type="button" :disabled="disabled" v-for="(aliment, indexAliment) in aliments" @click="insererEmoji(aliment)" :key="'aliment_' + indexAliment">{{ aliment }}</button>
 		</div>
 		<h5>{{ $t('objets') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(objet, indexObjet) in objets" @click="insererEmoji(objet)" @keydown.enter.space.prevent="insererEmoji(objet)" :key="'objet_' + indexObjet">{{ objet }}</span>
+			<button type="button" :disabled="disabled" v-for="(objet, indexObjet) in objets" @click="insererEmoji(objet)" :key="'objet_' + indexObjet">{{ objet }}</button>
 		</div>
 		<h5>{{ $t('lieux') }}</h5>
 		<div class="categorie">
-			<span role="button" :tabindex="tabindex" v-for="(lieu, indexLieu) in lieux" @click="insererEmoji(lieu)" @keydown.enter.space.prevent="insererEmoji(lieu)" :key="'lieu_' + indexLieu">{{ lieu }}</span>
+			<button type="button" :disabled="disabled" v-for="(lieu, indexLieu) in lieux" @click="insererEmoji(lieu)" :key="'lieu_' + indexLieu">{{ lieu }}</button>
 		</div>
 	</div>
 </template>
 
 <script>
 export default {
-	name: 'Emojis',
+	name: 'DigipadEmojis',
 	props: {
 		type: String,
 		diaporama: Boolean,
-		tabindex: Number
+		disabled: Boolean
 	},
 	data () {
 		return {
-			// eslint-disable-next-line
 			emoticones: ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','🤡','👻','💀','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾', '💯', '✔️', '☀️', '✨', '🎉'],
-			// eslint-disable-next-line
 			gestes: ['👋','🤚','✋','👌','🤌','🤏','🤞','🤟','🤘','🤙','👈','👉','👆','👇','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','💅','🤳','💪','🦾','🦵','🦿','🦶','👣','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👅','👄','💋','🩸'],
-			// eslint-disable-next-line
 			natures: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷','🕸','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🦬','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕','🦺','🐈','🪶','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔','🐾','🐉','🐲','🌵','🎄','🌲','🌳','🌴','🪵','🌱','🌿','🍀','🎍','🪴','🎋','🍃','🍂','🍁','🍄','🐚','🪨','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌎','🌍','🌏','🪐','💫','⭐','🌟','✨','💥','🔥','🌈','⛅','⛄','💨','💧','💦','🌊'],
-			// eslint-disable-next-line
 			aliments: ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','🫖','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🥣','🥡','🥢','🧂'],
-			// eslint-disable-next-line
 			objets: ['🎍','💝','🎎','🎒','🎓','🎏','🎆','🎇','🎐','🎑','🎃','👻','🎅','🎄','🎁','🎋','🎉','🎊','🎈','🎌','🔮','🎥','📷','📹','📼','💿','📀','💽','💾','💻','📱','📞','📟','📠','📡','📺','📻','🔊','🔔','📢','📣','⏳','⌛','⏰','⌚','🔓','🔒','🔏','🔐','🔑','🔎','💡','🔦','🔌','🔋','🔍','🛀','🚽','🔧','🔩','🔨','🚪','🚬','💣','🔫','🔪','💊','💉','💰','💴','💵','💳','💸','📲','📧','📥','📤','📩','📨','📫','📪','📮','📦','📝','📄','📃','📑','📊','📈','📉','📜','📋','📅','📆','📇','📁','📂','📌','📎','📏','📐','📕','📗','📘','📙','📓','📔','📒','📚','📖','🔖','📛','📰','🎨','🎬','🎤','🎧','🎼','🎵','🎶','🎹','🎻','🎺','🎷','🎸','👾','🎮','🃏','🎴','🀄','🎲','🎯','🏈','🏀','⚽','⚾','🎾','🎱','🎳','⛳','🏁','🏆','🎿','🏂','🏊','🏄','🎣','🍵','🍶', '👑'],
-			// eslint-disable-next-line
 			lieux: ['🏠','🏡','🏫','🏢','🏣','🏥','🏦','🏪','🏩','🏨','💒','⛪','🏬','🌇','🌆','🏯','🏰','⛺','🏭','🗼','🗾','🗻','🌄','🌅','🌃','🗽','🌉','🎠','🎡','⛲','🎢','🚢','⛵','🚤','🚀','💺','🚉','🚄','🚅','🚇','🚃','🚌','🚙','🚗','🚕','🚚','🚨','🚓','🚒','🚑','🚲','💈','🚏','🎫','🚥','🚧','🔰','⛽','🏮','🎰','🗿','🎪','🎭','📍','🚩']
 		}
 	},
@@ -70,7 +64,7 @@ export default {
 #emojis {
 	position: absolute;
 	height: 17.2rem;
-    width: 30rem;
+	width: 30rem;
 	padding: 1rem;
 	border: 1px solid #ddd;
 	background: #fff;
@@ -124,14 +118,14 @@ export default {
 	flex: auto;
 }
 
-.categorie span {
+.categorie button {
 	font-size: 2rem;
 	padding: 2px;
 	cursor: pointer;
 	border-radius: 0.5rem;
 }
 
-.categorie span:hover {
+.categorie button:hover {
 	background: #ececec;
 	cursor: pointer;
 }

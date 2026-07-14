@@ -299,7 +299,7 @@
 	"editionNom": "Édition du nom",
 	"modeOrganiserAutreUtilisateur": "Le mode Organiser est en cours d'utilisation par un autre admin.",
 	"modeOrganiserProprietaire": "Le propriétaire du pad vient d'activer le Mode Organiser.",
-	"capsuleEnCoursModification": "Cette capsule est déjà en cours de modification par un autre utilisateur.",
+	"capsuleEnCoursModification": "⚠️ Cette capsule est en cours de modification par un autre utilisateur.",
 	"ordreCapsules": "Ordre des capsules",
 	"croissant": "croissant",
 	"decroissant": "décroissant",
@@ -413,5 +413,8 @@
 	"classer": "Classer",
 	"supprimerFormatage": "Supprimer le formatage",
 	"exposant": "Exposant",
-	"ouvrirLienNouvelOnglet": "Ouvrir le lien dans un nouvel onglet"
+	"ouvrirLienNouvelOnglet": "Ouvrir le lien dans un nouvel onglet",
+	"erreurTranscodage": "Erreur lors du transcodage du fichier.",
+	"capsuleSupprimeeUtilisateur": "La capsule que vous étiez en train de modifier vient d'être supprimée.",
+	"erreurTentativesNombreuses": "Le nombre de tentatives incorrectes est trop élevé. Veuillez patienter avant de réessayer."
 }

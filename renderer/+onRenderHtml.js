@@ -3,7 +3,7 @@ export { render as onRenderHtml }
 import { escapeInject, dangerouslySkipEscape } from 'vike/server'
 
 async function render (pageContext) {
-	let hote = 'https://digipad.app'
+	let hote = import.meta.env.DOMAIN || 'https://digipad.app'
 	let titre = 'Digipad by La Digitale'
 	if (pageContext && pageContext.hasOwnProperty('pageProps') && pageContext.pageProps.hasOwnProperty('titre')) {
 		titre = pageContext.pageProps.titre
@@ -15,7 +15,7 @@ async function render (pageContext) {
 	if (pageContext && pageContext.hasOwnProperty('pageProps') && pageContext.pageProps.hasOwnProperty('urlOriginal')) {
 		url = hote + pageContext.pageProps.urlOriginal
 	}
-	let robots = 'index,no-follow'
+	let robots = 'index,nofollow'
 	if (url !== hote) {
 		robots = 'noindex'
 	}
@@ -26,21 +26,20 @@ async function render (pageContext) {
 	const documentHtml = escapeInject`<!DOCTYPE html>
 		<html lang="fr">
 			<head>
-				<meta charset="UTF-8" />
+				<meta charset="UTF-8">
 				<meta name="viewport" content="width=device-width, height=device-height, viewport-fit=cover, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-				<meta name="apple-mobile-web-app-capable" content="yes">
 				<meta name="mobile-web-app-capable" content="yes">
 				<meta name="HandheldFriendly" content="true">
 				<meta name="keywords" content="ladigitale, collaborative, education, openedtech, free software">
 				<meta name="description" content="Une application en ligne pour créer des murs multimédias collaboratifs proposée par La Digitale">
-				<meta name="robots" content="${robots}" />
+				<meta name="robots" content="${robots}">
 				<meta name="theme-color" content="#00ced1">
 				<meta property="og:title" content="${titre}">
 				<meta property="og:description" content="Une application en ligne pour créer des murs multimédias collaboratifs proposée par La Digitale">
-				<meta property="og:type" content="website" />
-				<meta property="og:url" content="${url}" />
-				<meta property="og:image" content="${hote}/img/digipad.png" />
-				<meta property="og:locale" content="fr_FR" />
+				<meta property="og:type" content="website">
+				<meta property="og:url" content="${url}">
+				<meta property="og:image" content="${hote}/img/digipad.png">
+				<meta property="og:locale" content="fr_FR">
 				<title>${titre}</title>
 				<link rel="icon" type="image/png" href="/img/favicon.png">
 				${umami}
@@ -55,6 +54,7 @@ async function render (pageContext) {
 				<script src="/js/flex-images.js"></script>
 				<script src="/js/panzoom.js"></script>
 				<script src="/js/recordrtc.js"></script>
+				<script src="/js/pell.js"></script>
 			</body>
 		</html>`
   	return {

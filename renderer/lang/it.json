@@ -299,7 +299,7 @@
 	"editionNom": "Modifica nome",
 	"modeOrganiserAutreUtilisateur": "La modalità Organizzazione è utilizzata da un altro amministratore.",
 	"modeOrganiserProprietaire": "Il proprietario del pad ha appena attivato la Modalità Organizzazione.",
-	"capsuleEnCoursModification": "Questa capsula è già stata modificata da un altro utente.",
+	"capsuleEnCoursModification": "⚠️ Questa capsula è stata modificata da un altro utente.",
 	"ordreCapsules": "Ordine delle capsule",
 	"croissant": "ascendente",
 	"decroissant": "discendente",
@@ -413,5 +413,8 @@
 	"classer": "Ordinare",
 	"supprimerFormatage": "Rimuovi formattazione",
 	"exposant": "Esponente",
-	"ouvrirLienNouvelOnglet": "Apri il link in una nuova scheda"
+	"ouvrirLienNouvelOnglet": "Apri il link in una nuova scheda",
+	"erreurTranscodage": "Si è verificato un errore durante la transcodifica del file.",
+	"capsuleSupprimeeUtilisateur": "La capsula che stavi modificando è stata appena eliminata.",
+	"erreurTentativesNombreuses": "Il numero di tentativi non corretti è troppo elevato. Attendi qualche istante prima di riprovare."
 }

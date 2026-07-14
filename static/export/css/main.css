@@ -2,6 +2,7 @@
 	font-family: 'Roboto-Slab';
 	font-style: normal;
 	font-weight: 500;
+	font-display: swap;
 	src: url('../fonts/Roboto-Slab-Medium.woff2') format('woff2');
 }
 
@@ -67,7 +68,8 @@ body {
 	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
 
-*:focus {
+*:focus,
+button[type="button"]:focus {
 	outline: 2px solid #ed5b00;
   	outline-offset: 1px;
 }
@@ -94,11 +96,6 @@ ul {
     list-style: disc inside;
 }
 
-button {
-	appearance: none;
-    -webkit-appearance: none;
-}
-
 ::-webkit-scrollbar {
 	width: 7px;
 	height: 15px;
@@ -115,10 +112,7 @@ button {
 .ascenseur {
 	scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
 	scrollbar-width: thin;
-}
-
-[v-cloak] {
-	display: none;
+	outline: 0
 }
 
 #app {

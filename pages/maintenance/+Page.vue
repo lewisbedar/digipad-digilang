@@ -13,7 +13,7 @@
 import ChargementPage from '#root/components/chargement-page.vue'
 
 export default {
-	name: 'Maintenance',
+	name: 'DigipadMaintenance',
 	components: {
 		ChargementPage
 	},
@@ -30,9 +30,7 @@ export default {
 	mounted () {
 		document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)
 
-		setTimeout(function () {
-			this.chargementPage = false
-		}.bind(this), 300)
+		this.chargementPage = false
 	}
 }
 </script>

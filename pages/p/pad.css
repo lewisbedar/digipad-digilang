@@ -26,25 +26,25 @@
 	margin: 0.4rem 0.7rem 0.4rem 1.5rem;
 }
 
-#champ-recherche span {
+#champ-recherche button {
 	font-size: 24px;
 	color: #fff;
 	line-height: 1;
 	cursor: pointer;
 }
 
-#nav span .badge {
+#nav button .badge {
 	width: 1.5rem;
-    height: 1.5rem;
-    background: #e32f6c;
-    position: absolute;
-    top: -3rem;
-    left: 0;
-    border-radius: 50%;
-    font-size: 0.9rem;
-    color: #fff;
-    line-height: 1.5rem;
-    text-align: center;
+	height: 1.5rem;
+	background: #e32f6c;
+	position: absolute;
+	top: -0.5rem;
+	right: -0.5rem;
+	border-radius: 50%;
+	font-size: 0.9rem;
+	color: #fff;
+	line-height: 1.5rem;
+	text-align: center;
 }
 
 #recherche.active {
@@ -79,23 +79,25 @@
 	margin-right: 10px;
 }
 
-#ajouter-admin span i,
-#code-acces span i,
-#copier-code span i,
-#copier-lien span i {
+#ajouter-admin button i,
+#code-acces button i,
+#copier-code button i,
+#copier-lien button i {
 	font-size: 24px;
+	height: 24px;
+	line-height: 1;
 	cursor: pointer;
 }
 
-#code-acces span:last-child,
-#copier-lien span:last-child {
+#code-acces button:last-child,
+#copier-lien button:last-child {
 	margin-left: 10px;
 }
 
-#ajouter-admin span i:active,
-#copier-code span i:active,
-#copier-lien span i:active {
-	opacity: 0.8;
+#ajouter-admin button:active i,
+#copier-code button:active i,
+#copier-lien button:active i {
+	opacity: 0.5;
 }
 
 #ajouter-admin input {
@@ -205,29 +207,29 @@
 
 #diapositive .conteneur-moderation .bouton {
 	display: block;
-    padding: 0.9rem;
-    text-align: center;
+	padding: 0.9rem;
+	text-align: center;
 	font-size: 12px;
 	color: #e32f6c;
-    border: 1px solid #e32f6c;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-indent: 1px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    transition: all 0.1s ease-in;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+	border: 1px solid #e32f6c;
+	line-height: 1;
+	font-weight: 700;
+	letter-spacing: 1px;
+	text-indent: 1px;
+	border-radius: 4px;
+	text-transform: uppercase;
+	transition: all 0.1s ease-in;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	cursor: default;
 }
 
-#diapositive .conteneur-moderation .bouton[role="button"] {
+#diapositive .conteneur-moderation button.bouton {
 	cursor: pointer;
 }
 
-#diapositive .conteneur-moderation .bouton[role="button"]:hover {
+#diapositive .conteneur-moderation button.bouton:hover {
 	background: #e32f6c;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
@@ -247,13 +249,13 @@
 }
 
 #bloc .conteneur {
-	height: auto!important;
-	overflow: initial!important;
+	height: auto !important;
+	overflow: initial !important;
 }
 
 #texte {
 	border: 1px solid #ddd;
-    width: 100%;
+	width: 100%;
 	border-radius: 4px;
 	margin-bottom: 20px;
 }
@@ -277,12 +279,15 @@
 	height: 5rem;
 	cursor: pointer;
 	letter-spacing: 1px;
-    text-indent: 1px;
+	text-indent: 1px;
 	transition: all 0.1s ease-in;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
 	border-radius: 5px;
 	z-index: 5;
 	margin-top: 40px;
+	width: 100%;
+	border: none;
+	font-family: inherit;
 }
 
 #bloc .valider:hover {
@@ -304,11 +309,13 @@
 }
 
 .televerser.vignette {
-	font-size: 0;
+	display: flex;
+	flex-wrap: wrap;
+	text-align: center;
 	margin-bottom: 20px;
 }
 
-.televerser.vignette span.bouton {
+.televerser.vignette button.bouton {
 	margin-left: 1.5rem;
 }
 
@@ -323,22 +330,22 @@
 
 #image {
 	display: block;
-    margin: auto;
+	margin: auto;
 	max-height: 40rem;
 }
 
 #document {
 	width: 100%;
-    min-height: 40rem;
+	min-height: 40rem;
 }
 
 #lien,
 #fichier {
 	display: block;
 	padding: 1.5rem;
-    width: 70%;
-    margin: auto;
-    border: 1px solid #ddd;
+	width: 70%;
+	margin: auto;
+	border: 1px solid #ddd;
 	background: #f9f9f9;
 	border-radius: 4px;
 }
@@ -346,10 +353,10 @@
 #lien .type,
 #fichier .type {
 	display: block;
-    font-size: 2.3rem;
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
-    margin-top: 1.5rem;
+	font-size: 2.3rem;
+	text-transform: uppercase;
+	margin-bottom: 1.5rem;
+	margin-top: 1.5rem;
 }
 
 #lien .nom,
@@ -370,32 +377,32 @@
 }
 
 .separateur {
-    position: relative;
-    margin: 0 25% 1.5rem;
-    text-align: center;
-    width: 50%;
+	position: relative;
+	margin: 0 25% 1.5rem;
+	text-align: center;
+	width: 50%;
 }
 
 .separateur:before {
-    position: absolute;
-    top: 50%;
-    display: block;
-    content: '';
-    width: 100%;
-    height: 1px;
-    background-color: #ddd;
+	position: absolute;
+	top: 50%;
+	display: block;
+	content: '';
+	width: 100%;
+	height: 1px;
+	background-color: #ddd;
 }
 
 .separateur span {
-    position: relative;
-    margin: 0;
-    font-size: 1.5rem;
-    z-index: 2;
-    display: inline-block;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    vertical-align: middle;
-    background-color: #fff;
+	position: relative;
+	margin: 0;
+	font-size: 1.5rem;
+	z-index: 2;
+	display: inline-block;
+	padding-left: 1.5rem;
+	padding-right: 1.5rem;
+	vertical-align: middle;
+	background-color: #fff;
 }
 
 #transcodage {
@@ -428,9 +435,9 @@
 
 #media .information {
 	font-size: 1.5rem;
-    display: block;
-    margin-top: 1rem;
-    color: #777;
+	display: block;
+	margin-top: 1rem;
+	color: #777;
 }
 
 #ajouter-lien {
@@ -445,24 +452,24 @@
 	margin-bottom: 0;
 }
 
-#ajouter-lien span {
+#ajouter-lien button {
 	font-size: 24px;
 	width: 5rem;
 	padding: 0;
 }
 
-#ajouter-lien span.rechercher {
+#ajouter-lien button.rechercher {
 	margin-left: 1rem;
 	height: 46px;
 	line-height: 46px;
 }
 
-#ajouter-lien span.supprimer {
+#ajouter-lien button.supprimer {
 	background: #ff6259;
 	margin-top: 1.5rem;
 }
 
-#ajouter-lien span.supprimer:hover {
+#ajouter-lien button.supprimer:hover {
 	background: #ff372d;
 }
 
@@ -479,8 +486,8 @@
 #iframe.youtube {
 	position: relative;
 	padding-bottom: 56.25%;
-    height: 0;
-    overflow: hidden;
+	height: 0;
+	overflow: hidden;
 }
 
 #media .supprimer {
@@ -493,6 +500,7 @@
 }
 
 #media .supprimer + .convertir {
+	margin-top: 1.5rem;
 	margin-left: 1.5rem;
 }
 
@@ -547,11 +555,11 @@
 	margin-top: 0.5rem;
 }
 
-#recherche #navigation span {
+#recherche #navigation button {
 	cursor: pointer;
 }
 
-#recherche #navigation span.invisible {
+#recherche #navigation button.invisible {
 	visibility: hidden;
 }
 
@@ -563,7 +571,7 @@
 }
 
 #diapositive.privee {
-	border-color: #ccc!important;
+	border-color: #ccc !important;
 }
 
 #diapositive .contenu {
@@ -609,7 +617,7 @@
 
 #diapositive .media span {
 	display: block;
-    text-align: center;
+	text-align: center;
 }
 
 #diapositive .media span img {
@@ -639,26 +647,26 @@
 
 #diapositive .conteneur label {
 	padding-bottom: 0.5rem;
-    border-bottom: 1px solid #eee;
+	border-bottom: 1px solid #eee;
 	margin-bottom: 2rem;
 	font-weight: 700;
 }
 
 #diapositive .conteneur .evaluation {
 	display: flex;
-    justify-content: space-between;
-    line-height: 1;
+	justify-content: space-between;
+	line-height: 1;
 	font-size: 36px;
 }
 
 #diapositive .conteneur .etoiles {
 	display: flex;
-    align-items: center;
+	align-items: center;
 }
 
 #diapositive .conteneur .etoiles span {
-    font-size: 1.6rem;
-    margin-left: 0.5rem;
+	font-size: 1.6rem;
+	margin-left: 0.5rem;
 }
 
 #diapositive .conteneur .evaluation .bouton {
@@ -668,23 +676,23 @@
 #suivant,
 #precedent {
 	position: absolute;
-    top: calc(50% - 3.5rem);
-    font-size: 7rem;
+	top: calc(50% - 3.5rem);
+	font-size: 7rem;
 	height: 7rem;
-    color: #fff;
+	color: #fff;
 	background: rgba(0, 0, 0, 0.5);
 	line-height: 1;
 	cursor: pointer;
 }
 
 #precedent {
-    left: 0;
+	left: 0;
 	border-top-right-radius: 0.75rem;
 	border-bottom-right-radius: 0.75rem;
 }
 
 #suivant {
-    right: 0;
+	right: 0;
 	border-top-left-radius: 0.75rem;
 	border-bottom-left-radius: 0.75rem;
 }
@@ -692,19 +700,19 @@
 #utilisateurs,
 #entrees {
 	list-style: none;
-    margin: 0;
-    padding: 2rem 1.5rem;
+	margin: 0;
+	padding: 2rem 1.5rem;
 }
 
 #utilisateurs li,
 #entrees li {
 	padding: 1rem;
 	font-size: 1.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    line-height: 1.4;
-    margin-bottom: 1.5rem;
-    cursor: default;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	line-height: 1.4;
+	margin-bottom: 1.5rem;
+	cursor: default;
 }
 
 #entrees li {
@@ -727,7 +735,7 @@
 	display: block;
 }
 
-#entrees li .menu-entree span.supprimer {
+#entrees li .menu-entree button.supprimer {
 	color: #ff6259;
 	cursor: pointer;
 }
@@ -747,22 +755,22 @@
 
 #messages li {
 	font-size: 16px;
-    padding: 1rem;
-    line-height: 1.4;
+	padding: 1rem;
+	line-height: 1.4;
 }
 
 #messages li span {
-    padding: 0.3rem 0.5rem;
-    background: #242f3d;
-    color: #fff;
-    border-radius: 0.3rem;
-    margin-right: 0.5rem;
+	padding: 0.3rem 0.5rem;
+	background: #242f3d;
+	color: #fff;
+	border-radius: 0.3rem;
+	margin-right: 0.5rem;
 	font-size: 1.1rem;
 	vertical-align: middle;
 }
 
 #messages li:nth-child(odd) {
-    background: #eee;
+	background: #eee;
 }
 
 #ecrire-message {
@@ -772,16 +780,16 @@
 	position: absolute;
 	bottom: 0;
 	left: 0;
-    width: 30rem;
-    background: #ddd;
-    padding: 0.5rem;
+	width: 30rem;
+	background: #ddd;
+	padding: 0.5rem;
 	height: 4.4rem;
 }
 
 #ecrire-message input {
 	font-size: 16px;
-    width: 24.5rem;
-    padding: 0.5rem 1rem;
+	width: 24.5rem;
+	padding: 0.5rem 1rem;
 	margin-right: 0.5rem;
 	background: #fff;
 	border: 0;
@@ -790,15 +798,15 @@
 #ecrire-message button {
 	width: 5rem;
 	text-align: center;
-    background: #00ced1;
-    border: none;
-    padding: 0.5rem 0;
-    color: #fff;
+	background: #00ced1;
+	border: none;
+	padding: 0.5rem 0;
+	color: #fff;
 }
 
 #utilisateurs li {
 	display: flex;
-    justify-content: space-between;
+	justify-content: space-between;
 	align-items: center;
 	position: relative;
 }
@@ -812,12 +820,9 @@
 }
 
 #utilisateurs li.moi .utilisateur.invite.edition {
-	cursor: pointer;
-}
-
-#utilisateurs li.moi .utilisateur.invite.edition {
 	display: flex;
 	align-items: center;
+	cursor: pointer;
 }
 
 #utilisateurs li.moi .utilisateur.invite.edition .icone {
@@ -828,21 +833,21 @@
 
 #utilisateurs li .utilisateur:not(.edition) {
 	text-overflow: ellipsis;
-    overflow: hidden;
+	overflow: hidden;
 	white-space: nowrap;
 	max-width: calc(100% - 3rem);
 }
 
 #utilisateurs li .utilisateur.edition span:first-child {
 	text-overflow: ellipsis;
-    overflow: hidden;
+	overflow: hidden;
 	white-space: nowrap;
 	max-width: 19rem;
 }
 
 #discussion {
-    height: 70%;
-    max-width: 75rem;
+	height: 70%;
+	max-width: 75rem;
 }
 
 #discussion .contenu {
@@ -863,8 +868,8 @@
 
 .commentaires li {
 	position: relative;
-    line-height: 1.4;
-    margin-bottom: 1.5rem;
+	line-height: 1.4;
+	margin-bottom: 1.5rem;
 }
 
 .commentaires li .meta {
@@ -890,7 +895,7 @@
 	top: 0.2rem;
 	right: 0;
 	text-align: right;
-	width: calc(48px + 3rem);
+	width: calc(48px + 3.4rem);
 	line-height: 1;
 	font-size: 0;
 	padding: 3px 1rem;
@@ -899,19 +904,16 @@
 	z-index: 10;
 }
 
-.commentaires li .action span {
+.commentaires li .action button {
 	font-size: 24px;
 	color: #fff;
 	line-height: 1;
 	cursor: pointer;
 }
 
-.commentaires li .action span:last-child {
+.commentaires li .action button:last-child {
 	color: #ff6259;
-}
-
-.commentaires li .action span:last-child {
-	margin-left: 1rem;
+	margin-left: 1.4rem;
 }
 
 .commentaires li .texte {
@@ -947,8 +949,8 @@
 .commentaires li .texte button {
 	width: 5rem;
 	text-align: center;
-    background: #fe9926;
-    border: none;
+	background: #fe9926;
+	border: none;
 	color: #fff;
 	font-size: 24px;
 }
@@ -957,7 +959,7 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-    width: 100%;
+	width: 100%;
 	border-top: 2px solid #2b486b;
 	height: 11rem;
 }
@@ -992,8 +994,8 @@
 .ecrire-commentaire button {
 	width: 5rem;
 	text-align: center;
-    background: #00ced1;
-    border: none;
+	background: #00ced1;
+	border: none;
 	color: #fff;
 	height: 100%;
 	font-size: 24px;
@@ -1002,7 +1004,7 @@
 
 .modale .section-etoiles {
 	display: flex;
-    justify-content: space-between;
+	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 20px;
 }
@@ -1010,41 +1012,55 @@
 .modale .section-etoiles .annuler {
 	font-size: 36px;
 	line-height: 1;
-    color: #aaa;
-    cursor: pointer;
+	color: #aaa;
+	cursor: pointer;
+	background: none;
+	border: none;
+	padding: 0;
 }
 
 .modale .section-etoiles .etoiles {
 	display: flex;
-    font-size: 48px;
+	font-size: 48px;
 	line-height: 1;
 }
 
-.modale .section-etoiles .etoiles i {
+.modale .section-etoiles .etoiles button {
 	cursor: pointer;
+	background: none;
+	border: none;
+	padding: 0;
 }
 
-.modale .section-etoiles .etoiles i.selectionne {
+.modale .section-etoiles .etoiles button.selectionne {
 	color: #fdcc33;
 }
 
 .modale .contenu .connexion {
 	font-size: 14px;
-    margin-top: 20px;
+	margin-top: 20px;
 	cursor: pointer;
+	background: none;
+	border: none;
+	padding: 0;
+	display: block;
+	width: 100%;
+	text-align: left;
+	font-family: inherit;
+	color: inherit;
 }
 
 #masque {
 	visibility: hidden;
 	opacity: 0;
 	position: fixed;
-    top: 0;
+	top: 0;
 	left: 0;
 	right: 0;
 	bottom: 0;
-    height: 100%;
-    width: 100%;
-	z-index: 99;
+	height: 100%;
+	width: 100%;
+	z-index: 100;
 	background-color: rgba(0, 0, 0, 0.5);
 	pointer-events: none;
 }
@@ -1052,7 +1068,7 @@
 #masque.ouvert {
 	visibility: visible;
 	opacity: 1;
-    animation: fonduEntrant linear 0.1s;
+	animation: fonduEntrant linear 0.1s;
 }
 
 .menu .bouton-radio {
@@ -1194,17 +1210,20 @@
 	align-items: center;
 }
 
-.menu .conteneur.fond span {
+.menu .conteneur.fond button,
+.menu .conteneur.fond .couleur-personnalisee {
 	width: 15%;
-	margin: 0 0 1rem 0;
-	cursor: pointer;
 }
 
-.menu .conteneur.fond span:nth-last-child(-n + 6) {
+.menu .conteneur.fond button {
+	margin: 0 0 1rem 0;
+}
+
+.menu .conteneur.fond button:nth-last-child(-n + 6) {
 	margin-bottom: 0;
 }
 
-.menu .conteneur .fonds input[type="color"] {
+.menu .conteneur .fonds input[type='color'] {
 	width: 3.5rem;
 	height: 3.5rem;
 	padding: 0;
@@ -1213,17 +1232,17 @@
 	cursor: pointer;
 }
 
-.menu .conteneur .fonds input[type="color"]::-moz-color-swatch {
+.menu .conteneur .fonds input[type='color']::-moz-color-swatch {
 	border: 1px solid #ddd;
 	border-radius: 50%;
 }
 
-.menu .conteneur .fonds input[type="color"]::-webkit-color-swatch {
+.menu .conteneur .fonds input[type='color']::-webkit-color-swatch {
 	border: 1px solid #ddd;
 	border-radius: 50%;
 }
 
-.menu .conteneur .fonds input[type="color"]::-webkit-color-swatch-wrapper {
+.menu .conteneur .fonds input[type='color']::-webkit-color-swatch-wrapper {
 	padding: 0;
 }
 
@@ -1235,7 +1254,7 @@
 	overflow: auto;
 }
 
-.modale #couleurs span {
+.modale #couleurs button {
 	display: block;
 	width: 30px;
 	height: 30px;
@@ -1246,7 +1265,7 @@
 	outline: none;
 }
 
-.modale #couleurs span:focus {
+.modale #couleurs button:focus {
 	border: 2px solid #ed5b00;
 }
 
@@ -1264,7 +1283,7 @@
 	line-height: 30px;
 }
 
-.modale #couleurs span input[type="color"] {
+.modale #couleurs span input[type='color'] {
 	width: 30px;
 	height: 30px;
 	padding: 0;
@@ -1273,42 +1292,46 @@
 	cursor: pointer;
 }
 
-.modale #couleurs span input[type="color"]::-moz-color-swatch {
+.modale #couleurs span input[type='color']::-moz-color-swatch {
 	border: none;
 	border-radius: 50%;
 }
 
-.modale #couleurs span input[type="color"]::-webkit-color-swatch {
+.modale #couleurs span input[type='color']::-webkit-color-swatch {
 	border: none;
 	border-radius: 50%;
 }
 
-.modale #couleurs span input[type="color"]::-webkit-color-swatch-wrapper {
+.modale #couleurs span input[type='color']::-webkit-color-swatch-wrapper {
 	padding: 0;
 }
 
-.modale #couleurs span input[type="color"]:focus::-moz-color-swatch {
+.modale #couleurs span input[type='color']:focus::-moz-color-swatch {
 	border: 2px solid #ed5b00;
 }
 
-.modale #couleurs span input[type="color"]:focus::-webkit-color-swatch {
+.modale #couleurs span input[type='color']:focus::-webkit-color-swatch {
 	border: 2px solid #ed5b00;
 }
 
-.modale #couleurs span input[type="color"].selectionne::-moz-color-swatch {
+.modale #couleurs span input[type='color'].selectionne::-moz-color-swatch {
 	border: 2px solid #000;
 }
 
-.modale #couleurs span input[type="color"].selectionne::-webkit-color-swatch {
+.modale #couleurs span input[type='color'].selectionne::-webkit-color-swatch {
 	border: 2px solid #000;
 }
 
-.modale #couleurs span.selectionne {
+.modale #couleurs button.selectionne {
 	border: 2px solid #000;
 }
 
 .modale .vide {
 	margin-bottom: 20px;
+}
+
+#codeqr {
+	max-width: 400px;
 }
 
 #codeqr .contenu {
@@ -1320,29 +1343,13 @@
 	display: inline-block;
 }
 
-.fondu-enter-active {
-	transition-property: opacity;
-	transition-duration: 0.25s;
-}
-
-.fondu-enter-active {
-	transition-delay: 0s;
-}
-
-.fondu-enter,
-.fondu-leave-active,
-.fondu-leave,
-.fondu-leave-to {
-	opacity: 0;
-}
-
 @keyframes fonduEntrant {
-    0% {
-        opacity: 0;
-    }
-    100% {
-        opacity: 1;
-    }
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
 }
 
 @media screen and (max-height: 640px) {
@@ -1372,7 +1379,8 @@
 	.televerser.vignette .bouton,
 	#media .supprimer,
 	#media .convertir {
-		margin-left: 0!important;
+		width: 100%;
+		margin-left: 0 !important;
 	}
 
 	#media .supprimer {
@@ -1383,10 +1391,14 @@
 	#media .convertir {
 		width: 100%;
 	}
+
+	#media .supprimer + .convertir {
+		margin-top: 0;
+	}
 }
 
 @media screen and (orientation: landscape) and (max-height: 479px) {
-	#motdepasse {
+	#modale-motdepasse {
 		height: 90%;
 	}
 }
@@ -1419,8 +1431,8 @@
 		line-height: 5rem;
 	}
 
-	.televerser.vignette span.bouton {
-		margin-top: 1rem;
+	.televerser.vignette button.bouton {
+		margin-top: 1.5rem;
 	}
 
 	#lien,
@@ -1467,28 +1479,28 @@
 	#conteneur-header-droit,
 	#masque,
 	.menu {
-		display: none!important;
+		display: none !important;
 	}
 
 	header {
-		height: auto!important;
+		height: auto !important;
 	}
 
 	#pad {
-		height: auto!important;
-		margin-left: 0!important;
-		width: 100%!important;
-		padding-top: 1.5rem!important;
-		padding-bottom: 10rem!important;
+		height: auto !important;
+		margin-left: 0 !important;
+		width: 100% !important;
+		padding-top: 1.5rem !important;
+		padding-bottom: 10rem !important;
 	}
 
 	#titre {
-		margin-left: 0!important;
+		margin-left: 0 !important;
 	}
 
 	.colonnes #pad {
-		display: block!important;
-		width: 100%!important;
-		overflow: auto!important;
+		display: block !important;
+		width: 100% !important;
+		overflow: auto !important;
 	}
 }

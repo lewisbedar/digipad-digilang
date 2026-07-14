@@ -2,6 +2,18 @@ import 'dotenv/config'
 import { convert } from 'html-to-text'
 import t from './lang.js'
 
+function echapperXML (str) {
+	if (typeof str !== 'string') {
+		str = String(str || '')
+	}
+	return str
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&apos;')
+}
+
 function verifierURL (s, protocoles) {
 	try {
 		const url = new URL(s)
@@ -23,26 +35,33 @@ function genererXML (hote, id, titre, lien, blocs, admin, langue) {
 	let rss = '<?xml version="1.0" encoding="UTF-8"?>\n'
 	rss += '<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">\n'
 	rss += '  <channel>\n'
-	rss += '    <title>' + titre + '</title>\n'
-	rss += '    <link>' + lien  + '</link>\n'
-	rss += '    <description>' + t[langue].fluxRSS + ' "' + titre + '"</description>\n'
+	rss += '    <title>' + echapperXML(titre) + '</title>\n'
+	rss += '    <link>' + echapperXML(lien)  + '</link>\n'
+	rss += '    <description>' + t[langue].fluxRSS + ' "' + echapperXML(titre) + '"</description>\n'
 	rss += '    <language>' + langue + '</language>\n'
 	// Ajouter les blocs
 	for (let i = 0; i < blocs.length; i++) {
-		if (admin || blocs[i].visibilite === 'visible') {
+		if (!blocs[i] || typeof blocs[i] !== 'object') {
+			continue
+		}
+		if (!admin && blocs[i].visibilite !== 'visible') {
+			continue
+		}
+		try {
 			rss += '    <item>\n'
-			let titre = blocs[i].titre
+			let titre = blocs[i].titre.trim()
 			if (titre === '') {
 				titre = t[langue].capsuleSansTitre
 			}
 			if (blocs[i].nom !== '') {
-				rss += '      <title>' + titre + ' (' + t[langue].par + ' ' + blocs[i].nom + ')</title>\n'
+				rss += '      <title>' + echapperXML(titre) + ' (' + t[langue].par + ' ' + blocs[i].nom + ')</title>\n'
 			} else {
-				rss += '      <title>' + titre + '</title>\n'
+				rss += '      <title>' + echapperXML(titre) + '</title>\n'
 			}
-			rss += '      <link>' + lien + '?caps=' + blocs[i].bloc.replace('bloc-id-', '') + '</link>\n'
+			rss += '      <link>' + echapperXML(lien) + '?caps=' + blocs[i].bloc.replace('bloc-id-', '') + '</link>\n'
 			if (blocs[i].texte !== '') {
-				rss += '      <description>' + convert(blocs[i].texte, { wordwrap: 100 }) + '</description>\n'
+				const texte = convert(blocs[i].texte, { wordwrap: 100 })
+				rss += '      <description>' + echapperXML(texte) + '</description>\n'
 			}
 			if (blocs[i].type === 'image' || blocs[i].type === 'lien-image' || blocs[i].vignette !== '') {
 				let image
@@ -56,12 +75,21 @@ function genererXML (hote, id, titre, lien, blocs, admin, langue) {
 				} else if (!verifierURL(image, ['https', 'http']) && image.substring(0, 5) === '/img/') {
 					image = hote + image
 				}
-				rss += '      <media:thumbnail url="' + image + '" />\n'
-				rss += '      <media:content url="' + image + '" medium="image" />\n'
+				rss += '      <media:thumbnail url="' + echapperXML(image) + '" />\n'
+				rss += '      <media:content url="' + echapperXML(image) + '" medium="image" />\n'
 			}
-			rss += '      <pubDate>' + new Date(blocs[i].date).toUTCString() + '</pubDate>\n'
-			rss += '      <guid>' + lien + '?caps=' + blocs[i].bloc.replace('bloc-id-', '') + '</guid>\n'
+			try {
+				const date = new Date(blocs[i].date)
+				if (!isNaN(date.getTime())) {
+					rss += '      <pubDate>' + date.toUTCString() + '</pubDate>\n'
+				}
+			} catch (err) {
+				console.error(err.message)
+			}
+			rss += '      <guid>' + echapperXML(lien) + '?caps=' + blocs[i].bloc.replace('bloc-id-', '') + '</guid>\n'
 			rss += '    </item>\n'
+		} catch (err) {
+			console.error(err.message)
 		}
 	}
 	rss += '  </channel>\n'

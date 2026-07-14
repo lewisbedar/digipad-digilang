@@ -4,99 +4,99 @@
 			<span id="logo" />
 		</span>
 		<span id="titre" v-if="!recherche">{{ pad.titre }}</span>
-		<div id="conteneur-header-droit" role="button" :tabindex="definirTabIndex()" :title="$t('utilisateursConnectes')" :aria-label="$t('utilisateursConnectes')" @click="afficherUtilisateurs" @keydown.enter.space.prevent="afficherUtilisateurs" v-if="!pad.listeUtilisateurs || (pad.listeUtilisateurs && pad.listeUtilisateurs === 'activee')">
+		<button type="button" id="conteneur-header-droit" :disabled="disabled" :title="$t('utilisateursConnectes')" :aria-label="$t('utilisateursConnectes')" @click="afficherUtilisateurs" v-if="!pad.listeUtilisateurs || (pad.listeUtilisateurs && pad.listeUtilisateurs === 'activee')">
 			<i class="material-icons" aria-hidden="true">people_alt</i>
 			<span class="badge">{{ utilisateurs.length }}</span>
-		</div>
+		</button>
 	</header>
 
 	<div id="champ-recherche" role="search" :aria-label="$t('rechercherCapsules')" v-if="recherche">
-		<input type="text" maxlength="48" :placeholder="$t('rechercherCapsules')" @input="requete = $event.target.value">
-		<span role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="recherche = false" @keydown.enter.space.prevent="recherche = false"><i class="material-icons" aria-hidden="true">close</i></span>
+		<input type="text" maxlength="48" :disabled="disabled" :placeholder="$t('rechercherCapsules')" @input="requete = $event.target.value">
+		<button type="button" :disabled="disabled" :title="$t('fermer')" :aria-label="$t('fermer')" @click="recherche = false"><i class="material-icons" aria-hidden="true">close</i></button>
 	</div>
 
 	<nav id="nav">
-		<span id="compte" role="button" :tabindex="definirTabIndex()" :title="$t('compteUtilisateur')" :aria-label="$t('compteUtilisateur')" @click="allerCompte" @keydown.enter.space.prevent="allerCompte" v-if="statut === 'utilisateur' && !integration"><i class="material-icons" aria-hidden="true">arrow_back</i></span>
-		<span id="accueil" role="button" :tabindex="definirTabIndex()" :title="$t('accueil')" :aria-label="$t('accueil')" @click="allerAccueil" @keydown.enter.space.prevent="allerAccueil" v-else-if="!integration"><i class="material-icons" aria-hidden="true">home</i></span>
-		<span id="recherche" role="button" :tabindex="definirTabIndex()" :title="$t('recherche')" :aria-label="$t('recherche')" :class="{'active': recherche, 'desactive': action === 'organiser'}" @click="gererRecherche" @keydown.enter.space.prevent="gererRecherche"><i class="material-icons" aria-hidden="true">search</i></span>
-		<span id="activite" role="button" :tabindex="definirTabIndex()" :title="$t('activitePad')" :aria-label="$t('activitePad')" @click="afficherActivite" @keydown.enter.space.prevent="afficherActivite" v-if="accesAutorise && (!pad.registreActivite || (pad.registreActivite && pad.registreActivite === 'active'))"><i class="material-icons" aria-hidden="true">schedule</i></span>
-		<span id="chat" role="button" :tabindex="definirTabIndex()" :title="$t('conversation')" :aria-label="$t('conversation')" @click="afficherChat" @keydown.enter.space.prevent="afficherChat" v-if="accesAutorise && (!pad.conversation || (pad.conversation && pad.conversation === 'activee'))">
+		<button type="button" id="compte" :disabled="disabled" :title="$t('compteUtilisateur')" :aria-label="$t('compteUtilisateur')" @click="allerCompte" v-if="statut === 'utilisateur' && !integration"><i class="material-icons" aria-hidden="true">arrow_back</i></button>
+		<button type="button" id="accueil" :disabled="disabled" :title="$t('accueil')" :aria-label="$t('accueil')" @click="allerAccueil" v-else-if="!integration"><i class="material-icons" aria-hidden="true">home</i></button>
+		<button type="button" id="recherche" :disabled="disabled" :title="$t('recherche')" :aria-label="$t('recherche')" :class="{'active': recherche, 'desactive': action === 'organiser'}" @click="gererRecherche"><i class="material-icons" aria-hidden="true">search</i></button>
+		<button type="button" id="activite" :disabled="disabled" :title="$t('activitePad')" :aria-label="$t('activitePad')" @click="afficherActivite" v-if="accesAutorise && (!pad.registreActivite || (pad.registreActivite && pad.registreActivite === 'active'))"><i class="material-icons" aria-hidden="true">schedule</i></button>
+		<button type="button" id="chat" :disabled="disabled" :title="$t('conversation')" :aria-label="$t('conversation')" @click="afficherChat" v-if="accesAutorise && (!pad.conversation || (pad.conversation && pad.conversation === 'activee'))">
 			<i class="material-icons" aria-hidden="true">chat</i>
 			<span class="badge" v-if="nouveauxMessagesChat > 0">{{ nouveauxMessagesChat }}</span>
-		</span>
-		<span id="motdepasse" role="button" :tabindex="definirTabIndex()" :title="$t('motDePassePad')" :aria-label="$t('motDePassePad')" @click="afficherModaleMotDePasse" @keydown.enter.space.prevent="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse') && !admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">vpn_key</i></span>
-		<span id="options" role="button" :tabindex="definirTabIndex()" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" @keydown.enter.space.prevent="afficherOptions" v-if="admin"><i class="material-icons" aria-hidden="true">settings</i></span>
-		<span id="options" role="button" :tabindex="definirTabIndex()" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" @keydown.enter.space.prevent="afficherOptions" v-else-if="!admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">language</i></span>
-		<span id="organisation" role="button" :tabindex="definirTabIndex()" :title="$t('modeOrganiser')" :aria-label="$t('modeOrganiser')" :class="{'desactive': definirClasseOrganiser() === false}" @click="activerModeOrganiser" @keydown.enter.space.prevent="activerModeOrganiser" v-if="admin && action !== 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></span>
-		<span id="organisation" class="actif" role="button" :tabindex="definirTabIndex()" :title="$t('finModeOrganiser')" :aria-label="$t('finModeOrganiser')" @click="desactiverModeOrganiser" @keydown.enter.space.prevent="desactiverModeOrganiser" v-else-if="admin && action === 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></span>
-		<span id="diaporama" role="button" :tabindex="definirTabIndex()" :title="$t('modeDiaporama')" :aria-label="$t('modeDiaporama')" :class="{'desactive': blocs.length === 0}" @click="afficherModaleDiaporama" @keydown.enter.space.prevent="afficherModaleDiaporama"><i class="material-icons" aria-hidden="true">slideshow</i></span>
-		<span id="deconnexion" role="button" :tabindex="definirTabIndex()" :title="$t('deconnexion')" :aria-label="$t('deconnexion')" @click="deconnexion" @keydown.enter.space.prevent="deconnexion" v-if="statut === 'utilisateur'"><i class="material-icons" aria-hidden="true">power_settings_new</i></span>
-		<span id="deconnexion" role="button" :tabindex="definirTabIndex()" :title="$t('seDeconnecterPad')" :aria-label="$t('seDeconnecterPad')" @click="afficherSeDeconnecterPad" @keydown.enter.space.prevent="afficherSeDeconnecterPad" v-else-if="admin"><i class="material-icons" aria-hidden="true">power_settings_new</i></span>
+		</button>
+		<button type="button" id="motdepasse" :disabled="disabled" :title="$t('motDePassePad')" :aria-label="$t('motDePassePad')" @click="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse') && !admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">vpn_key</i></button>
+		<button type="button" id="options" :disabled="disabled" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" v-if="admin"><i class="material-icons" aria-hidden="true">settings</i></button>
+		<button type="button" id="options" :disabled="disabled" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" v-else-if="!admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">language</i></button>
+		<button type="button" id="organisation" :disabled="disabled" :title="$t('modeOrganiser')" :aria-label="$t('modeOrganiser')" :class="{'desactive': definirClasseOrganiser() === false}" @click="activerModeOrganiser" v-if="admin && action !== 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></button>
+		<button type="button" id="organisation" class="actif" :disabled="disabled" :title="$t('finModeOrganiser')" :aria-label="$t('finModeOrganiser')" @click="desactiverModeOrganiser" v-else-if="admin && action === 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></button>
+		<button type="button" id="diaporama" :disabled="disabled" :title="$t('modeDiaporama')" :aria-label="$t('modeDiaporama')" :class="{'desactive': blocs.length === 0}" @click="afficherModaleDiaporama"><i class="material-icons" aria-hidden="true">slideshow</i></button>
+		<button type="button" id="deconnexion" :disabled="disabled" :title="$t('deconnexion')" :aria-label="$t('deconnexion')" @click="deconnexion" v-if="statut === 'utilisateur'"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
+		<button type="button" id="deconnexion" :disabled="disabled" :title="$t('seDeconnecterPad')" :aria-label="$t('seDeconnecterPad')" @click="afficherSeDeconnecterPad" v-else-if="admin"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
 	</nav>
 
-	<div id="menu-activite" class="menu gauche" v-if="menu === 'activite' && pad.registreActivite === 'active'">
+	<div id="menu-activite" class="menu gauche" role="menu" :aria-label="$t('activitePad')" @keydown="gererClavierMenu($event, 'menu-activite')" v-if="menu === 'activite' && pad.registreActivite === 'active'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('activitePad') }}</span>
 			<span class="action">
-				<span class="reinitialiser" role="button" :tabindex="definirTabIndex()" :title="$t('reinitialiserActivite')" :aria-label="$t('reinitialiserActivite')" @click="afficherReinitialiserActivite" @keydown.enter.space.prevent="afficherReinitialiserActivite" v-if="admin && activite.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></span>
-				<span class="fermer" role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu" @keydown.enter.space.prevent="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="reinitialiser" role="menuitem" tabindex="-1" :title="$t('reinitialiserActivite')" :aria-label="$t('reinitialiserActivite')" @click="afficherReinitialiserActivite" v-if="admin && activite.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
+				<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 			</span>
 		</div>
 		<div class="contenu ascenseur">
 			<ul id="entrees">
 				<template v-for="(entree, indexEntree) in activite">
 					<li v-if="entree.type === 'bloc-ajoute'" :data-bloc="entree.bloc" :key="'bloc-ajoute_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCreeCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aCreeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCreeCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aCreeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-valide'" :data-bloc="entree.bloc" :key="'bloc-valide_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aValideCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aValideUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aValideCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aValideUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-supprime'" :data-bloc="entree.bloc" :key="'bloc-supprime_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aSupprimeCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aSupprimeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aSupprimeCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aSupprimeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-modifie'" :data-bloc="entree.bloc" :key="'bloc-modifie_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aModifieCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aModifieUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aModifieCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aModifieUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-commente'" :data-bloc="entree.bloc" :key="'bloc-commente_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCommenteCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aCommenteUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCommenteCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aCommenteUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-evalue'" :data-bloc="entree.bloc" :key="'bloc-evalue_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aEvalueCapsule', { titre: entree.titre })" /><span v-else v-html="$t('aEvalueUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aEvalueCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aEvalueUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-ajoutee' && pad.affichage === 'colonnes'" :key="'colonne-ajoutee_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aAjouteColonne', { titre: entree.titre })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aAjouteColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-supprimee' && pad.affichage === 'colonnes'" :key="'colonne-supprimee_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aSupprimeColonne', { titre: entree.titre })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aSupprimeColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-deplacee' && pad.affichage === 'colonnes'" :key="'colonne-deplacee_' + indexEntree">
-						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aDeplaceColonne', { titre: entree.titre })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aDeplaceColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)" @keydown.enter.space.prevent="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 				</template>
@@ -104,12 +104,12 @@
 		</div>
 	</div>
 
-	<div id="menu-conversation" class="menu gauche" v-else-if="menu === 'chat' && pad.conversation === 'activee'">
+	<div id="menu-conversation" class="menu gauche" role="menu" :aria-label="$t('conversation')" @keydown="gererClavierMenu($event, 'menu-conversation')" v-else-if="menu === 'chat' && pad.conversation === 'activee'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('conversation') }}</span>
 			<span class="action">
-				<span class="reinitialiser" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerMessages')" :aria-label="$t('supprimerMessages')" @click="afficherReinitialiserMessages" @keydown.enter.space.prevent="afficherReinitialiserMessages" v-if="admin && messagesChat.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></span>
-				<span class="fermer" role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu" @keydown.enter.space.prevent="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="reinitialiser" role="menuitem" tabindex="-1" :title="$t('supprimerMessages')" :aria-label="$t('supprimerMessages')" @click="afficherReinitialiserMessages" v-if="admin && messagesChat.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
+				<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 			</span>
 		</div>
 		<div class="contenu ascenseur">
@@ -117,41 +117,42 @@
 				<li v-for="(messageConversation, indexMessageConversation) in messagesChat" :key="'conversation_' + indexMessageConversation"><span>{{ definirNom(messageConversation) }}</span>{{ messageConversation.texte }}</li>
 			</ul>
 			<div id="ecrire-message">
-				<input type="text" :value="messageChat" @input="messageChat = $event.target.value" autocomplete="off" @keydown.enter="envoyerMessage">
-				<button :tabindex="definirTabIndex()" @click="envoyerMessage"><i class="material-icons" aria-hidden="true">send</i></button>
+				<input type="text" role="menuitem" :value="messageChat" @input="messageChat = $event.target.value" autocomplete="off" @keydown.enter.prevent="envoyerMessage">
+				<button type="button" role="menuitem" tabindex="-1" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerMessage"><i class="material-icons" aria-hidden="true">send</i></button>
 			</div>
 		</div>
 	</div>
 
-	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('parametresPad')" v-else-if="menu === 'options' && admin">
+	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('parametresPad')" @keydown="gererClavierMenu($event, 'menu-options')" v-else-if="menu === 'options' && admin">
 		<div class="en-tete">
 			<span class="titre">{{ $t('parametresPad') }}</span>
-			<span class="fermer" role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions" @keydown.enter.space.prevent="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></span>
+			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<div class="conteneur">
 				<label for="titre-pad">{{ $t('titre') }}</label>
-				<input id="titre-pad"  type="text" :disabled="viaDigidrive" :value="pad.titre" @keydown.enter="modifierTitre">
+				<input id="titre-pad" type="text" disabled :value="pad.titre" v-if="viaDigidrive">
+				<input id="titre-pad" type="text" role="menuitem" tabindex="-1" :value="pad.titre" @keydown.enter="modifierTitre" v-else>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="!viaDigidrive">
-				<span class="bouton-vert" role="button" :tabindex="definirTabIndex()" @click="modifierTitre" @keydown.enter.space.prevent="modifierTitre">{{ $t('enregistrer') }}</span>
+				<button type="button" class="bouton-vert" role="menuitem" tabindex="-1" @click="modifierTitre">{{ $t('enregistrer') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
-				<span class="bouton-bleu" role="button" :tabindex="definirTabIndex()" @click="afficherModaleModifierMotDePasse" @keydown.enter.space.prevent="afficherModaleModifierMotDePasse">{{ $t('modifierMotDePasse') }}</span>
+				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleModifierMotDePasse">{{ $t('modifierMotDePasse') }}</button>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('lienEtCodeQR') }}</label>
 				<div id="copier-lien">
 					<input type="text" disabled :value="hote + '/p/' + pad.id + '/' + pad.token">
-					<span class="icone lien" role="button" :tabindex="definirTabIndex()" :title="$t('copierLien')" :aria-label="$t('copierLien')" @keydown.enter.space.prevent="copierLien"><i class="material-icons" aria-hidden="true">content_copy</i></span>
-					<span class="icone codeqr" role="button" :tabindex="definirTabIndex()" :title="$t('afficherCodeQR')" :aria-label="$t('afficherCodeQR')" @click="afficherCodeQR" @keydown.enter.space.prevent="afficherCodeQR"><i class="material-icons" aria-hidden="true">qr_code</i></span>
+					<button type="button" class="icone lien" role="menuitem" tabindex="-1" :title="$t('copierLien')" :aria-label="$t('copierLien')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+					<button type="button" class="icone codeqr" role="menuitem" tabindex="-1" :title="$t('afficherCodeQR')" :aria-label="$t('afficherCodeQR')" @click="afficherCodeQR"><i class="material-icons" aria-hidden="true">qr_code</i></button>
 				</div>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('codeIntegration') }}</label>
 				<div id="copier-code">
 					<input type="text" disabled :value="'<iframe src=&quot;' + hote + '/p/' + pad.id + '/' + pad.token + '&quot; frameborder=&quot;0&quot; width=&quot;100%&quot; height=&quot;500&quot; allow=&quot;autoplay; fullscreen&quot;></iframe>'">
-					<span class="icone lien" role="button" :tabindex="definirTabIndex()" :title="$t('copierCode')" :aria-label="$t('copierCode')" @keydown.enter.space.prevent="copierIframe"><i class="material-icons" aria-hidden="true">content_copy</i></span>
+					<button type="button" class="icone lien" role="menuitem" tabindex="-1" :title="$t('copierCode')" :aria-label="$t('copierCode')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 				</div>
 			</div>
 			<div class="conteneur" v-if="pad.vues && pad.vues > 0">
@@ -161,29 +162,29 @@
 			<div class="conteneur">
 				<label>{{ $t('langue') }}</label>
 				<div id="langues">
-					<span role="button" :tabindex="definirTabIndex()" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter.space.prevent="modifierLangue('fr')">FR</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter.space.prevent="modifierLangue('es')">ES</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter.space.prevent="modifierLangue('it')">IT</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter.space.prevent="modifierLangue('de')">DE</span>
-					<span role="button" :tabindex="definirTabIndex()" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter.space.prevent="modifierLangue('en')">EN</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter.space.prevent="modifierLangue('hr')">HR</span>
+					<button type="button" role="menuitem" tabindex="-1" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+					<button type="button" role="menuitem" tabindex="-1" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut !== 'auteur'">
 				<label>{{ $t('adminsPad') }}</label>
-				<span class="bouton-bleu" role="button" :tabindex="definirTabIndex()" @click="ouvrirModaleAdmins" @keydown.enter.space.prevent="ouvrirModaleAdmins">{{ $t('gererAdmins') }}</span>
+				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="ouvrirModaleAdmins">{{ $t('gererAdmins') }}</button>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('acces') }}</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('acces') + ' ' + $t('public')" @keydown.enter.space.prevent="activerInput('acces-public')">{{ $t('public') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('public')" @keydown.enter.space.prevent="activerInput('acces-public')">{{ $t('public') }}
 					<input id="acces-public" type="radio" name="acces" :checked="pad.acces === 'public'" @change="modifierAcces('public')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('acces') + ' ' + $t('prive')" @keydown.enter.space.prevent="activerInput('acces-prive')" v-if="statut === 'utilisateur'">{{ $t('prive') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('prive')" @keydown.enter.space.prevent="activerInput('acces-prive')" v-if="statut === 'utilisateur'">{{ $t('prive') }}
 					<input id="acces-prive" type="radio" name="acces" :checked="pad.acces === 'prive'" @change="modifierAcces('prive')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('acces') + ' ' + $t('protege')" @keydown.enter.space.prevent="activerInput('acces-code')">{{ $t('protege') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('protege')" @keydown.enter.space.prevent="activerInput('acces-code')">{{ $t('protege') }}
 					<input id="acces-code" type="radio" name="acces" :checked="pad.acces === 'code'" @change="modifierAcces('code')">
 					<span class="coche" />
 				</label>
@@ -191,69 +192,75 @@
 			<div class="conteneur" v-if="pad.acces === 'code'">
 				<label for="champ-code-acces">{{ $t('codeAcces') }}</label>
 				<div id="code-acces">
-					<input id="champ-code-acces" type="text" maxlength="18" :disabled="modificationCode === false" :value="pad.code" v-if="codeVisible">
-					<input id="champ-code-acces" type="password" :disabled="modificationCode === false" :value="pad.code" v-else>
-					<span class="icone" role="button" :tabindex="definirTabIndex()" :title="$t('modifierCode')" :aria-label="$t('modifierCode')" @click="afficherModifierCodeAcces" @keydown.enter.space.prevent="afficherModifierCodeAcces" v-if="!modificationCode"><i class="material-icons" aria-hidden="true">edit</i></span>
-					<span class="icone" role="button" :tabindex="definirTabIndex()" :title="$t('annulerModifierCode')" :aria-label="$t('annulerModifierCode')" @click="annulerModifierCodeAcces" @keydown.enter.space.prevent="annulerModifierCodeAcces" v-else><i class="material-icons" aria-hidden="true">edit_off</i></span>
-					<span class="icone" role="button" :tabindex="definirTabIndex()" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" @keydown.enter.space.prevent="masquerCodeAcces" v-if="codeVisible"><i class="material-icons">visibility_off</i></span>
-					<span class="icone" role="button" :tabindex="definirTabIndex()" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" @keydown.enter.space.prevent="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></span>
+					<template v-if="modificationCode === false">
+						<input id="champ-code-acces-texte" type="text" maxlength="18" disabled :value="pad.code" v-if="codeVisible">
+						<input id="champ-code-acces" type="password" disabled :value="pad.code" v-else>
+					</template>
+					<template v-else>
+						<input id="champ-code-acces-texte" type="text" role="menuitem" tabindex="-1" maxlength="18" :value="pad.code" v-if="codeVisible">
+						<input id="champ-code-acces" type="password" role="menuitem" tabindex="-1" :value="pad.code" v-else>
+					</template>
+					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('modifierCode')" :aria-label="$t('modifierCode')" @click="afficherModifierCodeAcces" v-if="!modificationCode"><i class="material-icons" aria-hidden="true">edit</i></button>
+					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('annulerModifierCode')" :aria-label="$t('annulerModifierCode')" @click="annulerModifierCodeAcces" v-else><i class="material-icons" aria-hidden="true">edit_off</i></button>
+					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
+					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="modificationCode">
-				<span class="bouton-vert" role="button" :tabindex="definirTabIndex()" @click="modifierCodeAcces" @keydown.enter.space.prevent="modifierCodeAcces">{{ $t('enregistrer') }}</span>
+				<button type="button" class="bouton-vert" role="menuitem" tabindex="-1" @click="modifierCodeAcces">{{ $t('enregistrer') }}</button>
 			</div>
 			<div class="conteneur" v-if="pad.acces !== 'prive'">
 				<label>{{ $t('contributions') }}</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('contributions') + ' ' + $t('modifiables')" @keydown.enter.space.prevent="activerInput('contributions-modifiables')">{{ $t('modifiables') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('modifiables')" @keydown.enter.space.prevent="activerInput('contributions-modifiables')">{{ $t('modifiables') }}
 					<input id="contributions-modifiables" type="radio" name="contributions" :checked="pad.contributions === 'modifiables'" @change="modifierContributions('modifiables')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('contributions') + ' ' + $t('ouvertes')" @keydown.enter.space.prevent="activerInput('contributions-ouvertes')">{{ $t('ouvertes') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('ouvertes')" @keydown.enter.space.prevent="activerInput('contributions-ouvertes')">{{ $t('ouvertes') }}
 					<input id="contributions-ouvertes" type="radio" name="contributions" :checked="pad.contributions === 'ouvertes'" @change="modifierContributions('ouvertes')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('contributions') + ' ' + $t('moderees')" @keydown.enter.space.prevent="activerInput('contributions-moderees')">{{ $t('moderees') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('moderees')" @keydown.enter.space.prevent="activerInput('contributions-moderees')">{{ $t('moderees') }}
 					<input id="contributions-moderees" type="radio" name="contributions" :checked="pad.contributions === 'moderees'" @change="modifierContributions('moderees')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('contributions') + ' ' + $t('fermees')" @keydown.enter.space.prevent="activerInput('contributions-fermees')">{{ $t('fermees') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('fermees')" @keydown.enter.space.prevent="activerInput('contributions-fermees')">{{ $t('fermees') }}
 					<input id="contributions-fermees" type="radio" name="contributions" :checked="pad.contributions === 'fermees'" @change="modifierContributions('fermees')">
 					<span class="coche" />
 				</label>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('affichage') }}</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('affichage') + ' ' + $t('mur')" @keydown.enter.space.prevent="activerInput('affichage-mur')">{{ $t('mur') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('mur')" @keydown.enter.space.prevent="activerInput('affichage-mur')">{{ $t('mur') }}
 					<input id="affichage-mur" type="radio" name="affichage" :checked="pad.affichage === 'mur'" @change="modifierAffichage('mur')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('affichage') + ' ' + $t('fluxVertical')" @keydown.enter.space.prevent="activerInput('affichage-flux')">{{ $t('fluxVertical') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('fluxVertical')" @keydown.enter.space.prevent="activerInput('affichage-flux')">{{ $t('fluxVertical') }}
 					<input id="affichage-flux" type="radio" name="affichage" :checked="pad.affichage === 'flux-vertical'" @change="modifierAffichage('flux-vertical')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('affichage') + ' ' + $t('colonnes')" @keydown.enter.space.prevent="activerInput('affichage-colonnes')">{{ $t('colonnes') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('colonnes')" @keydown.enter.space.prevent="activerInput('affichage-colonnes')">{{ $t('colonnes') }}
 					<input id="affichage-colonnes" type="radio" name="affichage" :checked="pad.affichage === 'colonnes'" @change="modifierAffichage('colonnes')">
 					<span class="coche" />
 				</label>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('ordreCapsules') }}</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('ordreCapsules') + ' ' + $t('croissant')" @keydown.enter.space.prevent="activerInput('ordre-croissant')">{{ $t('croissant') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('ordreCapsules') + ' ' + $t('croissant')" @keydown.enter.space.prevent="activerInput('ordre-croissant')">{{ $t('croissant') }}
 					<input id="ordre-croissant" type="radio" name="ordre" :checked="pad.ordre === 'croissant'" @change="modifierOrdre('croissant')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('ordreCapsules') + ' ' + $t('decroissant')" @keydown.enter.space.prevent="activerInput('ordre-decroissant')">{{ $t('decroissant') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('ordreCapsules') + ' ' + $t('decroissant')" @keydown.enter.space.prevent="activerInput('ordre-decroissant')">{{ $t('decroissant') }}
 					<input id="ordre-decroissant" type="radio" name="ordre" :checked="pad.ordre === 'decroissant'" @change="modifierOrdre('decroissant')">
 					<span class="coche" />
 				</label>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('largeurCapsules') }}</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('largeurCapsules') + ' ' + $t('normale')" @keydown.enter.space.prevent="activerInput('largeur-normale')">{{ $t('normale') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('largeurCapsules') + ' ' + $t('normale')" @keydown.enter.space.prevent="activerInput('largeur-normale')">{{ $t('normale') }}
 					<input id="largeur-normale" type="radio" name="largeur" :checked="pad.largeur === 'normale'" @change="modifierLargeur('normale')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" :tabindex="definirTabIndex()" :aria-label="$t('largeurCapsules') + ' ' + $t('large')" @keydown.enter.space.prevent="activerInput('largeur-large')">{{ $t('large') }}
+				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('largeurCapsules') + ' ' + $t('large')" @keydown.enter.space.prevent="activerInput('largeur-large')">{{ $t('large') }}
 					<input id="largeur-large" type="radio" name="largeur" :checked="pad.largeur === 'large'" @change="modifierLargeur('large')">
 					<span class="coche" />
 				</label>
@@ -261,17 +268,17 @@
 			<div class="conteneur fond">
 				<label>{{ $t('arrierePlan') }}</label>
 				<div class="fonds">
-					<span role="button" :tabindex="definirTabIndex()" :title="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" :aria-label="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" v-for="(imageFond, indexImageFond) in fonds" @click="modifierFond(imageFond)" @keydown.enter.space.prevent="modifierFond(imageFond)" :key="'fond_' + indexImageFond">
+					<button type="button" role="menuitem" tabindex="-1" :title="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" :aria-label="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" v-for="(imageFond, indexImageFond) in fonds" @click="modifierFond(imageFond)" :key="'fond_' + indexImageFond">
 						<img :src="'/img/vignettes/' + imageFond" :alt="'Fond' + (indexImageFond + 1)">
-					</span>
+					</button>
 					<span class="couleur-personnalisee">
-						<input type="color" :value="pad.fond" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-if="pad.hasOwnProperty('fond') && pad.fond.substring(0, 1) === '#'">
-						<input type="color" value="#ffffff" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-else>
+						<input type="color" role="menuitem" tabindex="-1" :value="pad.fond" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-if="pad.hasOwnProperty('fond') && pad.fond.substring(0, 1) === '#'">
+						<input type="color" role="menuitem" tabindex="-1" value="#ffffff" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-else>
 					</span>
 				</div>
 			</div>
 			<div class="conteneur">
-				<label for="televerser-fond" class="bouton-bleu" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('televerser-fond')" v-if="menu === 'options' && progressionFond === 0">{{ $t('televerserImageFond') }}</label>
+				<label for="televerser-fond" class="bouton-bleu" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('televerser-fond')" v-if="menu === 'options' && progressionFond === 0">{{ $t('televerserImageFond') }}</label>
 				<input id="televerser-fond" type="file" style="display: none" accept=".jpg, .jpeg, .png, .gif" @change="ajouterFond">
 				<div class="conteneur-chargement progression" v-if="menu === 'options' && progressionFond > 0">
 					<progress class="barre-progression" max="100" :value="progressionFond" />
@@ -279,7 +286,7 @@
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'">
 					<span>{{ $t('repeterImageFond') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
 						<input id="parametre-fond-repete" type="checkbox" :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
 						<span class="barre" />
 					</label>
@@ -289,14 +296,14 @@
 				<label>{{ $t('onglets') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('activitePad') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-registre-activite')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-registre-activite')">
 						<input id="parametre-registre-activite" type="checkbox" :checked="!pad.registreActivite || pad.registreActivite === 'active'" @change="modifierActivite">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('conversation') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-conversation')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-conversation')">
 						<input id="parametre-conversation" type="checkbox" :checked="!pad.conversation || pad.conversation === 'activee'" @change="modifierConversation">
 						<span class="barre" />
 					</label>
@@ -306,14 +313,14 @@
 				<label>{{ $t('utilisateurs') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('utilisateursConnectes') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-liste-utilisateurs')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-liste-utilisateurs')">
 						<input id="parametre-liste-utilisateurs" type="checkbox" :checked="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'" @change="modifierListeUtilisateurs">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'">
 					<span>{{ $t('editionNom') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-edition-nom')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-edition-nom')">
 						<input id="parametre-edition-nom" type="checkbox" :checked="pad.editionNom === 'activee'" @change="modifierEditionNom">
 						<span class="barre" />
 					</label>
@@ -323,92 +330,92 @@
 				<label>{{ $t('capsules') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('fichiers') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-fichiers')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-fichiers')">
 						<input id="parametre-fichiers" type="checkbox" :checked="pad.fichiers === 'actives'" @change="modifierFichiers">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('enregistrementsAudio') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-enregistrements')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-enregistrements')">
 						<input id="parametre-enregistrements" type="checkbox" :checked="pad.enregistrements === 'actives'" @change="modifierEnregistrements">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('liens') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-liens')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-liens')">
 						<input id="parametre-liens" type="checkbox" :checked="pad.liens === 'actives'" @change="modifierLiens">
 						<span class="barre" />
 					</label>
 				</div>
-				<div class="conteneur-interrupteur" v-if="etherpad !== '' && etherpadApi !== ''">
+				<div class="conteneur-interrupteur" v-if="etherpad !== ''">
 					<span>{{ $t('documentsCollaboratifs') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-documents')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-documents')">
 						<input id="parametre-documents" type="checkbox" :checked="pad.documents === 'actives'" @change="modifierDocuments">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('commentaires') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
 						<input id="parametre-commentaires" type="checkbox" :checked="pad.commentaires === 'actives'" @change="modifierCommentaires">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('evaluations') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
 						<input id="parametre-evaluations" type="checkbox" :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="statut === 'utilisateur' || viaDigidrive">
 					<span>{{ $t('copieCapsule') }}</span>
-					<label class="bouton-interrupteur" :tabindex="definirTabIndex()" @keydown.enter.space.prevent="activerInput('parametre-copie-bloc')">
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-copie-bloc')">
 						<input id="parametre-copie-bloc" type="checkbox" :checked="pad.copieBloc === 'activee'" @change="modifierCopieBloc">
 						<span class="barre" />
 					</label>
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
-				<span class="bouton-bleu" role="button" :tabindex="definirTabIndex()" @click="afficherExporterPad" @keydown.enter.space.prevent="afficherExporterPad">{{ $t('exporterPad') }}</span>
+				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad">{{ $t('exporterPad') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
-				<span class="bouton-rouge" role="button" :tabindex="definirTabIndex()" @click="afficherSupprimerPad" @keydown.enter.space.prevent="afficherSupprimerPad">{{ $t('supprimerPad') }}</span>
+				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherSupprimerPad">{{ $t('supprimerPad') }}</button>
 			</div>
 		</div>
 	</div>
-	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('languePad')" v-else-if="menu === 'options' && !admin && statut !== 'utilisateur'">
+	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('languePad')" @keydown="gererClavierMenu($event, 'menu-options')" v-else-if="menu === 'options' && !admin && statut !== 'utilisateur'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('languePad') }}</span>
-			<span class="fermer" role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions" @keydown.enter.space.prevent="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></span>
+			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<div class="conteneur">
 				<div id="langues">
-					<span role="button" :tabindex="definirTabIndex()" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter.space.prevent="modifierLangue('fr')">FR</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter.space.prevent="modifierLangue('es')">ES</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter.space.prevent="modifierLangue('it')">IT</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter.space.prevent="modifierLangue('de')">DE</span>
-					<span role="button" :tabindex="definirTabIndex()" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter.space.prevent="modifierLangue('en')">EN</span>
-					<span role="button" :tabindex="definirTabIndex()" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter.space.prevent="modifierLangue('hr')">HR</span>
+					<button type="button" role="menuitem" tabindex="-1" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+					<button type="button" role="menuitem" tabindex="-1" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+					<button type="button" role="menuitem" tabindex="-1" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div id="menu-utilisateurs" class="menu droite" v-else-if="menu === 'utilisateurs' && pad.listeUtilisateurs === 'activee'">
+	<div id="menu-utilisateurs" class="menu droite" role="menu" :aria-label="$t('utilisateursConnectes')" @keydown="gererClavierMenu($event, 'menu-utilisateurs')" v-else-if="menu === 'utilisateurs' && pad.listeUtilisateurs === 'activee'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('utilisateursConnectes') }}</span>
-			<span class="fermer" role="button" :tabindex="definirTabIndex()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu" @keydown.enter.space.prevent="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></span>
+			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<ul id="utilisateurs">
 				<template v-for="(utilisateurConnecte, indexUtilisateurConnecte) in utilisateurs">
 					<li class="moi" v-if="utilisateurConnecte.identifiant === identifiant" :key="'utilisateur_moi_' + indexUtilisateurConnecte">
 						<span class="utilisateur" v-if="statut === 'utilisateur'">{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span>
-						<span class="utilisateur invite edition" role="button" :tabindex="definirTabIndex()" :title="$t('modifierNom')" :aria-label="$t('modifierNom')" @click="afficherModifierNom" @keydown.enter.space.prevent="afficherModifierNom" v-else-if="statut !== 'utilisateur' && pad.editionNom && pad.editionNom === 'activee'"><span>{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span><span class="icone" aria-hidden="true"><i class="material-icons">edit</i></span></span>
+						<button type="button" class="utilisateur invite edition" role="menuitem" tabindex="-1" :title="$t('modifierNom')" :aria-label="$t('modifierNom')" @click="afficherModifierNom" v-else-if="statut !== 'utilisateur' && pad.editionNom && pad.editionNom === 'activee'"><span>{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span><span class="icone" aria-hidden="true"><i class="material-icons">edit</i></span></button>
 						<span class="utilisateur invite" v-else-if="statut !== 'utilisateur' && (!pad.editionNom || (pad.editionNom && pad.editionNom === 'desactivee'))">{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span>
 					</li>
 					<li v-else :key="'utilisateur_' + indexUtilisateurConnecte">
@@ -422,26 +429,26 @@
 	<div id="pad" aria-live="polite" :class="{'fond-personnalise': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active', 'organiser': action === 'organiser'}" :style="definirFond(pad.fond)" v-if="Object.keys(pad).length > 0 && (pad.acces !== 'code' || (pad.acces === 'code' && accesAutorise))">
 		<!-- Affichage mur // sans recherche -->
 		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-if="pad.affichage === 'mur' && action !== 'organiser' && !recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :indexCol="0" :tabindex="definirTabIndex()" :action="action" />
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage mur // avec recherche -->
 		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-else-if="pad.affichage === 'mur' && action !== 'organiser' && recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :indexCol="0" :tabindex="definirTabIndex()" :action="action" />
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage flux vertical // sans recherche -->
 		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && !recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="simple" :viaDigidrive="viaDigidrive" :indexCol="0" :tabindex="definirTabIndex()" :action="action" />
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage flux vertical // avec recherche -->
 		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="simple" :viaDigidrive="viaDigidrive" :indexCol="0" :tabindex="definirTabIndex()" :action="action" />
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage colonne // sans recherche -->
@@ -453,44 +460,44 @@
 							<span>{{ col }}</span>
 						</div>
 						<div class="menu-colonne" v-if="admin">
-							<span class="bouton" role="button" :tabindex="definirTabIndex()" :title="$t('masquerColonne')" :aria-label="$t('masquerColonne')" @click="masquerColonne(indexCol)" @keydown.enter.space.prevent="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i></span>
-							<span class="bouton" role="button" :tabindex="definirTabIndex()" :title="$t('afficherColonne')" :aria-label="$t('afficherColonne')" @click="afficherColonne(indexCol)" @keydown.enter.space.prevent="afficherColonne(indexCol)" v-else-if="pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility</i></span>
-							<span class="bouton" role="button" :tabindex="definirTabIndex()" :title="$t('modifierColonne')" :aria-label="$t('modifierColonne')" @click="ouvrirModaleColonne('edition', indexCol)" @keydown.enter.space.prevent="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i></span>
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerColonne')" :aria-label="$t('supprimerColonne')" @click="afficherSupprimerColonne(indexCol)" @keydown.enter.space.prevent="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i></span>
+							<button type="button" class="bouton" :disabled="disabled" :title="$t('masquerColonne')" :aria-label="$t('masquerColonne')" @click="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
+							<button type="button" class="bouton" :disabled="disabled" :title="$t('afficherColonne')" :aria-label="$t('afficherColonne')" @click="afficherColonne(indexCol)" v-else-if="pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility</i></button>
+							<button type="button" class="bouton" :disabled="disabled" :title="$t('modifierColonne')" :aria-label="$t('modifierColonne')" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i></button>
+							<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerColonne')" :aria-label="$t('supprimerColonne')" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</div>
 					<div class="conteneur-colonne ascenseur" v-if="colonnes[indexCol].length > 0">
-						<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="simple" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :tabindex="definirTabIndex()" :action="action" />
+						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 						</div>
 					</div>
 					<div class="ajouter" v-if="accesAutorise && (admin || pad.contributions !== 'fermees')">
-						<span role="button" :tabindex="definirTabIndex()" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', indexCol)" @keydown.enter.space.prevent="ouvrirModaleBloc('creation', '', indexCol)">
+						<button type="button" :disabled="disabled" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', indexCol)">
 							<i class="material-icons" aria-hidden="true">add</i>
-						</span>
+						</button>
 					</div>
 				</section>
 			</template>
 			<section class="colonne" v-if="admin">
-				<div class="bloc haut ajouter-colonne" role="button" :tabindex="definirTabIndex()" @click="ouvrirModaleColonne('creation', '')" @keydown.enter.space.prevent="ouvrirModaleColonne('creation', '')">
+				<button type="button" class="bloc haut ajouter-colonne" :disabled="disabled" @click="ouvrirModaleColonne('creation', '')">
 					<div class="titre-colonne">
 						<span>{{ $t('ajouterColonne') }}</span>
 					</div>
-				</div>
+				</button>
 			</section>
 		</div>
 		<!-- Affichage colonne // avec recherche -->
 		<div id="blocs" class="colonnes" v-else-if="pad.affichage === 'colonnes' && action !== 'organiser' && recherche">
 			<template v-for="(col, indexCol) in pad.colonnes">
-				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="blocsRecherche[indexCol].length > 0 && (!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol]))" :key="'colonne_' + indexCol">
+				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="blocsRecherche[indexCol] && blocsRecherche[indexCol].length > 0 && (!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol]))" :key="'colonne_' + indexCol">
 					<div class="bloc haut">
 						<div class="titre-colonne">
 							<span>{{ col }}</span>
 						</div>
 					</div>
 					<div class="conteneur-colonne ascenseur">
-						<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="simple" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :tabindex="definirTabIndex()" :action="action" />
+						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space.prevent="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 						</div>
 					</div>
 				</section>
@@ -498,8 +505,8 @@
 		</div>
 		<!-- Mode Organiser // Affichage mur et flux vertical -->
 		<draggable id="blocs" :class="{'mur': pad.affichage === 'mur', 'flux-vertical': pad.affichage === 'flux-vertical', 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-model="blocs" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" @start="demarrerDeplacerBloc" @end="deplacerBloc" v-else-if="(pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && action === 'organiser'">
-			<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :indexCol="0" :tabindex="definirTabIndex()" :action="action" />
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 			</div>
 		</draggable>
 		<!-- Mode Organiser // Affichage colonnes -->
@@ -510,13 +517,13 @@
 						<span>{{ col }}</span>
 					</div>
 					<div class="menu-colonne" v-if="admin && pad.colonnes.length > 1">
-						<span class="bouton gauche" role="button" :tabindex="definirTabIndex()" :title="$t('deplacerGauche')" :aria-label="$t('deplacerGauche')" @click="deplacerColonne('gauche', indexCol)" @keydown.enter.space.prevent="deplacerColonne('gauche', indexCol)" v-if="indexCol > 0"><i class="material-icons" aria-hidden="true">arrow_back</i></span>
-						<span class="bouton droite" role="button" :tabindex="definirTabIndex()" :title="$t('deplacerDroite')" :aria-label="$t('deplacerDroite')" @click="deplacerColonne('droite', indexCol)" @keydown.enter.space.prevent="deplacerColonne('droite', indexCol)" v-if="indexCol < (pad.colonnes.length - 1)"><i class="material-icons" aria-hidden="true">arrow_forward</i></span>
+						<button type="button" class="bouton gauche" :disabled="disabled" :title="$t('deplacerGauche')" :aria-label="$t('deplacerGauche')" @click="deplacerColonne('gauche', indexCol)" v-if="indexCol > 0"><i class="material-icons" aria-hidden="true">arrow_back</i></button>
+						<button type="button" class="bouton droite" :disabled="disabled" :title="$t('deplacerDroite')" :aria-label="$t('deplacerDroite')" @click="deplacerColonne('droite', indexCol)" v-if="indexCol < (pad.colonnes.length - 1)"><i class="material-icons" aria-hidden="true">arrow_forward</i></button>
 					</div>
 				</div>
 				<draggable class="conteneur-colonne ascenseur" v-model="colonnes[indexCol]" group="colonne" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" :data-index="indexCol" @start="demarrerDeplacerBloc" @end="deplacerBloc">
-					<div :id="item.bloc" class="bloc" :tabindex="definirTabIndex()" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
-						<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :tabindex="definirTabIndex()" :action="action" />
+					<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
+						<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
 					</div>
 				</draggable>
 			</section>
@@ -526,25 +533,25 @@
 	<div id="pad" :style="{'background': '#00ced1'}" v-else />
 
 	<Transition name="fondu">
-		<span id="ajouter" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', 0)" @keydown.enter.space.prevent="ouvrirModaleBloc('creation', '', 0)" v-if="accesAutorise && !recherche && ((pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && ((admin && action !== 'organiser') || (!admin && pad.contributions !== 'fermees')))">
+		<button type="button" id="ajouter" :disabled="disabled" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', 0)" v-if="accesAutorise && !recherche && ((pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && ((admin && action !== 'organiser') || (!admin && pad.contributions !== 'fermees')))">
 			<i class="material-icons" aria-hidden="true">add</i>
-		</span>
+		</button>
 	</Transition>
 
 	<div class="conteneur-modale" v-if="modale === 'colonne'">
-		<div class="modale" role="dialog">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="titreModaleColonne">
 			<div class="en-tete">
 				<span class="titre">{{ titreModaleColonne }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleColonne" @keydown.enter.space.prevent="fermerModaleColonne"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleColonne"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="titreModaleColonne">
+				<div class="contenu">
 					<label for="champ-nom-colonne">{{ $t('nomColonne') }}</label>
-					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" @input="titreColonne = $event.target.value" @keydown.enter="ajouterColonne" v-if="modeColonne === 'creation'">
-					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" @input="titreColonne = $event.target.value" @keydown.enter="modifierColonne" v-else>
+					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" :disabled="disabledModale" @input="titreColonne = $event.target.value" @keydown.enter.prevent="ajouterColonne" v-if="modeColonne === 'creation'">
+					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" :disabled="disabledModale" @input="titreColonne = $event.target.value" @keydown.enter.prevent="modifierColonne" v-else>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="ajouterColonne" @keydown.enter.space.prevent="ajouterColonne" v-if="modeColonne === 'creation'">{{ $t('valider') }}</span>
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierColonne" @keydown.enter.space.prevent="modifierColonne" v-else>{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterColonne" v-if="modeColonne === 'creation'">{{ $t('valider') }}</button>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierColonne" v-else>{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
@@ -552,40 +559,40 @@
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'bloc'">
-		<div id="bloc" class="modale ascenseur" role="dialog">
+		<div id="bloc" class="modale ascenseur" role="dialog" aria-modal="true" :aria-label="titreModale">
 			<div class="en-tete">
 				<span class="titre">{{ titreModale }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleBloc" @keydown.enter.space.prevent="fermerModaleBloc"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleBloc"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="titreModale">
+				<div class="contenu">
 					<div class="conteneur-interrupteur" v-if="admin">
 						<span>{{ $t('capsulePrivee') }}</span>
-						<label class="bouton-interrupteur" :tabindex="definirTabIndexModale()" v-if="mode === 'edition' && visibiliteInitiale === 'privee'">
+						<label class="bouton-interrupteur" v-if="mode === 'edition' && visibiliteInitiale === 'privee'">
 							<input id="visibilite-capsule" type="checkbox" :checked="visibilite" disabled>
 							<span class="barre desactive" />
 						</label>
-						<label class="bouton-interrupteur" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('visibilite-capsule')" v-else>
-							<input id="visibilite-capsule" type="checkbox" :checked="visibilite" @change="modifierVisibiliteCapsule">
+						<label class="bouton-interrupteur" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('visibilite-capsule')" v-else>
+							<input id="visibilite-capsule" type="checkbox" :checked="visibilite" :disabled="disabledModale" @change="modifierVisibiliteCapsule">
 							<span class="barre" />
 						</label>
 					</div>
 					<label>{{ $t('couleur') }}</label>
 					<div id="couleurs">
-						<span role="button" :tabindex="definirTabIndexModale()" :title="$t('selectionnerCouleurModale', { couleur: item })" :aria-label="$t('selectionnerCouleurModale', { couleur: item })" v-for="(item, index) in couleurs" :class="{'selectionne': item === couleur}" :style="{'background': item}" @click="couleur = item" @keydown.enter.space.prevent="couleur = item" :key="'couleur_' + index" />
+						<button type="button" :disabled="disabledModale" :title="$t('selectionnerCouleurModale', { couleur: item })" :aria-label="$t('selectionnerCouleurModale', { couleur: item })" v-for="(item, index) in couleurs" :class="{'selectionne': item === couleur}" :style="{'background': item}" @click="couleur = item" :key="'couleur_' + index" />
 						<span class="icone">
 							<label for="couleur" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')"><i class="material-icons" aria-hidden="true">colorize</i></label>
-							<input id="couleur" type="color" value="#dddddd" @change="couleur = $event.target.value" v-if="couleurs.includes(couleur)">
-							<input id="couleur" type="color" :value="couleur" class="selectionne" @change="couleur = $event.target.value" v-else>
+							<input id="couleur" type="color" value="#dddddd" :disabled="disabledModale" @change="couleur = $event.target.value" v-if="couleurs.includes(couleur)">
+							<input id="couleur" type="color" :value="couleur" :disabled="disabledModale" class="selectionne" @change="couleur = $event.target.value" v-else>
 						</span>
 					</div>
 					<label for="champ-titre">{{ $t('titre') }}</label>
-					<input id="champ-titre" type="text" maxlength="96" :placeholder="$t('ajouterTitre')" :value="titre" @input="titre = $event.target.value">
-					<label>{{ $t('texte') }}</label>
-					<div id="texte" :class="{'mobile': mobile === true }" />
+					<input id="champ-titre" type="text" maxlength="96" :placeholder="$t('ajouterTitre')" :value="titre" :disabled="disabledModale" @input="titre = $event.target.value">
+					<label id="label-texte">{{ $t('texte') }}</label>
+					<div id="texte" :class="{'mobile': mobile === true }" aria-labelledby="label-texte" />
 					<div class="televerser fichier" v-if="media === '' && !chargementLien && !enregistrement && pad.fichiers === 'actives'">
-						<label for="televerser-fichier" class="bouton" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('televerser-fichier')" v-if="progressionFichier === 0">{{ $t('ajouterFichier') }}</label>
-						<input id="televerser-fichier" type="file" style="display: none" :accept="fichiersAutorises" @change="ajouterFichier($event.target)">
+						<label for="televerser-fichier" class="bouton" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('televerser-fichier')" v-if="progressionFichier === 0">{{ $t('ajouterFichier') }}</label>
+						<input id="televerser-fichier" type="file" :disabled="disabledModale" style="display: none" :accept="fichiersAutorises" @change="ajouterFichier($event.target)">
 						<div class="conteneur-chargement progression" v-if="progressionFichier > 0">
 							<progress class="barre-progression" max="100" :value="progressionFichier" />
 							<div class="chargement" />
@@ -599,8 +606,8 @@
 						<span>{{ $t('ou') }}</span>
 					</div>
 					<div id="ajouter-lien" v-if="media === '' && progressionFichier === 0 && !enregistrement && pad.liens === 'actives'">
-						<input type="text" :value="lien" @input="lien = $event.target.value" :placeholder="$t('ajouterLien')" @keydown.enter="ajouterLien" v-if="!chargementLien">
-						<span class="bouton rechercher" role="button" :tabindex="definirTabIndexModale()" :title="$t('valider')" :aria-label="$t('valider')" @click="ajouterLien" @keydown.enter.space.prevent="ajouterLien" v-if="!chargementLien"><i class="material-icons" aria-hidden="true">search</i></span>
+						<input type="text" :value="lien" :disabled="disabledModale" @input="lien = $event.target.value" :placeholder="$t('ajouterLien')" @keydown.enter="ajouterLien" v-if="!chargementLien">
+						<button type="button" class="bouton rechercher" :disabled="disabledModale" :title="$t('valider')" :aria-label="$t('valider')" @click="ajouterLien" v-if="!chargementLien"><i class="material-icons" aria-hidden="true">search</i></button>
 						<div class="conteneur-chargement" v-else>
 							<div class="chargement" />
 						</div>
@@ -609,7 +616,7 @@
 						<span>{{ $t('ou') }}</span>
 					</div>
 					<div id="ajouter-document" v-if="media === '' && progressionFichier === 0 && !chargementLien && !enregistrement && pad.documents === 'actives'">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="ajouterDocument" @keydown.enter.space.prevent="ajouterDocument">{{ $t('creerDocCollaboratif') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterDocument">{{ $t('creerDocCollaboratif') }}</button>
 					</div>
 					<label v-if="media !== '' && source !== 'etherpad'">{{ $t('media') }}</label>
 					<label v-else-if="media !== ''">{{ $t('documentCollaboratif') }}</label>
@@ -619,8 +626,8 @@
 							<div class="html" v-else v-html="iframe" />
 						</div>
 						<div class="action">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndexModale()" @click="supprimerLien" @keydown.enter.space.prevent="supprimerLien">{{ $t('supprimer') }}</span>
-							<span class="bouton convertir" role="button" :tabindex="definirTabIndexModale()" @click="convertirEnLien" @keydown.enter.space.prevent="convertirEnLien" v-if="lien !== ''">{{ $t('convertirEnLien') }}</span>
+							<button type="button" class="bouton supprimer" :disabled="disabledModale" @click="supprimerLien">{{ $t('supprimer') }}</button>
+							<button type="button" class="bouton convertir" :disabled="disabledModale" @click="convertirEnLien" v-if="lien !== ''">{{ $t('convertirEnLien') }}</button>
 							<span class="information" v-if="lien !== ''">
 								<i class="material-icons" aria-hidden="true">info</i>
 								<span v-html="$t('infoErreurLien')" />
@@ -649,18 +656,18 @@
 							<span class="icone" aria-hidden="true"><i class="material-icons">attachment</i></span>
 						</a>
 						<div class="action">
-							<span class="bouton supprimer" role="button" :tabindex="definirTabIndexModale()" @click="supprimerFichier" @keydown.enter.space.prevent="supprimerFichier" v-if="!chargementMedia">{{ $t('supprimer') }}</span>
+							<button type="button" class="bouton supprimer" :disabled="disabledModale" @click="supprimerFichier" v-if="!chargementMedia">{{ $t('supprimer') }}</button>
 						</div>
 					</div>
 					<div id="recherche" v-if="pad.liens === 'actives' && !chargementLien && Object.keys(resultats).length > 0 && media === ''">
 						<div id="resultats">
-							<div class="item" role="button" :tabindex="definirTabIndexModale()" :title="$t('selectionnerImageRecherche', { image: resultat.id })" :aria-label="$t('selectionnerImageRecherche', { image: resultat.id })" :data-w="resultat.previewWidth" :data-h="resultat.previewHeight" v-for="(resultat, index) in resultats.hits" @click="selectionnerImage(resultat.previewURL.replace('_150', '_1280'))" @keydown.enter.space.prevent="selectionnerImage(resultat.previewURL.replace('_150', '_1280'))" :key="'image_' + index">
+							<button type="button" class="item" :disabled="disabledModale" :title="$t('selectionnerImageRecherche', { image: resultat.id })" :aria-label="$t('selectionnerImageRecherche', { image: resultat.id })" :data-w="resultat.previewWidth" :data-h="resultat.previewHeight" v-for="(resultat, index) in resultats.hits" @click="selectionnerImage(resultat.previewURL.replace('_150', '_1280'))" :key="'image_' + index">
 								<img :src="resultat.previewURL" :alt="definirNomLienFichier(resultat.previewURL)">
-							</div>
+							</button>
 						</div>
 						<div id="navigation" v-if="page > 1 || page < (resultats.total / 16)">
-							<span role="button" :tabindex="definirTabIndexModale()" :class="{'invisible': page < 2}" @click="modifierPage('precedente')" @keydown.enter.space.prevent="modifierPage('precedente')">{{ $t('pagePrecedente') }}</span>
-							<span role="button" :tabindex="definirTabIndexModale()" :class="{'invisible': page >= (resultats.total / 16)}" @click="modifierPage('suivante')" @keydown.enter.space.prevent="modifierPage('suivante')">{{ $t('pageSuivante') }}</span>
+							<button type="button" :disabled="disabledModale" :class="{'invisible': page < 2}" @click="modifierPage('precedente')">{{ $t('pagePrecedente') }}</button>
+							<button type="button" :disabled="disabledModale" :class="{'invisible': page >= (resultats.total / 16)}" @click="modifierPage('suivante')">{{ $t('pageSuivante') }}</button>
 						</div>
 					</div>
 					<label v-if="type !== 'image' && type !== 'lien-image' && media !== ''">{{ $t('vignette') }}</label>
@@ -671,44 +678,44 @@
 						</div>
 					</div>
 					<div class="televerser vignette" v-if="type !== 'image' && type !== 'lien-image' && media !== ''">
-						<label for="televerser-vignette" class="bouton" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('televerser-vignette')" v-if="progressionVignette === 0">{{ $t('modifierVignette') }}</label>
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="remettreVignetteDefaut" v-if="progressionVignette === 0 && vignetteDefaut !== '' && vignette !== vignetteDefaut">{{ $t('remettreVignette') }}</span>
-						<input id="televerser-vignette" type="file" style="display: none" accept=".jpg, .jpeg, .png, .gif" @change="ajouterVignette">
+						<label for="televerser-vignette" class="bouton" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('televerser-vignette')" v-if="progressionVignette === 0">{{ $t('modifierVignette') }}</label>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="remettreVignetteDefaut" v-if="progressionVignette === 0 && vignetteDefaut !== '' && vignette !== vignetteDefaut">{{ $t('remettreVignette') }}</button>
+						<input id="televerser-vignette" type="file" :disabled="disabledModale" style="display: none" accept=".jpg, .jpeg, .png, .gif" @change="ajouterVignette">
 						<div class="conteneur-chargement progression" v-if="progressionVignette > 0">
 							<progress class="barre-progression" max="100" :value="progressionVignette" />
 							<div class="chargement" />
 						</div>
 					</div>
 
-					<div class="valider" role="button" :tabindex="definirTabIndexModale()" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="ajouterBloc" @keydown.enter.space.prevent="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</div>
-					<div class="valider" role="button" :tabindex="definirTabIndexModale()" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="modifierBloc" @keydown.enter.space.prevent="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</div>
+					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</button>
+					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'admins'">
-		<div id="admins" class="modale" role="dialog">
+		<div id="admins" class="modale" role="dialog" aria-modal="true" :aria-label="$t('adminsPad')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('adminsPad') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleAdmins" @keydown.enter.space.prevent="fermerModaleAdmins"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleAdmins"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('adminsPad')">
+				<div class="contenu">
 					<label>{{ $t('listeAdmins') }}</label>
 					<div id="liste-admins" v-if="admins.length > 0">
-						<div class="admin" v-for="(itemAdmin, indexAdmin) in admins">
+						<div class="admin" v-for="(itemAdmin, indexAdmin) in admins" :key="'admin_' + indexAdmin">
 							<span class="identifiant">{{ itemAdmin }}</span>
-							<span class="supprimer" role="button" :tabindex="definirTabIndexModale()" :title="$t('supprimerAdmin')" :aria-label="$t('supprimerAdmin')" @click="supprimerAdmin" @keydown.enter.space.prevent="supprimerAdmin"><i class="material-icons" aria-hidden="true">close</i></span>
+							<button type="button" class="supprimer" :disabled="disabledModale" :title="$t('supprimerAdmin')" :aria-label="$t('supprimerAdmin')" @click="supprimerAdmin(itemAdmin)"><i class="material-icons" aria-hidden="true">close</i></button>
 						</div>
 					</div>
 					<p class="vide" v-else>{{ $t('aucunAdmin') }}</p>
 					<div id="ajouter-admin">
-						<input type="text" :placeholder="$t('identifiantAdmin')" @keydown.enter="ajouterAdmin">
-						<span class="icone" role="button" :tabindex="definirTabIndexModale()" :title="$t('ajouterAdmin')" :aria-label="$t('ajouterAdmin')" @click="ajouterAdmin" @keydown.enter.space.prevent="ajouterAdmin"><i class="material-icons" aria-hidden="true">person_add</i></span>
+						<input type="text" :placeholder="$t('identifiantAdmin')" :disabled="disabledModale" @keydown.enter="ajouterAdmin">
+						<button type="button" class="icone" :disabled="disabledModale" :title="$t('ajouterAdmin')" :aria-label="$t('ajouterAdmin')" @click="ajouterAdmin"><i class="material-icons" aria-hidden="true">person_add</i></button>
 					</div>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierAdmins" @keydown.enter.space.prevent="modifierAdmins">{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierAdmins">{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
@@ -716,24 +723,24 @@
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'commentaires'">
-		<div id="discussion" class="modale" role="dialog">
+		<div id="discussion" class="modale" role="dialog" aria-modal="true" :aria-label="$t('commentairesCapsule')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('commentairesCapsule') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCommentaires" @keydown.enter.space.prevent="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<ul class="commentaires ascenseur">
-				<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="definirTabIndexModale()" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
+				<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="tabIndexModale" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
 					<span class="meta" :class="{'auteur': entreeCommentaire.identifiant === identifiant || admin}">{{ $t('par') }} {{ definirNom(entreeCommentaire) }}, {{ $formaterDateRelative(entreeCommentaire.date, langue) }}</span>
 					<div class="action" v-if="entreeCommentaire.identifiant === identifiant || admin">
-						<span role="button" :tabindex="definirTabIndexModale()" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" @keydown.enter.space.prevent="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></span>
-						<span role="button" :tabindex="definirTabIndexModale()" :title="$t('annuler')" :aria-label="$t('annuler')" @click="annulerModifierCommentaire" @keydown.enter.space.prevent="annulerModifierCommentaire" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id"><i class="material-icons" aria-hidden="true">close</i></span>
-						<span role="button" :tabindex="definirTabIndexModale()" :title="$t('supprimerCommentaire')" :aria-label="$t('supprimerCommentaire')" @click="afficherSupprimerCommentaire(entreeCommentaire.id)" @keydown.enter.space.prevent="afficherSupprimerCommentaire(entreeCommentaire.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+						<button type="button" :disabled="disabledModale" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="!editionCommentaire || commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></button>
+						<button type="button" :disabled="disabledModale" :title="$t('annuler')" :aria-label="$t('annuler')" @click="annulerModifierCommentaire" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id"><i class="material-icons" aria-hidden="true">close</i></button>
+						<button type="button" :disabled="disabledModale" :title="$t('supprimerCommentaire')" :aria-label="$t('supprimerCommentaire')" @click="afficherSupprimerCommentaire(entreeCommentaire.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 					</div>
-					<div class="texte" v-if="(commentaireId !== entreeCommentaire.id) || (commentaireId === entreeCommentaire.id && modaleConfirmer)" v-html="entreeCommentaire.texte" />
+					<div class="texte" v-if="(commentaireId !== entreeCommentaire.id) || (commentaireId === entreeCommentaire.id && modaleConfirmation)" v-html="entreeCommentaire.texte" />
 					<div class="texte edition" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id">
 						<div id="commentaire-modifie" :class="{'mobile': mobile === true }" />
-						<button :tabindex="definirTabIndexModale()" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
-						<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :tabindex="definirTabIndexModale()" @emoji="insererEmoji" />
+						<button type="button" :disabled="disabledModale" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
+						<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModale" @emoji="insererEmoji" />
 					</div>
 				</li>
 				<li class="vide" v-if="commentaires.length === 0">
@@ -742,24 +749,24 @@
 			</ul>
 			<div class="ecrire-commentaire">
 				<div id="commentaire" :class="{'mobile': mobile === true }" />
-				<button :tabindex="definirTabIndexModale()" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
-				<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :tabindex="definirTabIndexModale()" @emoji="insererEmoji" />
+				<button type="button" :disabled="disabledModale" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
+				<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModale" @emoji="insererEmoji" />
 			</div>
 		</div>
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'modifier-nom'">
-		<div class="modale" role="dialog">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('modifierNom')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('modifierNom') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierNom" @keydown.enter.space.prevent="fermerModaleModifierNom"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierNom"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('modifierNom')">
+				<div class="contenu">
 					<label for="champ-nom">{{ $t('votreNom') }}</label>
-					<input id="champ-nom" type="text" maxlength="48" :value="nomUtilisateur" @input="nomUtilisateur = $event.target.value" @keydown.enter="modifierNom">
+					<input id="champ-nom" type="text" maxlength="48" :value="nomUtilisateur" :disabled="disabledModale" @input="nomUtilisateur = $event.target.value" @keydown.enter.prevent="modifierNom">
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierNom" @keydown.enter.space.prevent="modifierNom">{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierNom">{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
@@ -767,62 +774,62 @@
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'mot-de-passe' || modale === 'code-acces'">
-		<div class="modale" role="dialog" v-if="modale === 'mot-de-passe'">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('motDePassePad')" v-if="modale === 'mot-de-passe'">
 			<div class="en-tete">
 				<span class="titre">{{ $t('motDePassePad') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasse" @keydown.enter.space.prevent="fermerModaleMotDePasse"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasse"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('motDePassePad')">
+				<div class="contenu">
 					<label for="champ-motdepasse">{{ $t('motDePasse') }}</label>
 					<div class="conteneur-motdepasse">
-						<input id="champ-motdepasse" type="text" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value" @keydown.enter="verifierMotDePasse" v-if="codeVisible">
-						<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value" @keydown.enter="verifierMotDePasse" v-else>
-						<span class="icone" role="button" :tabindex="definirTabIndexModale()" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="masquerCodeAcces" @keydown.enter.space.prevent="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></span>
-						<span class="icone" role="button" :tabindex="definirTabIndexModale()" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="afficherCodeAcces" @keydown.enter.space.prevent="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></span>
+						<input id="champ-motdepasse-texte" type="text" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="verifierMotDePasse" v-if="codeVisible">
+						<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="verifierMotDePasse" v-else>
+						<button type="button" class="icone" :disabled="disabledModale" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
+						<button type="button" class="icone" :disabled="disabledModale" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 					</div>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="verifierMotDePasse" @keydown.enter.space.prevent="verifierMotDePasse">{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="verifierMotDePasse">{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
 		</div>
-		<div class="modale" role="dialog" v-else-if="modale === 'code-acces'">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('padProtegeCodeAcces')" v-else-if="modale === 'code-acces'">
 			<div class="en-tete">
 				<span class="titre">{{ $t('padProtegeCodeAcces') }}</span>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('padProtegeCodeAcces')">
+				<div class="contenu">
 					<label for="champ-code">{{ $t('codeAcces') }}</label>
 					<div class="conteneur-code-acces">
-						<input id="champ-code" type="text" maxlength="18" :value="codeAcces" @input="codeAcces = $event.target.value" @keydown.enter="verifierCodeAcces" v-if="codeVisible">
-						<input id="champ-code" type="password" maxlength="18" :value="codeAcces" @input="codeAcces = $event.target.value" @keydown.enter="verifierCodeAcces" v-else>
-						<span class="icone" role="button" :tabindex="definirTabIndexModale()" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" @keydown.enter.space.prevent="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></span>
-						<span class="icone" role="button" :tabindex="definirTabIndexModale()" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" @keydown.enter.space.prevent="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></span>
+						<input id="champ-code" type="text" maxlength="18" :value="codeAcces" :disabled="disabledModale" @input="codeAcces = $event.target.value" @keydown.enter="verifierCodeAcces" v-if="codeVisible">
+						<input id="champ-code" type="password" maxlength="18" :value="codeAcces" :disabled="disabledModale" @input="codeAcces = $event.target.value" @keydown.enter="verifierCodeAcces" v-else>
+						<button type="button" class="icone" :disabled="disabledModale" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
+						<button type="button" class="icone" :disabled="disabledModale" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 					</div>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="verifierCodeAcces" @keydown.enter.space.prevent="verifierCodeAcces">{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="verifierCodeAcces">{{ $t('valider') }}</button>
 					</div>
-					<div class="connexion" role="button" :tabindex="definirTabIndexModale()" @click="afficherModaleMotDePasse" @keydown.enter.space.prevent="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse')" v-html="$t('proprietairePad')" />
+					<button type="button" class="connexion" :disabled="disabledModale" @click="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse')" v-html="$t('proprietairePad')" />
 				</div>
 			</div>
 		</div>
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'modifier-mot-de-passe'">
-		<div id="motdepasse" class="modale" role="dialog">
+		<div id="modale-motdepasse" class="modale" role="dialog" aria-modal="true" :aria-label="$t('modifierMotDePassePad')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('modifierMotDePassePad') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierMotDePasse" @keydown.enter.space.prevent="fermerModaleModifierMotDePasse"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierMotDePasse"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('modifierMotDePassePad')">
+				<div class="contenu">
 					<label for="champ-motdepasse-actuel">{{ $t('motDePasseActuel') }}</label>
-					<input id="champ-motdepasse-actuel" type="text" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value">
+					<input id="champ-motdepasse-actuel" type="text" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value">
 					<label for="champ-nouveau-motdepasse">{{ $t('nouveauMotDePasse') }}</label>
-					<input id="champ-nouveau-motdepasse" type="text" maxlength="48" :value="nouveauMotDePasse" @input="nouveauMotDePasse = $event.target.value" @keydown.enter="modifierMotDePasse">
+					<input id="champ-nouveau-motdepasse" type="text" maxlength="48" :value="nouveauMotDePasse" :disabled="disabledModale" @input="nouveauMotDePasse = $event.target.value" @keydown.enter="modifierMotDePasse">
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierMotDePasse" @keydown.enter.space.prevent="modifierMotDePasse">{{ $t('modifier') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierMotDePasse">{{ $t('modifier') }}</button>
 					</div>
 				</div>
 			</div>
@@ -830,28 +837,28 @@
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'copier-bloc'">
-		<div class="modale" role="dialog">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('copierCapsule')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('copierCapsule') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCopieBloc" @keydown.enter.space.prevent="fermerModaleCopieBloc"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCopieBloc"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
-				<div class="contenu" role="form" :aria-label="$t('copierCapsule')">
+				<div class="contenu">
 					<label>{{ $t('capsuleACopier') }} {{ titre }}</label>
 					<label for="pad-destination">{{ $t('padDestination') }}</label>
-					<select id="pad-destination" @change="padDestination = $event.target.value" v-if="donneesUtilisateur.padsCrees.length > 0 || donneesUtilisateur.padsAdmins.length > 0">
+					<select id="pad-destination" :disabled="disabledModale" @change="padDestination = $event.target.value" v-if="donneesUtilisateur.padsCrees.length > 0 || donneesUtilisateur.padsAdmins.length > 0">
 						<option value="">-</option>
 						<option v-for="(item, indexItem) in donneesUtilisateur.padsCrees" :value="item.id" :key="'pad_cree_' + indexItem">{{ item.titre }}</option>
 						<option v-for="(item, indexItem) in donneesUtilisateur.padsAdmins" :value="item.id" :key="'pad_admin_' + indexItem">{{ item.titre }} ({{ $t('coadmin') }})</option>
 					</select>
 					<div class="vide" v-else>{{ $t('aucunPadDestination') }}</div>
 					<label for="colonne-destination" v-if="verifierColonnesDestination() === true && padDestination !== ''">{{ $t('colonneDestination') }}</label>
-					<select id="colonne-destination" @change="colonneDestination = $event.target.value" v-if="verifierColonnesDestination() === true && padDestination !== ''">
+					<select id="colonne-destination" :disabled="disabledModale" @change="colonneDestination = $event.target.value" v-if="verifierColonnesDestination() === true && padDestination !== ''">
 						<option value="">-</option>
 						<option v-for="(item, indexItem) in definirNombreColonnesDestination()" :value="indexItem" :key="'colonne_' + item">{{ item }}</option>
 					</select>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="envoyerBloc" @keydown.enter.space.prevent="envoyerBloc">{{ $t('valider') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerBloc">{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
@@ -859,10 +866,10 @@
 	</div>
 
 	<div class="conteneur-modale" v-else-if="modale === 'code-qr'">
-		<div id="codeqr" class="modale" role="dialog">
+		<div id="codeqr" class="modale" role="dialog" aria-modal="true" :aria-label="$t('codeQR')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('codeQR') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModale" @keydown.enter.space.prevent="fermerModale"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModale"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
 				<div class="contenu">
@@ -873,10 +880,10 @@
 	</div>
 
 	<div class="conteneur-modale" v-if="modaleDiaporama">
-		<div id="diapositive" class="modale-diapositive" :class="{'privee': donneesBloc.visibilite === 'privee'}" :style="{'border-color': donneesBloc.couleur}" role="dialog" v-show="!chargement">
+		<div id="diapositive" class="modale-diapositive" :class="{'privee': donneesBloc.visibilite === 'privee'}" :style="{'border-color': donneesBloc.couleur}" role="dialog" aria-modal="true" :aria-label="donneesBloc.titre + ' ' + $t('par') + ' ' + definirNom(donneesBloc)" v-show="!chargement">
 			<div class="en-tete">
 				<span class="titre"><span>{{ donneesBloc.titre }}</span> <span>{{ $t('par') }} {{ definirNom(donneesBloc) }}</span></span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDiaporama" @keydown.enter.space.prevent="fermerModaleDiaporama"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModaleDiaporama" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDiaporama"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="contenu ascenseur" :class="{'vide': donneesBloc.texte === '' && donneesBloc.media === '' && pad.evaluations === 'desactivees' && pad.commentaires === 'desactives' && ((pad.contributions !== 'moderees') || (pad.contributions === 'moderees' && donneesBloc.visibilite === 'visible'))}">
 				<div class="conteneur conteneur-texte" v-if="donneesBloc.texte !== ''">
@@ -911,10 +918,10 @@
 					</div>
 				</div>
 				<div class="conteneur conteneur-moderation" v-if="donneesBloc.visibilite === 'privee' && admin">
-					<span class="bouton" role="button" :tabindex="definirTabIndexModaleDiaporama()" @click="autoriserBloc(donneesBloc, 'privee')" @keydown.enter.space.prevent="autoriserBloc(donneesBloc, 'privee')">{{ $t('afficherCapsule') }}</span>
+					<button type="button" class="bouton" :disabled="disabledModaleDiaporama" @click="autoriserBloc(donneesBloc, 'privee')">{{ $t('afficherCapsule') }}</button>
 				</div>
 				<div class="conteneur conteneur-moderation" v-else-if="pad.contributions === 'moderees' && donneesBloc.visibilite === 'masquee'">
-					<span class="bouton" role="button" :tabindex="definirTabIndexModaleDiaporama()" @click="autoriserBloc(donneesBloc, 'moderee')" @keydown.enter.space.prevent="autoriserBloc(donneesBloc, 'moderee')" v-if="admin">{{ $t('validerCapsule') }}</span>
+					<button type="button" class="bouton" :disabled="disabledModaleDiaporama" @click="autoriserBloc(donneesBloc, 'moderee')" v-if="admin">{{ $t('validerCapsule') }}</button>
 					<span class="bouton" v-else-if="donneesBloc.identifiant === identifiant">{{ $t('enAttenteModeration') }}</span>
 				</div>
 				<div class="conteneur conteneur-evaluations" v-if="pad.evaluations === 'activees'">
@@ -925,25 +932,25 @@
 							<i class="material-icons" aria-hidden="true" :class="{'evalue': verifierUtilisateurEvaluation(donneesBloc.evaluations) === true}" v-for="etoile in (5 - definirEvaluationCapsule(donneesBloc.evaluations))" :key="'etoilevide_' + etoile">star_outline</i>
 							<span>({{ donneesBloc.evaluations.length }})</span>
 						</span>
-						<span class="bouton" role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, '')" @keydown.enter.space.prevent="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, '')" v-if="verifierUtilisateurEvaluation(donneesBloc.evaluations) === false"><i class="material-icons" aria-hidden="true">add_comment</i></span>
-						<span class="bouton" role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, donneesBloc.evaluations)" @keydown.enter.space.prevent="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, donneesBloc.evaluations)" v-else><i class="material-icons" aria-hidden="true">rate_review</i></span>
+						<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, '')" v-if="verifierUtilisateurEvaluation(donneesBloc.evaluations) === false"><i class="material-icons" aria-hidden="true">add_comment</i></button>
+						<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, donneesBloc.evaluations)" v-else><i class="material-icons" aria-hidden="true">rate_review</i></button>
 					</div>
 				</div>
 				<div class="conteneur conteneur-commentaires" v-if="pad.commentaires === 'actives'">
 					<label>{{ $t('commentaires') }}</label>
 					<ul class="commentaires" v-if="commentaires.length > 0">
-						<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="definirTabIndexModaleDiaporama()" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
+						<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="tabIndexModaleDiaporama" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
 							<span class="meta" :class="{'auteur': entreeCommentaire.identifiant === identifiant || admin}">{{ $t('par') }} {{ definirNom(entreeCommentaire) }}, {{ $formaterDateRelative(entreeCommentaire.date, langue) }}</span>
 							<div class="action" v-if="entreeCommentaire.identifiant === identifiant || admin">
-								<span role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" @keydown.enter.space.prevent="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></span>
-								<span role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('annuler')" :aria-label="$t('annuler')" @click="annulerModifierCommentaire" @keydown.enter.space.prevent="annulerModifierCommentaire" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id"><i class="material-icons" aria-hidden="true">close</i></span>
-								<span role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('supprimerCommentaire')" :aria-label="$t('supprimerCommentaire')" @click="afficherSupprimerCommentaire(entreeCommentaire.id)" @keydown.enter.space.prevent="afficherSupprimerCommentaire(entreeCommentaire.id)"><i class="material-icons" aria-hidden="true">delete</i></span>
+								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="!editionCommentaire || commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></button>
+								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('annuler')" :aria-label="$t('annuler')" @click="annulerModifierCommentaire" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id"><i class="material-icons" aria-hidden="true">close</i></button>
+								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('supprimerCommentaire')" :aria-label="$t('supprimerCommentaire')" @click="afficherSupprimerCommentaire(entreeCommentaire.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 							</div>
-							<div class="texte" v-if="(commentaireId !== entreeCommentaire.id) || (commentaireId === entreeCommentaire.id && modaleConfirmer)" v-html="entreeCommentaire.texte" />
+							<div class="texte" v-if="(commentaireId !== entreeCommentaire.id) || (commentaireId === entreeCommentaire.id && modaleConfirmation)" v-html="entreeCommentaire.texte" />
 							<div class="texte edition" v-else-if="editionCommentaire && commentaireId === entreeCommentaire.id">
 								<div id="commentaire-modifie" :class="{'mobile': mobile === true }" />
-								<button :tabindex="definirTabIndexModaleDiaporama()" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
-								<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :tabindex="definirTabIndexModaleDiaporama()" @emoji="insererEmoji" />
+								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
+								<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModaleDiaporama" @emoji="insererEmoji" />
 							</div>
 						</li>
 					</ul>
@@ -952,42 +959,42 @@
 					</div>
 					<div class="ecrire-commentaire">
 						<div id="commentaire" :class="{'mobile': mobile === true }" />
-						<button :tabindex="definirTabIndexModaleDiaporama()" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
-						<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :tabindex="definirTabIndexModaleDiaporama()" @emoji="insererEmoji" />
+						<button type="button" :disabled="disabledModaleDiaporama" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
+						<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModaleDiaporama" @emoji="insererEmoji" />
 					</div>
 				</div>
 			</div>
 		</div>
-		<span id="precedent" role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('afficherCapsulePrecedente')" :aria-label="$t('afficherCapsulePrecedente')" v-if="blocs.length > 1" @click="afficherBlocPrecedent" @keydown.enter.space.prevent="afficherBlocPrecedent"><i class="material-icons" aria-hidden="true">arrow_back</i></span>
-		<span id="suivant" role="button" :tabindex="definirTabIndexModaleDiaporama()" :title="$t('afficherCapsuleSuivante')" :aria-label="$t('afficherCapsuleSuivante')" v-if="blocs.length > 1" @click="afficherBlocSuivant" @keydown.enter.space.prevent="afficherBlocSuivant"><i class="material-icons" aria-hidden="true">arrow_forward</i></span>
+		<button type="button" id="precedent" :disabled="disabledModaleDiaporama" :title="$t('afficherCapsulePrecedente')" :aria-label="$t('afficherCapsulePrecedente')" v-if="blocs.length > 1" @click="afficherBlocPrecedent"><i class="material-icons" aria-hidden="true">arrow_back</i></button>
+		<button type="button" id="suivant" :disabled="disabledModaleDiaporama" :title="$t('afficherCapsuleSuivante')" :aria-label="$t('afficherCapsuleSuivante')" v-if="blocs.length > 1" @click="afficherBlocSuivant"><i class="material-icons" aria-hidden="true">arrow_forward</i></button>
 	</div>
 
 	<div class="conteneur-modale" v-if="modale === 'evaluations'">
-		<div class="modale" role="dialog">
+		<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('evaluerCapsule')">
 			<div class="en-tete">
 				<span class="titre">{{ $t('evaluerCapsule') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleEvaluations" @keydown.enter.space.prevent="fermerModaleEvaluations"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleEvaluations"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="conteneur">
 				<div class="contenu">
 					<label>{{ $t('monEvaluation') }}</label>
 					<div class="section-etoiles">
 						<span class="etoiles" v-if="evaluation === 0">
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="'1 ' + $t('etoile')" :aria-label="'1 ' + $t('etoile')" @click="evaluation = 1" @keydown.enter.space.prevent="evaluation = 1">star_outline</i>
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="'2 ' + $t('etoiles')" :aria-label="'2 ' + $t('etoiles')" @click="evaluation = 2" @keydown.enter.space.prevent="evaluation = 2">star_outline</i>
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="'3 ' + $t('etoiles')" :aria-label="'3 ' + $t('etoiles')" @click="evaluation = 3" @keydown.enter.space.prevent="evaluation = 3">star_outline</i>
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="'4 ' + $t('etoiles')" :aria-label="'4 ' + $t('etoiles')" @click="evaluation = 4" @keydown.enter.space.prevent="evaluation = 4">star_outline</i>
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="'5 ' + $t('etoiles')" :aria-label="'5 ' + $t('etoiles')" @click="evaluation = 5" @keydown.enter.space.prevent="evaluation = 5">star_outline</i>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="'1 ' + $t('etoile')" :aria-label="'1 ' + $t('etoile')" @click="evaluation = 1">star_outline</button>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="'2 ' + $t('etoiles')" :aria-label="'2 ' + $t('etoiles')" @click="evaluation = 2">star_outline</button>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="'3 ' + $t('etoiles')" :aria-label="'3 ' + $t('etoiles')" @click="evaluation = 3">star_outline</button>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="'4 ' + $t('etoiles')" :aria-label="'4 ' + $t('etoiles')" @click="evaluation = 4">star_outline</button>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="'5 ' + $t('etoiles')" :aria-label="'5 ' + $t('etoiles')" @click="evaluation = 5">star_outline</button>
 						</span>
 						<span class="etoiles" :title="evaluation > 1 ? evaluation + ' ' + $t('etoiles') : evaluation + ' ' + $t('etoile')" v-else>
-							<i class="material-icons selectionne" role="button" :tabindex="definirTabIndexModale()" :title="etoile > 1 ? etoile + ' ' + $t('etoiles') : etoile + ' ' + $t('etoile')" :aria-label="etoile > 1 ? etoile + ' ' + $t('etoiles') : etoile + ' ' + $t('etoile')" v-for="etoile in evaluation" @click="evaluation = etoile" @keydown.enter.space.prevent="evaluation = etoile" :key="'etoilepleine_' + etoile">star</i>
-							<i class="material-icons" role="button" :tabindex="definirTabIndexModale()" :title="(evaluation + etoile) > 1 ? (evaluation + etoile) + ' ' + $t('etoiles') : (evaluation + etoile) + ' ' + $t('etoile')" :aria-label="(evaluation + etoile) > 1 ? (evaluation + etoile) + ' ' + $t('etoiles') : (evaluation + etoile) + ' ' + $t('etoile')" v-for="etoile in (5 - evaluation)" @click="evaluation = (evaluation + etoile)" @keydown.enter.space.prevent="evaluation = (evaluation + etoile)" :key="'etoilevide_' + etoile">star_outline</i>
+							<button type="button" class="material-icons selectionne" :disabled="disabledModale" :title="etoile > 1 ? etoile + ' ' + $t('etoiles') : etoile + ' ' + $t('etoile')" :aria-label="etoile > 1 ? etoile + ' ' + $t('etoiles') : etoile + ' ' + $t('etoile')" v-for="etoile in evaluation" @click="evaluation = etoile" :key="'etoilepleine_' + etoile">star</button>
+							<button type="button" class="material-icons" :disabled="disabledModale" :title="(evaluation + etoile) > 1 ? (evaluation + etoile) + ' ' + $t('etoiles') : (evaluation + etoile) + ' ' + $t('etoile')" :aria-label="(evaluation + etoile) > 1 ? (evaluation + etoile) + ' ' + $t('etoiles') : (evaluation + etoile) + ' ' + $t('etoile')" v-for="etoile in (5 - evaluation)" @click="evaluation = (evaluation + etoile)" :key="'etoilevide_' + etoile">star_outline</button>
 						</span>
-						<i class="material-icons annuler" role="button" :tabindex="definirTabIndexModale()" :title="$t('supprimerEvaluation')" :aria-label="$t('supprimerEvaluation')" @click="evaluation = 0" @keydown.enter.space.prevent="evaluation = 0" v-if="evaluation > 0">delete_forever</i>
+						<button type="button" class="material-icons annuler" :disabled="disabledModale" :title="$t('supprimerEvaluation')" :aria-label="$t('supprimerEvaluation')" @click="evaluation = 0" v-if="evaluation > 0">delete_forever</button>
 					</div>
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="envoyerEvaluation" @keydown.enter.space.prevent="envoyerEvaluation" v-if="evaluations.map(function (e) { return e.identifiant }).indexOf(identifiant) === -1">{{ $t('valider') }}</span>
-						<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierEvaluation" @keydown.enter.space.prevent="modifierEvaluation" v-else>{{ $t('modifier') }}</span>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerEvaluation" v-if="evaluations.map(function (e) { return e.identifiant }).indexOf(identifiant) === -1">{{ $t('valider') }}</button>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierEvaluation" v-else>{{ $t('modifier') }}</button>
 					</div>
 				</div>
 			</div>
@@ -995,7 +1002,7 @@
 	</div>
 
 	<div class="conteneur-modale" v-if="transcodage || progressionEnregistrement">
-		<div id="transcodage" class="modale" role="dialog">
+		<div id="transcodage" class="modale" role="dialog" aria-modal="true">
 			<div class="conteneur">
 				<div class="contenu">
 					<div class="conteneur-chargement">
@@ -1007,21 +1014,21 @@
 		</div>
 	</div>
 
-	<div id="conteneur-message" class="conteneur-modale" v-if="modaleConfirmer">
-		<div class="modale" role="dialog">
+	<div id="conteneur-message" class="conteneur-modale" v-if="modaleConfirmation">
+		<div class="modale" role="dialog" aria-modal="true">
 			<div class="conteneur">
 				<div class="contenu">
 					<div class="message" v-html="messageConfirmation" />
 					<div class="actions">
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleConfirmer" @keydown.enter.space.prevent="fermerModaleConfirmer">{{ $t('non') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerBloc" @keydown.enter.space.prevent="supprimerBloc" v-if="typeConfirmation === 'supprimer-bloc'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerColonne" @keydown.enter.space.prevent="supprimerColonne" v-if="typeConfirmation === 'supprimer-colonne'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerCommentaire" @keydown.enter.space.prevent="supprimerCommentaire" v-if="typeConfirmation === 'supprimer-commentaire'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="seDeconnecterPad" @keydown.enter.space.prevent="seDeconnecterPad" v-if="typeConfirmation === 'deconnecter-pad'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerPad" @keydown.enter.space.prevent="supprimerPad" v-if="typeConfirmation === 'supprimer-pad'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="reinitialiserMessages" @keydown.enter.space.prevent="reinitialiserMessages" v-else-if="typeConfirmation === 'reinitialiser-messages'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="reinitialiserActivite" @keydown.enter.space.prevent="reinitialiserActivite" v-else-if="typeConfirmation === 'reinitialiser-activite'">{{ $t('oui') }}</span>
-						<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="exporterPad" @keydown.enter.space.prevent="exporterPad" v-else-if="typeConfirmation === 'exporter-pad'">{{ $t('oui') }}</span>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="fermerModaleConfirmation">{{ $t('non') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerBloc" v-if="typeConfirmation === 'supprimer-bloc'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerColonne" v-else-if="typeConfirmation === 'supprimer-colonne'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCommentaire" v-else-if="typeConfirmation === 'supprimer-commentaire'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="seDeconnecterPad" v-else-if="typeConfirmation === 'deconnecter-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="typeConfirmation === 'supprimer-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserMessages" v-else-if="typeConfirmation === 'reinitialiser-messages'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserActivite" v-else-if="typeConfirmation === 'reinitialiser-activite'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad" v-else-if="typeConfirmation === 'exporter-pad'">{{ $t('oui') }}</button>
 					</div>
 				</div>
 			</div>

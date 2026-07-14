@@ -1,5 +1,9 @@
 import vue from '@vitejs/plugin-vue'
 import ssr from 'vike/plugin'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export default {
 	plugins: [vue(), ssr()],
@@ -17,6 +21,9 @@ export default {
 		}
 	},
 	build: {
-		target: ['es2019']
+		target: ['es2019'],
+		modulePreload: {
+			polyfill: false
+		}
 	}
 }

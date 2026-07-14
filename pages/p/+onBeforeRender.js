@@ -1,43 +1,26 @@
-import axios from 'axios'
-
 export { onBeforeRender }
 
 async function onBeforeRender (pageContext) {
 	let pageProps
 	let redirection = '/'
-	const id = pageContext.routeParams.id
-	const token = pageContext.routeParams.token
 	const identifiant = pageContext.identifiant
 	const statut = pageContext.statut
 	let pads = pageContext.pads
-	const reponse = await axios.post(pageContext.hote + '/api/recuperer-donnees-pad', {
-		id: id,
-		token: token,
-		identifiant: identifiant,
-		statut: statut,
-		pads: pads
-	}, {
-		headers: { 'Content-Type': 'application/json' }
-	}).catch(function () {
-		if (statut === 'utilisateur') {
-			redirection = '/u/' + identifiant
-		}
-		pageProps = { redirection }
-	})
-	if (!reponse || !reponse.hasOwnProperty('data') || !reponse.data.hasOwnProperty('pad') || !reponse.data.hasOwnProperty('blocs') || !reponse.data.hasOwnProperty('activite') || (reponse.data && reponse.data === 'erreur')) {
+	const donneesPad = pageContext.donneesPad
+	if (typeof donneesPad !== 'object' || !donneesPad || !donneesPad.hasOwnProperty('pad') || !donneesPad.hasOwnProperty('blocs') || !donneesPad.hasOwnProperty('activite')) {
 		if (statut === 'utilisateur') {
 			redirection = '/u/' + identifiant
 		}
 		pageProps = { redirection }
 	} else {
 		let admin = false
-		if ((statut === 'utilisateur' && ((reponse.data.pad.hasOwnProperty('identifiant') && reponse.data.pad.identifiant === identifiant) || (reponse.data.pad.hasOwnProperty('admins') && reponse.data.pad.admins.includes(identifiant)))) || (statut === 'auteur' && reponse.data.pad.hasOwnProperty('identifiant') && reponse.data.pad.identifiant === identifiant && reponse.data.pad.hasOwnProperty('id') && pads.includes(parseInt(reponse.data.pad.id)))) {
+		if ((statut === 'utilisateur' && ((donneesPad.pad.hasOwnProperty('identifiant') && donneesPad.pad.identifiant === identifiant) || (donneesPad.pad.hasOwnProperty('admins') && donneesPad.pad.admins.includes(identifiant)))) || (statut === 'auteur' && donneesPad.pad.hasOwnProperty('identifiant') && donneesPad.pad.identifiant === identifiant && donneesPad.pad.hasOwnProperty('id') && pads.includes(parseInt(donneesPad.pad.id, 10)))) {
 			admin = true
 		}
-		if (!admin && reponse.data.pad.acces === 'prive' && statut === 'utilisateur') {
+		if (!admin && donneesPad.pad.acces === 'prive' && statut === 'utilisateur') {
 			redirection = '/u/' + identifiant
 			pageProps = { redirection }
-		} else if (!admin && reponse.data.pad.acces === 'prive' && statut !== 'utilisateur') {
+		} else if (!admin && donneesPad.pad.acces === 'prive' && statut !== 'utilisateur') {
 			pageProps = { redirection }
 		} else {
 			const urlOriginal = pageContext.urlOriginal
@@ -48,9 +31,9 @@ async function onBeforeRender (pageContext) {
 			const langues = pageContext.langues
 			const nom = pageContext.nom
 			const langue = pageContext.langue
-			const pad = reponse.data.pad
-			const blocs = reponse.data.blocs
-			const activite = reponse.data.activite
+			const pad = donneesPad.pad
+			const blocs = donneesPad.blocs
+			const activite = donneesPad.activite
 			const titre = pad.titre + ' - Digipad by La Digitale'
 			if (!admin) {
 				pads = []

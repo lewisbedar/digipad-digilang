@@ -299,7 +299,7 @@
 	"editionNom": "Name editing",
 	"modeOrganiserAutreUtilisateur": "The Organize mode is being used by another admin.",
 	"modeOrganiserProprietaire": "The owner of the pad has just activated the Organize Mode.",
-	"capsuleEnCoursModification": "This capsule is already being modified by another user.",
+	"capsuleEnCoursModification": "⚠️ This capsule is being modified by another user.",
 	"ordreCapsules": "Order of the capsules",
 	"croissant": "ascending",
 	"decroissant": "descending",
@@ -413,5 +413,8 @@
 	"classer": "Sort",
 	"supprimerFormatage": "Remove formatting",
 	"exposant": "Exponent",
-	"ouvrirLienNouvelOnglet": "Open link in a new tab"
+	"ouvrirLienNouvelOnglet": "Open link in a new tab",
+	"erreurTranscodage": "Error while transcoding the file.",
+	"capsuleSupprimeeUtilisateur": "The capsule you were editing has just been deleted.",
+	"erreurTentativesNombreuses": "Too many incorrect attempts. Please wait before trying again."
 }

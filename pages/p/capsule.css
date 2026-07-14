@@ -164,13 +164,17 @@
 #blocs.colonnes .bloc.haut .menu-colonne .bouton:nth-child(2) {
 	font-size: 24px;
 	color: #fff;
-	margin-right: 0.7rem;
 	cursor: pointer;
+}
+
+#blocs.colonnes .bloc.haut .menu-colonne .bouton:nth-child(2) {
+	margin-left: 1.4rem;
 }
 
 #blocs.colonnes .bloc.haut .menu-colonne .bouton.supprimer {
 	font-size: 24px;
 	color: #ff6259;
+	margin-left: 1.4rem;
 	cursor: pointer;
 }
 
@@ -190,6 +194,7 @@
 }
 
 #blocs.colonnes .bloc.haut.ajouter-colonne {
+	width: 100%;
 	text-align: center;
 	cursor: pointer;
 	border: 2px solid #fff;
@@ -205,7 +210,7 @@
     justify-content: center;
 }
 
-#blocs.colonnes .ajouter span {
+#blocs.colonnes .ajouter button {
 	width: 4rem;
 	height: 4rem;
 	background: #e32f6c;
@@ -289,26 +294,37 @@
 }
 
 #blocs .bloc .media a,
-#blocs .bloc .media span {
+#blocs .bloc .media button {
 	display: block;
     text-align: center;
 	padding: 1rem;
+	margin: auto;
 }
 
-#blocs .bloc .media span img.vignette {
+#blocs .bloc .media button.bouton-image {
+	padding: 0;
+}
+
+#blocs .bloc .media button.bouton-image img {
+	max-width: 100%;
+	max-height: 40rem;
+}
+
+#blocs .bloc .media a img.vignette,
+#blocs .bloc .media button img.vignette {
 	max-width: 100%;
 	border-radius: 1rem;
 }
 
-#blocs .bloc .media a img,
-#blocs .bloc .media span img:not(.vignette) {
+#blocs .bloc .media a img:not(.vignette),
+#blocs .bloc .media button:not(.bouton-image) img:not(.vignette) {
 	max-width: 128px;
 	max-height: 128px;
 	border-radius: 1rem;
 }
 
 #blocs .bloc .media a:focus,
-#blocs .bloc .media span:focus,
+#blocs .bloc .media button:focus,
 #blocs .bloc .media img:focus {
 	box-shadow: rgba(0, 0, 0, 0.16) 0px 1px 4px;
 	outline: 0;
@@ -400,6 +416,8 @@
 
 #blocs .bloc .moderation .bouton {
 	display: block;
+	width: calc(100% - 1.4rem);
+	margin: 0 0.7rem 0.7rem;
     padding: 0.9rem;
     text-align: center;
 	font-size: 12px;
@@ -418,15 +436,11 @@
 	cursor: default;
 }
 
-#blocs .bloc .moderation .bouton {
-	margin: 0 0.7rem 0.7rem;
-}
-
-#blocs .bloc .moderation .bouton[role="button"] {
+#blocs .bloc .moderation button.bouton {
 	cursor: pointer;
 }
 
-#blocs .bloc .moderation .bouton[role="button"]:hover {
+#blocs .bloc .moderation button.bouton:hover {
 	background: #e32f6c;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);

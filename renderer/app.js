@@ -52,36 +52,36 @@ function createPageApp (pageContext) {
 
 	app.config.globalProperties.$pageContext = pageContext
 
-	app.config.globalProperties.$formaterDate = function (date, langue) {
+	app.config.globalProperties.$formaterDate = (date, langue) => {
 		let dateFormattee = ''
 		switch (langue) {
-		case 'fr':
-			dateFormattee = dayjs(new Date(date)).locale('fr').format('L') + ' à ' + dayjs(new Date(date)).locale('fr').format('LT')
-			break
-		case 'es':
-			dateFormattee = dayjs(new Date(date)).locale('es').format('L') + ' a las ' + dayjs(new Date(date)).locale('es').format('LT')
-			break
-		case 'it':
-			dateFormattee = dayjs(new Date(date)).locale('it').format('L') + ' alle ' + dayjs(new Date(date)).locale('it').format('LT')
-			break
-		case 'de':
-			dateFormattee = dayjs(new Date(date)).locale('de').format('L') + ' um ' + dayjs(new Date(date)).locale('de').format('LT')
-			break
-		case 'en':
-			dateFormattee = dayjs(new Date(date)).locale('en').format('L') + ' at ' + dayjs(new Date(date)).locale('en').format('LT')
-			break
-		case 'hr':
-			dateFormattee = dayjs(new Date(date)).locale('hr').format('L') + ' u ' + dayjs(new Date(date)).locale('hr').format('LT')
-			break
+			case 'fr':
+				dateFormattee = dayjs(new Date(date)).locale('fr').format('L') + ' à ' + dayjs(new Date(date)).locale('fr').format('LT')
+				break
+			case 'es':
+				dateFormattee = dayjs(new Date(date)).locale('es').format('L') + ' a las ' + dayjs(new Date(date)).locale('es').format('LT')
+				break
+			case 'it':
+				dateFormattee = dayjs(new Date(date)).locale('it').format('L') + ' alle ' + dayjs(new Date(date)).locale('it').format('LT')
+				break
+			case 'de':
+				dateFormattee = dayjs(new Date(date)).locale('de').format('L') + ' um ' + dayjs(new Date(date)).locale('de').format('LT')
+				break
+			case 'en':
+				dateFormattee = dayjs(new Date(date)).locale('en').format('L') + ' at ' + dayjs(new Date(date)).locale('en').format('LT')
+				break
+			case 'hr':
+				dateFormattee = dayjs(new Date(date)).locale('hr').format('L') + ' u ' + dayjs(new Date(date)).locale('hr').format('LT')
+				break
 		}
 		return dateFormattee
 	}
 	
-	app.config.globalProperties.$formaterDateRelative = function (date, langue) {
+	app.config.globalProperties.$formaterDateRelative = (date, langue) => {
 		return dayjs(new Date(date)).locale(langue).fromNow()
 	}
 	
-	app.config.globalProperties.$verifierEmail = function (email) {
+	app.config.globalProperties.$verifierEmail = (email) => {
 		const regexExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/gi
 		return regexExp.test(email)
 	}

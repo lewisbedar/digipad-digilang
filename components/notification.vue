@@ -4,31 +4,48 @@
 
 <script>
 export default {
-	name: 'Notification',
+	name: 'DigipadNotification',
 	props: {
 		notification: String
 	},
+	data () {
+		return {
+			elementNotification: null,
+			evenementNotification: null,
+			timeoutNotification: null
+		}
+	},
+	beforeUnmount () {
+		if (this.timeoutNotification) {
+			clearTimeout(this.timeoutNotification)
+		}
+		if (this.elementNotification && this.evenementNotification) {
+			this.elementNotification.removeEventListener('click', this.evenementNotification)
+		}
+		const container = document.querySelector('#notification')
+		if (container) container.innerHTML = ''
+	},
 	watch: {
-		notification: function (notification) {
-			if (notification !== '') {
-				const element = document.createElement('div')
-				const id = 'notification_' + Date.now().toString(36) + Math.random().toString(36).substring(2)
-				element.id = id
-				element.textContent = notification
-				element.classList.add('notification')
-				document.querySelector('#notification').appendChild(element)
-				if (notification !== this.$t('rechargerPage')) {
-					setTimeout(function () {
-						element.parentNode.removeChild(element)
-						this.$emit('fermer')
-					}.bind(this), 2500)
-				} else {
-					element.style.cursor = 'pointer'
-					element.addEventListener('click', function () {
-						element.parentNode.removeChild(element)
-						this.$emit('fermer')
-					}.bind(this))
+		notification (notification) {
+			if (notification === '') return
+			const element = document.createElement('div')
+			element.textContent = notification
+			element.classList.add('notification')
+			document.querySelector('#notification')?.appendChild(element)
+			if (notification !== this.$t('rechargerPage')) {
+				this.timeoutNotification = setTimeout(() => {
+					this.timeoutNotification = null
+					element?.remove()
+					this.$emit('fermer')
+				}, 2500)
+			} else {
+				element.style.cursor = 'pointer'
+				this.elementNotification = element
+				this.evenementNotification = () => {
+					element?.remove()
+					this.$emit('fermer')
 				}
+				element.addEventListener('click', this.evenementNotification)
 			}
 		}
 	}

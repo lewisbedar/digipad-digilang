@@ -23,7 +23,7 @@
 
 <script>
 export default {
-	name: 'Chargement'
+	name: 'DigipadChargement'
 }
 </script>
 

@@ -8,25 +8,25 @@
 		</header>
 
 		<nav id="nav">
-			<span id="compte" role="button" :tabindex="definirTabIndex()" :title="$t('parametresCompte')" :aria-label="$t('parametresCompte')" @click="gererMenu" @keydown.enter.space.prevent="gererMenu"><i class="material-icons" aria-hidden="true">account_circle</i></span>
-			<span id="deconnexion" role="button" :tabindex="definirTabIndex()" :title="$t('deconnexion')" :aria-label="$t('deconnexion')" @click="deconnexion" @keydown.enter.space.prevent="deconnexion"><i class="material-icons" aria-hidden="true">power_settings_new</i></span>
+			<button type="button" id="compte" :disabled="disabled" :title="$t('parametresCompte')" :aria-label="$t('parametresCompte')" @click="gererMenu"><i class="material-icons" aria-hidden="true">account_circle</i></button>
+			<button type="button" id="deconnexion" :disabled="disabled" :title="$t('deconnexion')" :aria-label="$t('deconnexion')" @click="deconnexion"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
 		</nav>
 
-		<div class="menu gauche" v-if="menu" role="menu" :aria-label="$t('parametresCompte')">
+		<div id="menu-utilisateur" class="menu gauche" v-if="menu" role="menu" :aria-label="$t('parametresCompte')" @keydown="gererClavierMenu">
 			<div class="en-tete">
 				<span class="titre">{{ $t('parametresCompte') }}</span>
-				<span class="fermer" role="button" :tabindex="definirTabIndexMenu()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu" @keydown.enter.space.prevent="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></span>
+				<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<div class="contenu ascenseur">
 				<div class="conteneur">
 					<label>{{ $t('langue') }}</label>
 					<div id="langues">
-						<span role="button" :tabindex="definirTabIndexMenu()" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')" @keydown.enter.space.prevent="modifierLangue('fr')">FR</span>
-						<span role="button" :tabindex="definirTabIndexMenu()" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')" @keydown.enter.space.prevent="modifierLangue('es')">ES</span>
-						<span role="button" :tabindex="definirTabIndexMenu()" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')" @keydown.enter.space.prevent="modifierLangue('it')">IT</span>
-						<span role="button" :tabindex="definirTabIndexMenu()" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')" @keydown.enter.space.prevent="modifierLangue('de')">DE</span>
-						<span role="button" :tabindex="definirTabIndexMenu()" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')" @keydown.enter.space.prevent="modifierLangue('en')">EN</span>
-						<span role="button" :tabindex="definirTabIndexMenu()" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')" @keydown.enter.space.prevent="modifierLangue('hr')">HR</span>
+						<button type="button" role="menuitem" tabindex="-1" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+						<button type="button" role="menuitem" tabindex="-1" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+						<button type="button" role="menuitem" tabindex="-1" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+						<button type="button" role="menuitem" tabindex="-1" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+						<button type="button" role="menuitem" tabindex="-1" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+						<button type="button" role="menuitem" tabindex="-1" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 					</div>
 				</div>
 				<div class="conteneur">
@@ -35,70 +35,70 @@
 				</div>
 				<div class="conteneur">
 					<label for="nom">{{ $t('nom') }}</label>
-					<input id="nom" type="text" maxlength="48" :value="nom" @keydown.enter="modifierInformations">
+					<input id="nom" type="text" role="menuitem" tabindex="-1" maxlength="48" :value="nom" @keydown.enter="modifierInformations">
 				</div>
 				<div class="conteneur">
 					<label for="email">{{ $t('email') }}</label>
-					<input id="email" type="text" :value="email" @keydown.enter="modifierInformations">
+					<input id="email" type="text" role="menuitem" tabindex="-1" :value="email" @keydown.enter="modifierInformations">
 				</div>
 				<div class="conteneur conteneur-bouton">
-					<span class="bouton-vert" role="button":tabindex="definirTabIndexMenu()" @click="modifierInformations" @keydown.enter.space.prevent="modifierInformations">{{ $t('enregistrer') }}</span>
+					<button type="button" class="bouton-vert" role="menuitem" tabindex="-1" @click="modifierInformations">{{ $t('enregistrer') }}</button>
 				</div>
 				<div class="conteneur conteneur-bouton">
-					<span class="bouton-bleu" role="button" :tabindex="definirTabIndexMenu()" @click="afficherModaleMotDePasse" @keydown.enter.space.prevent="afficherModaleMotDePasse">{{ $t('modifierMotDePasse') }}</span>
+					<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleMotDePasse">{{ $t('modifierMotDePasse') }}</button>
 				</div>
 				<div class="conteneur conteneur-bouton">
-					<span class="bouton-rouge" role="button" :tabindex="definirTabIndexMenu()" @click="afficherModaleConfirmation($event, '', 'supprimer-compte')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, '', 'supprimer-compte')">{{ $t('supprimerCompte') }}</span>
+					<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherModaleConfirmation($event, '', 'supprimer-compte')">{{ $t('supprimerCompte') }}</button>
 				</div>
 			</div>
 		</div>
 
 		<div id="onglets" class="ascenseur">
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" :class="{'actif': onglet === 'pads-crees'}" @click="modifierOnglet('pads-crees')" @keydown.enter.space.prevent="modifierOnglet('pads-crees')">
+			<button type="button" class="onglet" :disabled="disabled" :class="{'actif': onglet === 'pads-crees'}" @click="modifierOnglet('pads-crees')">
 				<span>{{ $t('padsCrees') }}</span>
 				<span class="badge">{{ padsCrees.length }}</span>
-			</div>
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" :class="{'actif': onglet === 'pads-rejoints'}" @click="modifierOnglet('pads-rejoints')" @keydown.enter.space.prevent="modifierOnglet('pads-rejoints')">
+			</button>
+			<button type="button" class="onglet" :disabled="disabled" :class="{'actif': onglet === 'pads-rejoints'}" @click="modifierOnglet('pads-rejoints')">
 				<span>{{ $t('padsRejoints') }}</span>
 				<span class="badge">{{ padsRejoints.length }}</span>
-			</div>
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" :class="{'actif': onglet === 'pads-admins'}" @click="modifierOnglet('pads-admins')" @keydown.enter.space.prevent="modifierOnglet('pads-admins')">
+			</button>
+			<button type="button" class="onglet" :disabled="disabled" :class="{'actif': onglet === 'pads-admins'}" @click="modifierOnglet('pads-admins')">
 				<span>{{ $t('padsAdmins') }}</span>
 				<span class="badge">{{ padsAdmins.length }}</span>
-			</div>
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" :class="{'actif': onglet === 'pads-favoris'}" @click="modifierOnglet('pads-favoris')" @keydown.enter.space.prevent="modifierOnglet('pads-favoris')">
+			</button>
+			<button type="button" class="onglet" :disabled="disabled" :class="{'actif': onglet === 'pads-favoris'}" @click="modifierOnglet('pads-favoris')">
 				<span>{{ $t('favoris') }}</span>
 				<span class="badge">{{ padsFavoris.length }}</span>
-			</div>
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" v-for="(item, indexItem) in dossiers" :class="{'actif': onglet === item.id}" @click="modifierOnglet(item.id)" @keydown.enter.space.prevent="modifierOnglet(item.id)" :key="'dossier_' + indexItem">
+			</button>
+			<button type="button" class="onglet" :disabled="disabled" v-for="(item, indexItem) in dossiers" :class="{'actif': onglet === item.id}" @click="modifierOnglet(item.id)" @dragover="gererDrag" @dragcenter="gererDrag" @drop="glisserDeplacerPad($event, item.id)" :key="'dossier_' + indexItem">
 				<span>{{ item.nom }}</span>
 				<span class="badge">{{ item.pads.length }}</span>
 				<div class="menu-dossier">
-					<span class="bouton" role="button" :tabindex="definirTabIndex()" :title="$t('modifierDossier')" :aria-label="$t('modifierDossier')" @click="afficherModaleModifierDossier($event, item.id)" @keydown.enter.space.prevent="afficherModaleModifierDossier($event, item.id)"><i class="material-icons" aria-hidden="true">edit</i></span>
-					<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerDossier')" :aria-label="$t('supprimerDossier')" @click="afficherModaleConfirmation($event, item.id, 'supprimer-dossier')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, item.id, 'supprimer-dossier')"><i class="material-icons" aria-hidden="true">delete</i></span>
+					<button type="button" class="bouton" :disabled="disabled" :title="$t('modifierDossier')" :aria-label="$t('modifierDossier')" @click="afficherModaleModifierDossier($event, item.id)"><i class="material-icons" aria-hidden="true">edit</i></button>
+					<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerDossier')" :aria-label="$t('supprimerDossier')" @click="afficherModaleConfirmation($event, item.id, 'supprimer-dossier')"><i class="material-icons" aria-hidden="true">delete</i></button>
 				</div>
-			</div>
-			<div class="onglet" role="button" :tabindex="definirTabIndex()" :class="{'actif': onglet === 'pads-corbeille'}" @click="modifierOnglet('pads-corbeille')" @keydown.enter.space.prevent="modifierOnglet('pads-corbeille')">
+			</button>
+			<button type="button" class="onglet" :disabled="disabled" :class="{'actif': onglet === 'pads-corbeille'}" @click="modifierOnglet('pads-corbeille')">
 				<span>{{ $t('corbeille') }}</span>
 				<span class="badge">{{ padsCorbeille.length }}</span>
-			</div>
-			<span class="bouton-ajouter" role="button" :tabindex="definirTabIndex()" @click="afficherModaleAjouterDossier" @keydown.enter.space.prevent="afficherModaleAjouterDossier">{{ $t('ajouterDossier') }}</span>
+			</button>
+			<button type="button" class="bouton-ajouter" :disabled="disabled" @click="afficherModaleAjouterDossier">{{ $t('ajouterDossier') }}</button>
 		</div>
 
 		<div id="pads" class="ascenseur" :class="affichage">
 			<div class="section">
 				<div id="boutons">
-					<span id="bouton-creer" role="button" :tabindex="definirTabIndex()" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleCreerPad" @keydown.enter.space.prevent="afficherModaleCreerPad">{{ $t('creerPad') }}</span>
-					<span id="bouton-importer" role="button" :tabindex="definirTabIndex()" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleImporterPad" @keydown.enter.space.prevent="afficherModaleImporterPad">{{ $t('importerPad') }}</span>
+					<button type="button" id="bouton-creer" :disabled="disabled" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleCreerPad">{{ $t('creerPad') }}</button>
+					<button type="button" id="bouton-importer" :disabled="disabled" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleImporterPad">{{ $t('importerPad') }}</button>
 				</div>
 				<div id="afficher">
 					<div class="rechercher" role="search" :aria-label="$t('rechercher')">
 						<label for="champ-rechercher" :title="$t('rechercher')" :aria-label="$t('rechercher')"><i class="material-icons" aria-hidden="true">search</i></label>
-						<input id="champ-rechercher" type="search" :value="requete" :placeholder="$t('rechercher')" @input="requete = $event.target.value">
+						<input id="champ-rechercher" type="search" :value="requete" :disabled="disabled" :placeholder="$t('rechercher')" @input="requete = $event.target.value">
 					</div>
 					<div class="classer">
 						<label for="champ-classer" :title="$t('classer')" :aria-label="$t('classer')"><i class="material-icons" aria-hidden="true">sort</i></label>
-						<select id="champ-classer" @change="modifierClassement($event.target.value)">
+						<select id="champ-classer" :disabled="disabled" @change="modifierClassement($event.target.value)">
 							<option value="date-asc" :selected="classement === 'date-asc'">{{ $t('dateAsc') }}</option>
 							<option value="date-desc" :selected="classement === 'date-desc'">{{ $t('dateDesc') }}</option>
 							<option value="alpha-asc" :selected="classement === 'alpha-asc'">{{ $t('alphaAsc') }}</option>
@@ -106,22 +106,22 @@
 						</select>
 					</div>
 					<div class="afficher">
-						<span role="button" :tabindex="definirTabIndex()" :title="$t('affichageListe')" :aria-label="$t('affichageListe')" @click="modifierAffichage('liste')" @keydown.enter.space.prevent="modifierAffichage('liste')"><i class="material-icons" aria-hidden="true">view_list</i></span>
-						<span role="button" :tabindex="definirTabIndex()" :title="$t('affichageMosaique')" :aria-label="$t('affichageMosaique')" @click="modifierAffichage('mosaique')" @keydown.enter.space.prevent="modifierAffichage('mosaique')"><i class="material-icons" aria-hidden="true">view_module</i></span>
+						<button type="button" :disabled="disabled" :title="$t('affichageListe')" :aria-label="$t('affichageListe')" @click="modifierAffichage('liste')"><i class="material-icons" aria-hidden="true">view_list</i></button>
+						<button type="button" :disabled="disabled" :title="$t('affichageMosaique')" :aria-label="$t('affichageMosaique')" @click="modifierAffichage('mosaique')"><i class="material-icons" aria-hidden="true">view_module</i></button>
 					</div>
 				</div>
 				<div id="actions-dossier" v-if="onglet !== 'pads-crees' && onglet !== 'pads-rejoints' && onglet !== 'pads-admins' && onglet !== 'pads-favoris' && onglet !== 'pads-corbeille'">
 					<div class="conteneur">
 						<label>{{ $t('actionsDossier') }}</label>
-						<span class="bouton" role="button" :tabindex="definirTabIndex()" :title="$t('modifierDossier')" :aria-label="$t('modifierDossier')" @click="afficherModaleModifierDossier($event, onglet)" @keydown.enter.space.prevent="afficherModaleModifierDossier($event, onglet)"><i class="material-icons" aria-hidden="true">edit</i></span>
-						<span class="bouton supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerDossier')" :aria-label="$t('supprimerDossier')" @click="afficherModaleConfirmation($event, onglet, 'supprimer-dossier')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, onglet, 'supprimer-dossier')"><i class="material-icons" aria-hidden="true">delete</i></span>
+						<button type="button" class="bouton" :disabled="disabled" :title="$t('modifierDossier')" :aria-label="$t('modifierDossier')" @click="afficherModaleModifierDossier($event, onglet)"><i class="material-icons" aria-hidden="true">edit</i></button>
+						<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerDossier')" :aria-label="$t('supprimerDossier')" @click="afficherModaleConfirmation($event, onglet, 'supprimer-dossier')"><i class="material-icons" aria-hidden="true">delete</i></button>
 					</div>
 				</div>
 				<div class="pads" aria-live="polite" v-if="pads.length > 0 && requete === ''">
-					<template v-for="(pad, indexPad) in pads">
-						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'" :key="'pad_liste_' + indexPad">
+					<template v-for="pad in pads" :key="'pad_' + pad.id">
+						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
 							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" />
-							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token">
+							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />
 								<span class="titre">{{ pad.titre }}</span>
 								<span class="dossier" v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</span>
@@ -132,27 +132,27 @@
 								<span class="vues" v-else-if="!pad.hasOwnProperty('vues')"> - 0 {{ $t('vue') }}</span>
 							</a>
 							<div class="actions" v-if="pad.identifiant === identifiant">
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="dupliquer" role="button" :tabindex="definirTabIndex()" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></span>
-								<span class="exporter" role="button" :tabindex="definirTabIndex()" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></span>
-								<span class="restaurer" role="button" :tabindex="definirTabIndex()" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" @keydown.enter.space.prevent="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" @keydown.enter.space.prevent="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
 							</div>
 							<div class="actions" v-else>
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></button>
 								<span class="admin" :title="$t('admin')" v-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">admin_panel_settings</i></span>
 							</div>
 						</div>
 
-						<div :id="'pad-' + pad.id" class="pad mosaique" v-else :key="'pad_mosaique_' + indexPad">
-							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token">
+						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
+							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
 									<span class="date">{{ $t('creeLe') }} {{ $formaterDate(pad.date, langue) }}</span>
@@ -163,21 +163,21 @@
 								</div>
 							</a>
 							<div class="actions" v-if="pad.identifiant === identifiant">
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="dupliquer" role="button" :tabindex="definirTabIndex()" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></span>
-								<span class="exporter" role="button" :tabindex="definirTabIndex()" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></span>
-								<span class="restaurer" role="button" :tabindex="definirTabIndex()" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" @keydown.enter.space.prevent="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" @keydown.enter.space.prevent="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
 							</div>
 							<div class="actions" v-else>
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" @keydown.enter.space.prevent="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></button>
 								<span class="admin" :title="$t('admin')" v-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">admin_panel_settings</i></span>
 							</div>
 						</div>
@@ -190,10 +190,10 @@
 					<span v-else>{{ $t('aucunPadDossier') }}</span>
 				</div>
 				<div class="pads" v-else-if="resultats.length > 0 && requete !== ''">
-					<template v-for="(pad, indexPad) in resultats">
-						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'" :key="'pad_liste_' + indexPad">
+					<template v-for="pad in resultats" :key="'resultats_' + pad.id">
+						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
 							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" />
-							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token">
+							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />
 								<span class="titre">{{ pad.titre }}</span>
 								<span class="dossier" v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</span>
@@ -204,27 +204,27 @@
 								<span class="vues" v-else-if="!pad.hasOwnProperty('vues')"> - 0 {{ $t('vue') }}</span>
 							</a>
 							<div class="actions" v-if="pad.identifiant === identifiant">
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="dupliquer" role="button" :tabindex="definirTabIndex()" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></span>
-								<span class="exporter" role="button" :tabindex="definirTabIndex()" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></span>
-								<span class="restaurer" role="button" :tabindex="definirTabIndex()"  :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" @keydown.enter.space.prevent="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" @keydown.enter.space.prevent="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="restaurer" :disabled="disabled"  :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
 							</div>
 							<div class="actions" v-else>
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" @keydown.enter.space.prevent="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></button>
 								<span class="admin" :title="$t('admin')" v-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">admin_panel_settings</i></span>
 							</div>
 						</div>
 
-						<div :id="'pad-' + pad.id" class="pad mosaique" v-else :key="'pad_mosaique_' + indexPad">
-							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token">
+						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
+							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
 									<span class="date">{{ $t('creeLe') }} {{ $formaterDate(pad.date, langue) }}</span>
@@ -235,21 +235,21 @@
 								</div>
 							</a>
 							<div class="actions" v-if="pad.identifiant === identifiant">
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="dupliquer" role="button" :tabindex="definirTabIndex()" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></span>
-								<span class="exporter" role="button" :tabindex="definirTabIndex()" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></span>
-								<span class="restaurer" role="button" :tabindex="definirTabIndex()" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" @keydown.enter.space.prevent="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" @keydown.enter.space.prevent="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else-if="favoris.includes(pad.id) && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
 							</div>
 							<div class="actions" v-else>
-								<span class="ajouter-favori" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" @keydown.enter.space.prevent="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></span>
-								<span class="supprimer-favori" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" @keydown.enter.space.prevent="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></span>
-								<span class="deplacer" role="button" :tabindex="definirTabIndex()" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" @keydown.enter.space.prevent="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></span>
-								<span class="supprimer" role="button" :tabindex="definirTabIndex()" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" @keydown.enter.space.prevent="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></span>
+								<button type="button" class="ajouter-favori" :disabled="disabled" :title="$t('ajouterFavori')" :aria-label="$t('ajouterFavori')" @click="ajouterFavori(pad)" v-if="!favoris.includes(pad.id)"><i class="material-icons" aria-hidden="true">star_outline</i></button>
+								<button type="button" class="supprimer-favori" :disabled="disabled" :title="$t('supprimerFavori')" :aria-label="$t('supprimerFavori')" @click="supprimerFavori(pad.id)" v-else><i class="material-icons" aria-hidden="true">star</i></button>
+								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="definirTypePad(pad.id) === 'pad-rejoint'"><i class="material-icons" aria-hidden="true">delete</i></button>
+								<button type="button" class="supprimer" :disabled="disabled" :title="$t('quitterPad')" :aria-label="$t('quitterPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer-admin')" v-else-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">logout</i></button>
 								<span class="admin" :title="$t('admin')" v-if="definirTypePad(pad.id) === 'pad-admin'"><i class="material-icons" aria-hidden="true">admin_panel_settings</i></span>
 							</div>
 						</div>
@@ -262,21 +262,21 @@
 		</div>
 
 		<div class="conteneur-modale" v-if="modale === 'mot-de-passe'">
-			<div id="motdepasse" class="modale" role="dialog">
+			<div id="modale-motdepasse" class="modale" role="dialog" aria-modal="true" :aria-label="$t('modifierMotDePasse')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('modifierMotDePasse') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasse" @keydown.enter.space.prevent="fermerModaleMotDePasse"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasse"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('modifierMotDePasse')">
+					<div class="contenu">
 						<label for="champ-motdepasse-actuel">{{ $t('motDePasseActuel') }}</label>
-						<input id="champ-motdepasse-actuel" type="password" maxlength="48" :value="motDePasse" @input="motDePasse = $event.target.value">
+						<input id="champ-motdepasse-actuel" type="password" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value">
 						<label for="champ-nouveau-motdepasse">{{ $t('nouveauMotDePasse') }}</label>
-						<input id="champ-nouveau-motdepasse" type="password" maxlength="48" :value="nouveauMotDePasse" @input="nouveauMotDePasse = $event.target.value">
+						<input id="champ-nouveau-motdepasse" type="password" maxlength="48" :value="nouveauMotDePasse" :disabled="disabledModale" @input="nouveauMotDePasse = $event.target.value">
 						<label for="champ-confirmation-motdepasse">{{ $t('confirmationNouveauMotDePasse') }}</label>
-						<input id="champ-confirmation-motdepasse" type="password" maxlength="48" :value="confirmationNouveauMotDePasse" @input="confirmationNouveauMotDePasse = $event.target.value" @keydown.enter="modifierMotDePasse">
+						<input id="champ-confirmation-motdepasse" type="password" maxlength="48" :value="confirmationNouveauMotDePasse" :disabled="disabledModale" @input="confirmationNouveauMotDePasse = $event.target.value" @keydown.enter="modifierMotDePasse">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierMotDePasse" @keydown.enter.space.prevent="modifierMotDePasse">{{ $t('modifier') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="modifierMotDePasse">{{ $t('modifier') }}</button>
 						</div>
 					</div>
 				</div>
@@ -284,17 +284,17 @@
 		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'creer-pad'">
-			<div id="creation" class="modale" role="dialog">
+			<div id="creation" class="modale" role="dialog" aria-modal="true" :aria-label="$t('creerPad')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('creerPad') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCreerPad" @keydown.enter.space.prevent="fermerModaleCreerPad"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale || chargementModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCreerPad"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('creerPad')">
+					<div class="contenu">
 						<label for="champ-titre-pad">{{ $t('titrePad') }}</label>
-						<input id="champ-titre-pad" type="text" maxlength="48" :value="titre" @input="titre = $event.target.value" @keydown.enter="creerPad">
+						<input id="champ-titre-pad" type="text" maxlength="48" :value="titre" :disabled="disabledModale" @input="titre = $event.target.value" @keydown.enter="creerPad">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="creerPad" @keydown.enter.space.prevent="creerPad" v-if="!chargementModale">{{ $t('creer') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="creerPad" v-if="!chargementModale">{{ $t('creer') }}</button>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -305,25 +305,25 @@
 		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'deplacer-pad'">
-			<div id="deplacement" class="modale" role="dialog">
+			<div id="deplacement" class="modale" role="dialog" aria-modal="true" :aria-label="$t('ajouterDansDossier')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('ajouterDansDossier') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDeplacerPad" @keydown.enter.space.prevent="fermerModaleDeplacerPad"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDeplacerPad"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('ajouterDansDossier')">
+					<div class="contenu">
 						<label for="champ-dossier-actuel">{{ $t('dossierActuel') }}</label>
 						<input id="champ-dossier-actuel" type="text" :value="$t('aucunDossier')" disabled v-if="dossierActuel.id === 'aucun'">
 						<input id="champ-dossier-actuel" type="text" :value="dossierActuel.nom" disabled v-else>
 						<label for="champ-dossier-pad">{{ $t('dossierDestination') }}</label>
-						<select id="champ-dossier-pad">
+						<select id="champ-dossier-pad" :disabled="disabledModale">
 							<option value="aucun" v-if="dossierActuel.id !== 'aucun'">{{ $t('aucunDossier') }}</option>
-							<template v-for="(item, indexItem) in dossiers">
-								<option v-if="dossierActuel.id !== item.id" :value="item.id" :key="'dossier_' + indexItem">{{ item.nom }}</option>
+							<template v-for="(item, indexItem) in dossiers" :key="'dossier_' + indexItem">
+								<option v-if="dossierActuel.id !== item.id" :value="item.id">{{ item.nom }}</option>
 							</template>
 						</select>
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="deplacerPad" @keydown.enter.space.prevent="deplacerPad">{{ $t('valider') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="deplacerPad">{{ $t('valider') }}</button>
 						</div>
 					</div>
 				</div>
@@ -331,36 +331,36 @@
 		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'importer-pad'">
-			<div id="import" class="modale" role="dialog">
+			<div id="import" class="modale" role="dialog" aria-modal="true" :aria-label="$t('importerPad')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('importerPad') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleImporterPad" @keydown.enter.space.prevent="fermerModaleImporterPad"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleImporterPad"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('importerPad')">
+					<div class="contenu">
 						<div class="conteneur-interrupteur" v-if="progressionImport === 0">
 							<span>{{ $t('importerCommentaires') }}</span>
-							<label class="bouton-interrupteur" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
-								<input id="parametre-commentaires" type="checkbox" :checked="parametresImport.commentaires" @change="modifierParametresImport($event, 'commentaires')">
+							<label class="bouton-interrupteur" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
+								<input id="parametre-commentaires" type="checkbox" :checked="parametresImport.commentaires" :disabled="disabledModale" @change="modifierParametresImport($event, 'commentaires')">
 								<span class="barre" />
 							</label>
 						</div>
 						<div class="conteneur-interrupteur" v-if="progressionImport === 0">
 							<span>{{ $t('importerEvaluations') }}</span>
-							<label class="bouton-interrupteur" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
-								<input id="parametre-evaluations" type="checkbox" :checked="parametresImport.evaluations" @change="modifierParametresImport($event, 'evaluations')">
+							<label class="bouton-interrupteur" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
+								<input id="parametre-evaluations" type="checkbox" :checked="parametresImport.evaluations" :disabled="disabledModale" @change="modifierParametresImport($event, 'evaluations')">
 								<span class="barre" />
 							</label>
 						</div>
 						<div class="conteneur-interrupteur" v-if="progressionImport === 0">
 							<span>{{ $t('importerActivite') }}</span>
-							<label class="bouton-interrupteur" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('parametre-activite')">
-								<input id="parametre-activite" type="checkbox" :checked="parametresImport.activite" @change="modifierParametresImport($event, 'activite')">
+							<label class="bouton-interrupteur" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('parametre-activite')">
+								<input id="parametre-activite" type="checkbox" :checked="parametresImport.activite" :disabled="disabledModale" @change="modifierParametresImport($event, 'activite')">
 								<span class="barre" />
 							</label>
 						</div>
-						<label for="importer-pad" class="bouton" :tabindex="definirTabIndexModale()" @keydown.enter.space.prevent="activerInput('importer-pad')" v-if="progressionImport === 0">{{ $t('selectionnerPad') }}</label>
-						<input id="importer-pad" type="file" style="display: none" accept=".zip" @change="importerPad" v-if="progressionImport === 0">
+						<label for="importer-pad" class="bouton" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('importer-pad')" v-if="progressionImport === 0">{{ $t('selectionnerPad') }}</label>
+						<input id="importer-pad" type="file" :disabled="disabledModale" style="display: none" accept=".zip" @change="importerPad" v-if="progressionImport === 0">
 						<div class="conteneur-chargement progression" v-if="progressionImport > 0">
 							<progress class="barre-progression" max="100" :value="progressionImport" />
 							<div class="chargement" />
@@ -371,17 +371,17 @@
 		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'ajouter-dossier'">
-			<div id="ajout-dossier" class="modale" role="dialog">
+			<div id="ajout-dossier" class="modale" role="dialog" aria-modal="true" :aria-label="$t('ajouterDossier')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('ajouterDossier') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleAjouterDossier" @keydown.enter.space.prevent="fermerModaleAjouterDossier"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleAjouterDossier"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('ajouterDossier')">
+					<div class="contenu">
 						<label for="champ-nom-dossier">{{ $t('nomDossier') }}</label>
-						<input id="champ-nom-dossier" type="text" maxlength="48" :value="dossier" @input="dossier = $event.target.value" @keydown.enter="ajouterDossier">
+						<input id="champ-nom-dossier" type="text" maxlength="48" :value="dossier" :disabled="disabledModale" @input="dossier = $event.target.value" @keydown.enter="ajouterDossier">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="ajouterDossier" @keydown.enter.space.prevent="ajouterDossier">{{ $t('valider') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterDossier">{{ $t('valider') }}</button>
 						</div>
 					</div>
 				</div>
@@ -389,17 +389,17 @@
 		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'modifier-dossier'">
-			<div id="modification-dossier" class="modale" role="dialog">
+			<div id="modification-dossier" class="modale" role="dialog" aria-modal="true" :aria-label="$t('modifierDossier')">
 				<div class="en-tete">
 					<span class="titre">{{ $t('modifierDossier') }}</span>
-					<span class="fermer" role="button" :tabindex="definirTabIndexModale()" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierDossier" @keydown.enter.space.prevent="fermerModaleModifierDossier"><i class="material-icons" aria-hidden="true">close</i></span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleModifierDossier"><i class="material-icons" aria-hidden="true">close</i></button>
 				</div>
 				<div class="conteneur">
-					<div class="contenu" role="form" :aria-label="$t('modifierDossier')">
+					<div class="contenu">
 						<label for="champ-nom-dossier">{{ $t('nomDossier') }}</label>
-						<input id="champ-nom-dossier" type="text" maxlength="48" :value="dossier" @input="dossier = $event.target.value" @keydown.enter="modifierDossier">
+						<input id="champ-nom-dossier" type="text" maxlength="48" :value="dossier" :disabled="disabledModale" @input="dossier = $event.target.value" @keydown.enter="modifierDossier">
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="definirTabIndexModale()" @click="modifierDossier" @keydown.enter.space.prevent="modifierDossier">{{ $t('valider') }}</span>
+							<button type="button" class="bouton" :disabled="disabledModale" @click="modifierDossier">{{ $t('valider') }}</button>
 						</div>
 					</div>
 				</div>
@@ -407,7 +407,7 @@
 		</div>
 
 		<div id="conteneur-message" class="conteneur-modale" v-if="modaleConfirmation !== ''">
-			<div class="modale" role="dialog">
+			<div class="modale" role="dialog" aria-modal="true">
 				<div class="conteneur">
 					<div class="contenu">
 						<div class="message" v-html="$t('confirmationDupliquerPad')" v-if="modaleConfirmation === 'dupliquer'" />
@@ -417,13 +417,13 @@
 						<div class="message" v-html="$t('confirmationSupprimerCompte')" v-else-if="modaleConfirmation === 'supprimer-compte'" />
 						<div class="message" v-html="$t('confirmationSupprimerDossier')" v-else-if="modaleConfirmation === 'supprimer-dossier'" />
 						<div class="actions">
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="fermerModaleConfirmation" @keydown.enter.space.prevent="fermerModaleConfirmation">{{ $t('non') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="dupliquerPad" @keydown.enter.space.prevent="dupliquerPad" v-if="modaleConfirmation === 'dupliquer'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="exporterPad" @keydown.enter.space.prevent="exporterPad" v-else-if="modaleConfirmation === 'exporter'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerPad" @keydown.enter.space.prevent="supprimerPad" v-else-if="modaleConfirmation === 'supprimer'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerPad" @keydown.enter.space.prevent="supprimerPad" v-else-if="modaleConfirmation === 'supprimer-admin'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerCompte" @keydown.enter.space.prevent="supprimerCompte" v-else-if="modaleConfirmation === 'supprimer-compte'">{{ $t('oui') }}</span>
-							<span class="bouton" role="button" :tabindex="message === '' ? 0 : -1" @click="supprimerDossier" @keydown.enter.space.prevent="supprimerDossier" v-else-if="modaleConfirmation === 'supprimer-dossier'">{{ $t('oui') }}</span>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="fermerModaleConfirmation">{{ $t('non') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="dupliquerPad" v-if="modaleConfirmation === 'dupliquer'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad" v-else-if="modaleConfirmation === 'exporter'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="modaleConfirmation === 'supprimer'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="modaleConfirmation === 'supprimer-admin'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCompte" v-else-if="modaleConfirmation === 'supprimer-compte'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerDossier" v-else-if="modaleConfirmation === 'supprimer-dossier'">{{ $t('oui') }}</button>
 						</div>
 					</div>
 				</div>
@@ -451,7 +451,7 @@ import Message from '#root/components/message.vue'
 import Notification from '#root/components/notification.vue'
 
 export default {
-	name: 'Utilisateur',
+	name: 'DigipadUtilisateur',
 	components: {
 		ChargementPage,
 		Chargement,
@@ -508,8 +508,22 @@ export default {
 			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK
 		}
 	},
+	computed : {
+		tabIndexModale () {
+			return this.message === '' && this.modaleConfirmation === '' ? 0 : -1
+		},
+		disabled () {
+			return this.modale === '' && this.message === '' && this.modaleConfirmation === '' ? false : true
+		},
+		disabledModale () {
+			return this.message === '' && this.modaleConfirmation === '' ? false : true
+		},
+		disabledConfirmation () {
+			return this.message === '' ? false : true
+		}
+	},
 	watch: {
-		onglet: function (onglet) {
+		onglet (onglet) {
 			let pads = []
 			if (onglet === 'pads-crees') {
 				pads = JSON.parse(JSON.stringify(this.padsCrees))
@@ -523,14 +537,14 @@ export default {
 				pads = JSON.parse(JSON.stringify(this.padsCorbeille))
 			} else {
 				let listePads = []
-				this.dossiers.forEach(function (dossier) {
+				this.dossiers.forEach((dossier) => {
 					if (dossier.id === onglet) {
 						listePads = dossier.pads
 					}
 				})
 				const padsTous = this.padsCrees.concat(this.padsRejoints, this.padsAdmins)
-				padsTous.forEach(function (pad) {
-					if (listePads.includes(pad.id) && !pads.map(function (e) { return e.id }).includes(pad.id)) {
+				padsTous.forEach((pad) => {
+					if (listePads.includes(pad.id) && !pads.map((e) => { return e.id }).includes(pad.id)) {
 						pads.push(pad)
 					}
 				})
@@ -539,7 +553,7 @@ export default {
 			this.requete = ''
 			this.classer(this.classement)
 		},
-		requete: function () {
+		requete () {
 			this.rechercher()
 		}
 	},
@@ -561,10 +575,10 @@ export default {
 			this.$socket.emit('modifierlangue', this.langue)
 		}
 
-		this.pads = this.padsCrees
+		this.pads = JSON.parse(JSON.stringify(this.padsCrees))
 
 		const favoris = []
-		this.padsFavoris.forEach(function (pad) {
+		this.padsFavoris.forEach((pad) => {
 			favoris.push(pad.id)
 		})
 		this.favoris = favoris
@@ -578,11 +592,9 @@ export default {
 	mounted () {
 		document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)
 
-		imagesLoaded('#pads', { background: true }, function () {
-			setTimeout(function () {
-				this.chargementPage = false
-			}.bind(this), 300)
-		}.bind(this))
+		imagesLoaded('#pads', { background: true }, () => {
+			this.chargementPage = false
+		})
 
 		document.addEventListener('keydown', this.gererClavier, false)
 	},
@@ -594,9 +606,9 @@ export default {
 			if (!this.menu) {
 				this.elementPrecedent = (document.activeElement || document.body)
 				this.menu = true
-				setTimeout(function () {
+				setTimeout(() => {
 					document.querySelector('.menu').classList.add('ouvert')
-					document.querySelector('.menu .fermer').focus()
+					document.querySelector('.menu .fermer')?.focus()
 				}, 0)
 			} else {
 				this.fermerMenu()
@@ -610,16 +622,7 @@ export default {
 			this.onglet = onglet
 		},
 		activerInput (id) {
-			document.querySelector('#' + id).click()
-		},
-		definirTabIndex () {
-			return this.modale === '' && this.message === '' && this.modaleConfirmation === '' && !this.menu ? 0 : -1
-		},
-		definirTabIndexMenu () {
-			return this.modale === '' && this.message === '' && this.modaleConfirmation === '' ? 0 : -1
-		},
-		definirTabIndexModale () {
-			return this.message === '' && this.modaleConfirmation === '' ? 0 : -1
+			document.querySelector('#' + id)?.click()
 		},
 		definirFond (fond, id) {
 			if (fond.substring(0, 1) === '#') {
@@ -644,8 +647,8 @@ export default {
 			if (this.padsCrees.length < this.limite) {
 				this.elementPrecedent = (document.activeElement || document.body)
 				this.modale = 'creer-pad'
-				this.$nextTick(function () {
-					document.querySelector('#creation input').focus()
+				this.$nextTick(() => {
+					document.querySelector('#creation input')?.focus()
 				})
 			} else {
 				this.message = this.$t('limitePad', { limite: this.limite })
@@ -663,23 +666,25 @@ export default {
 					titre: this.titre,
 					identifiant: this.identifiant,
 					dossier: dossierId
-				}).then(function (reponse) {
+				}).then((reponse) => {
 					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					window.location.href = '/p/' + donnees.id + '/' + donnees.token
+				}).catch((err) => {
+					this.chargementModale = false
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'erreur_creation') {
-						this.chargementModale = true
+					} else if (err.response?.data === 'erreur_creation') {
 						this.message = this.$t('erreurCreationPad')
 					} else {
-						window.location.href = '/p/' + donnees.id + '/' + donnees.token
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargementModale = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		fermerModaleCreerPad () {
+			if (this.chargementModale) {
+				return
+			}
 			this.modale = ''
 			this.titre = ''
 			this.gererFocus()
@@ -688,8 +693,8 @@ export default {
 			if (this.padsCrees.length < this.limite) {
 				this.elementPrecedent = (document.activeElement || document.body)
 				this.modale = 'importer-pad'
-				this.$nextTick(function () {
-					document.querySelector('.modale .fermer').focus()
+				this.$nextTick(() => {
+					document.querySelector('.modale .fermer')?.focus()
 				})
 			} else {
 				this.message = this.$t('limitePad', { limite: this.limite })
@@ -700,47 +705,45 @@ export default {
 		},
 		importerPad () {
 			const champ = document.querySelector('#importer-pad')
-			const extension = champ.files[0].name.substring(champ.files[0].name.lastIndexOf('.') + 1).toLowerCase()
+			const extension = champ.files && champ.files[0] ? champ.files[0].name.substring(champ.files[0].name.lastIndexOf('.') + 1).toLowerCase() : ''
 			if (champ.files && champ.files[0] && extension === 'zip') {
 				const formulaire = new FormData()
 				formulaire.append('parametres', JSON.stringify(this.parametresImport))
 				formulaire.append('fichier', champ.files[0])
 				axios.post(this.hote + '/api/importer-pad', formulaire, {
-					headers: {
-						'Content-Type': 'multipart/form-data'
-					},
-					onUploadProgress: function (progression) {
+					onUploadProgress: (progression) => {
 						const pourcentage = parseInt(Math.round((progression.loaded * 100) / progression.total))
 						this.progressionImport = pourcentage
-					}.bind(this)
-				}).then(function (reponse) {
+					}
+				}).then((reponse) => {
 					this.fermerModaleImporterPad()
 					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.onglet = 'pads-crees'
+					this.pads.push(donnees)
+					this.padsCrees.push(donnees)
+					this.classer(this.classement)
+					this.$nextTick(() => {
+						if (this.affichage === 'liste' && document.querySelector('#pad-' + donnees.id + ' a.meta')) {
+							document.querySelector('#pad-' + donnees.id + ' a.meta')?.focus()
+						} else if (this.affichage === 'mosaique' && document.querySelector('#pad-' + donnees.id + ' a')) {
+							document.querySelector('#pad-' + donnees.id + ' a')?.focus()
+						}
+					})
+					this.notification = this.$t('padImporte')
+				}).catch((err) => {
+					this.fermerModaleImporterPad()
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'erreur_import') {
+					} else if (err.response?.data === 'erreur_import') {
 						this.message = this.$t('erreurImportPad')
-					} else if (donnees === 'donnees_corrompues') {
+					} else if (err.response?.data === 'donnees_corrompues') {
 						this.message = this.$t('donneesCorrompuesImportPad')
-					} else if (donnees === 'erreur_espace_disque') {
+					} else if (err.response?.data === 'erreur_espace_disque') {
 						this.message = this.$t('erreurEspaceDisque')
 					} else {
-						this.onglet = 'pads-crees'
-						this.padsCrees.push(donnees)
-						this.classer(this.classement)
-						this.$nextTick(function () {
-							if (this.affichage === 'liste' && document.querySelector('#pad-' + donnees.id + ' a.meta')) {
-								document.querySelector('#pad-' + donnees.id + ' a.meta').focus()
-							} else if (this.affichage === 'mosaique' && document.querySelector('#pad-' + donnees.id + ' a')) {
-								document.querySelector('#pad-' + donnees.id + ' a').focus()
-							}
-						}.bind(this))
-						this.notification = this.$t('padImporte')
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.fermerModaleImporterPad()
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			} else {
 				this.message = this.$t('formatFichierPasAccepte')
 				champ.value = ''
@@ -766,8 +769,8 @@ export default {
 			}
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modaleConfirmation = type
-			this.$nextTick(function () {
-				document.querySelector('.modale .bouton').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
 		fermerModaleConfirmation () {
@@ -781,76 +784,68 @@ export default {
 			axios.post(this.hote + '/api/ajouter-pad-favoris', {
 				padId: pad.id,
 				identifiant: this.identifiant
-			}).then(function (reponse) {
+			}).then(() => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
+				this.padsFavoris.push(pad)
+				this.favoris.push(pad.id)
+				this.notification = this.$t('padAjouteFavoris')
+				this.$nextTick(() => {
+					document.querySelector('#pad-' + pad.id + ' .supprimer-favori')?.focus()
+				})
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
 					window.location.replace('/')
-				} else if (donnees === 'pad_ajoute_favoris') {
-					this.padsFavoris.push(pad)
-					this.favoris.push(pad.id)
-					this.notification = this.$t('padAjouteFavoris')
-					this.$nextTick(function () {
-						document.querySelector('#pad-' + pad.id + ' .supprimer-favori').focus()
-					})
 				} else {
 					this.message = this.$t('erreurAjoutFavoris')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		supprimerFavori (padId) {
 			this.chargement = true
 			axios.post(this.hote + '/api/supprimer-pad-favoris', {
 				padId: padId,
 				identifiant: this.identifiant
-			}).then(function (reponse) {
+			}).then((reponse) => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
-					window.location.replace('/')
-				} else if (donnees === 'pad_supprime_favoris') {
-					this.padsFavoris.forEach(function (pad, indexPad) {
-						if (pad.id === padId) {
-							this.padsFavoris.splice(indexPad, 1)
-						}
-					}.bind(this))
-					this.favoris.forEach(function (favori, indexFavori) {
-						if (favori === padId) {
-							this.favoris.splice(indexFavori, 1)
-						}
-					}.bind(this))
-					if (this.onglet === 'pads-favoris') {
-						this.pads.forEach(function (pad, indexPad) {
-							if (pad.id === padId) {
-								this.pads.splice(indexPad, 1)
-							}
-						}.bind(this))
-						this.resultats.forEach(function (pad, indexPad) {
-							if (pad.id === padId) {
-								this.resultats.splice(indexPad, 1)
-							}
-						}.bind(this))
+				this.padsFavoris.forEach((pad, indexPad) => {
+					if (pad.id === padId) {
+						this.padsFavoris.splice(indexPad, 1)
 					}
-					this.notification = this.$t('padSupprimeFavoris')
-					this.$nextTick(function () {
-						if (document.querySelector('#pad-' + padId + ' .ajouter-favori')) {
-							document.querySelector('#pad-' + padId + ' .ajouter-favori').focus()
+				})
+				this.favoris.forEach((favori, indexFavori) => {
+					if (favori === padId) {
+						this.favoris.splice(indexFavori, 1)
+					}
+				})
+				if (this.onglet === 'pads-favoris') {
+					this.pads.forEach((pad, indexPad) => {
+						if (pad.id === padId) {
+							this.pads.splice(indexPad, 1)
 						}
 					})
+					this.resultats.forEach((pad, indexPad) => {
+						if (pad.id === padId) {
+							this.resultats.splice(indexPad, 1)
+						}
+					})
+				}
+				this.notification = this.$t('padSupprimeFavoris')
+				this.$nextTick(() => {
+					document.querySelector('#pad-' + padId + ' .ajouter-favori')?.focus()
+				})
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
 				} else {
 					this.message = this.$t('erreurSuppressionFavoris')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		verifierDossierPad (padId) {
 			let padDansDossier = false
-			this.dossiers.forEach(function (dossier) {
+			this.dossiers.forEach((dossier) => {
 				if (dossier.pads.includes(padId)) {
 					padDansDossier = true
 				}
@@ -859,7 +854,7 @@ export default {
 		},
 		verifierTitreDossier (padId) {
 			let titreDossier = ''
-			this.dossiers.forEach(function (dossier) {
+			this.dossiers.forEach((dossier) => {
 				if (dossier.pads.includes(padId)) {
 					titreDossier = dossier.nom
 				}
@@ -869,16 +864,16 @@ export default {
 		afficherModaleDeplacerPad (padId) {
 			this.padId = padId
 			let dossierActuel = { id: 'aucun', nom: '' }
-			this.dossiers.forEach(function (dossier) {
+			this.dossiers.forEach((dossier) => {
 				if (dossier.pads.includes(this.padId)) {
 					dossierActuel = { id: dossier.id, nom: dossier.nom }
 				}
-			}.bind(this))
+			})
 			this.dossierActuel = dossierActuel
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'deplacer-pad'
-			this.$nextTick(function () {
-				document.querySelector('.modale input').focus()
+			this.$nextTick(() => {
+				document.querySelector('.modale input')?.focus()
 			})
 		},
 		deplacerPad () {
@@ -890,38 +885,84 @@ export default {
 					padId: this.padId,
 					destination: destination,
 					identifiant: this.identifiant
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
-						window.location.replace('/')
-					} else if (donnees === 'pad_deplace') {
-						this.dossiers.forEach(function (dossier, indexDossier) {
-							if (dossier.pads.includes(this.padId)) {
-								const indexPad = dossier.pads.indexOf(this.padId)
-								this.dossiers[indexDossier].pads.splice(indexPad, 1)
-							}
-							if (dossier.id === destination) {
-								this.dossiers[indexDossier].pads.push(this.padId)
-							}
-						}.bind(this))
-						if (this.onglet === this.dossierActuel.id) {
-							this.pads.forEach(function (pad, indexPad) {
-								if (pad.id === this.padId) {
-									this.pads.splice(indexPad, 1)
-								}
-							}.bind(this))
+					this.dossiers.forEach((dossier, indexDossier) => {
+						if (dossier.id === destination && !dossier.pads.includes(this.padId)) {
+							this.dossiers[indexDossier].pads.push(this.padId)
+						} else if (dossier.pads.includes(this.padId)) {
+							this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(this.padId), 1)
 						}
-						this.notification = this.$t('padDeplace')
-						this.fermerModaleDeplacerPad()
+					})
+					if (this.onglet === this.dossierActuel.id) {
+						this.pads.forEach((pad, indexPad) => {
+							if (pad.id === this.padId) {
+								this.pads.splice(indexPad, 1)
+							}
+						})
+					}
+					this.notification = this.$t('padDeplace')
+					this.fermerModaleDeplacerPad()
+				}).catch((err) => {
+					this.chargement = false
+					this.fermerModaleDeplacerPad()
+					if (err.response?.data === 'non_connecte') {
+						window.location.replace('/')
 					} else {
 						this.message = this.$t('erreurDeplacementPad')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.fermerModaleDeplacerPad()
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
+			}
+		},
+		definirIdPad (event, id) {
+			event.dataTransfer.setData('id', id)
+		},
+		gererDrag (event) {
+			event.preventDefault()
+			event.stopPropagation()
+		},
+		glisserDeplacerPad (event, destination) {
+			let padId = event.dataTransfer.getData('id')
+			if (padId !== '') {
+				padId = parseInt(padId, 10)
+				let dossierActuel = { id: 'aucun', nom: '' }
+				this.dossiers.forEach((dossier) => {
+					if (dossier.pads.includes(padId)) {
+						dossierActuel = { id: dossier.id, nom: dossier.nom }
+					}
+				})
+				if (destination !== dossierActuel.id) {
+					this.chargement = true
+					axios.post(this.hote + '/api/deplacer-pad', {
+						padId: padId,
+						destination: destination,
+						identifiant: this.identifiant
+					}).then(() => {
+						this.chargement = false
+						this.dossiers.forEach((dossier, indexDossier) => {
+							if (dossier.id === destination && !dossier.pads.includes(padId)) {
+								this.dossiers[indexDossier].pads.push(padId)
+							} else if (dossier.pads.includes(padId)) {
+								this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(padId), 1)
+							}
+						})
+						if (this.onglet === dossierActuel.id) {
+							this.pads.forEach((pad, indexPad) => {
+								if (pad.id === padId) {
+									this.pads.splice(indexPad, 1)
+								}
+							})
+						}
+						this.notification = this.$t('padDeplace')
+					}).catch((err) => {
+						this.chargement = false
+						if (err.response?.data === 'non_connecte') {
+							window.location.replace('/')
+						} else {
+							this.message = this.$t('erreurDeplacementPad')
+						}
+					})
+				}
 			}
 		},
 		fermerModaleDeplacerPad () {
@@ -932,6 +973,10 @@ export default {
 		},
 		dupliquerPad () {
 			this.modaleConfirmation = ''
+			if (this.padsCrees.length >= this.limite) {
+				this.message = this.$t('limitePad', { limite: this.limite })
+				return
+			}
 			this.chargement = true
 			const onglets = ['pads-crees', 'pads-rejoints', 'pads-admins', 'pads-favoris', 'pads-corbeille']
 			let dossierId = ''
@@ -942,45 +987,43 @@ export default {
 				padId: this.padId,
 				identifiant: this.identifiant,
 				dossier: dossierId
-			}).then(function (reponse) {
+			}).then((reponse) => {
 				this.chargement = false
 				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
-					window.location.replace('/')
-				} else if (donnees === 'erreur_duplication') {
-					this.message = this.$t('erreurDuplicationPad')
-				} else if (donnees === 'erreur_espace_disque') {
-					this.message = this.$t('erreurEspaceDisque')
-				} else if (donnees === 'non_autorise') {
-					this.message = this.$t('actionNonAutorisee')
-				} else {
-					this.padsCrees.push(donnees)
-					if (dossierId !== '') {
-						this.pads.push(donnees)
-						this.dossiers.forEach(function (dossier, indexDossier) {
-							if (dossier.id === dossierId) {
-								this.dossiers[indexDossier].pads.push(donnees.id)
-							}
-						}.bind(this))
-					} else {
-						this.onglet = 'pads-crees'
-					}
-					this.classer(this.classement)
-					this.$nextTick(function () {
-						if (this.affichage === 'liste' && document.querySelector('#pad-' + donnees.id + ' a.meta')) {
-							document.querySelector('#pad-' + donnees.id + ' a.meta').focus()
-						} else if (this.affichage === 'mosaique' && document.querySelector('#pad-' + donnees.id + ' a')) {
-							document.querySelector('#pad-' + donnees.id + ' a').focus()
+				this.pads.push(donnees)
+				this.padsCrees.push(donnees)
+				if (dossierId !== '') {
+					this.dossiers.forEach((dossier, indexDossier) => {
+						if (dossier.id === dossierId) {
+							this.dossiers[indexDossier].pads.push(donnees.id)
 						}
-					}.bind(this))
-					this.notification = this.$t('padDuplique')
-					this.padId = ''
+					})
+				} else {
+					this.onglet = 'pads-crees'
 				}
-			}.bind(this)).catch(function () {
+				this.classer(this.classement)
+				this.$nextTick(() => {
+					if (this.affichage === 'liste' && document.querySelector('#pad-' + donnees.id + ' a.meta')) {
+						document.querySelector('#pad-' + donnees.id + ' a.meta')?.focus()
+					} else if (this.affichage === 'mosaique' && document.querySelector('#pad-' + donnees.id + ' a')) {
+						document.querySelector('#pad-' + donnees.id + ' a')?.focus()
+					}
+				})
+				this.notification = this.$t('padDuplique')
+				this.padId = ''
+			}).catch((err) => {
 				this.chargement = false
 				this.padId = ''
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'erreur_duplication') {
+					this.message = this.$t('erreurDuplicationPad')
+				} else if (err.response?.data === 'erreur_espace_disque') {
+					this.message = this.$t('erreurEspaceDisque')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
+				}
+			})
 		},
 		exporterPad () {
 			this.modaleConfirmation = ''
@@ -989,26 +1032,25 @@ export default {
 				padId: this.padId,
 				identifiant: this.identifiant,
 				admin: ''
-			}).then(function (reponse) {
+			}).then((reponse) => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
+				saveAs('/temp/' + reponse.data, 'pad-' + this.padId + '.zip')
+				this.padId = ''
+			}).catch((err) => {
+				this.chargement = false
+				this.padId = ''
+				if (err.response?.data === 'non_connecte') {
 					window.location.replace('/')
-				} else if (donnees === 'erreur_export') {
+				} else if (err.response?.data === 'erreur_export') {
 					this.message = this.$t('erreurExportPad')
-				} else if (donnees === 'non_autorise') {
+				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
-				} else if (donnees === 'pad_inexistant') {
+				} else if (err.response?.data === 'pad_inexistant') {
 					this.message = this.$t('padInexistant')
 				} else {
-					saveAs('/temp/' + donnees, 'pad-' + this.padId + '.zip')
+					this.message = this.$t('erreurCommunicationServeur')
 				}
-				this.padId = ''
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.padId = ''
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		restaurerPad (pad) {
 			this.chargement = true
@@ -1016,48 +1058,47 @@ export default {
 			axios.post(this.hote + '/api/restaurer-pad', {
 				padId: padId,
 				identifiant: this.identifiant
-			}).then(function (reponse) {
+			}).then(() => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
-					window.location.href = '/'
-				} else if (donnees === 'non_autorise') {
+				this.padsCrees.push(pad)
+				this.padsCorbeille.forEach((pad, index) => {
+					if (pad.id === padId) {
+						if (pad.favori === true) {
+							this.padsFavoris.push(pad)
+							this.favoris.push(padId)
+						}
+						if (pad.dossier !== '') {
+							this.dossiers.forEach((dossier, indexDossier) => {
+								if (dossier.id === pad.dossier) {
+									this.dossiers[indexDossier].pads.push(padId)
+								}
+							})
+						}
+						this.padsCorbeille.splice(index, 1)
+					}
+				})
+				this.pads.forEach((pad, index) => {
+					if (pad.id === padId) {
+						this.pads.splice(index, 1)
+					}
+				})
+				this.resultats.forEach((pad, index) => {
+					if (pad.id === padId) {
+						this.resultats.splice(index, 1)
+					}
+				})
+				this.classer(this.classement)
+				this.notification = this.$t('padRestaure')
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
-				} else if (donnees === 'pad_restaure') {
-					this.padsCrees.push(pad)
-					this.padsCorbeille.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							if (pad.favori === true) {
-								this.padsFavoris.push(pad)
-								this.favoris.push(padId)
-							}
-							if (pad.dossier !== '') {
-								this.dossiers.forEach(function (dossier, indexDossier) {
-									if (dossier.id === pad.dossier) {
-										this.dossiers[indexDossier].pads.push(padId)
-									}
-								}.bind(this))
-							}
-							this.padsCorbeille.splice(index, 1)
-						}
-					}.bind(this))
-					this.pads.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							this.pads.splice(index, 1)
-						}
-					}.bind(this))
-					this.resultats.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							this.resultats.splice(index, 1)
-						}
-					}.bind(this))
-					this.classer(this.classement)
-					this.notification = this.$t('padRestaure')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		mettrePadCorbeille (pad) {
 			this.chargement = true
@@ -1065,57 +1106,55 @@ export default {
 			axios.post(this.hote + '/api/mettre-pad-corbeille', {
 				padId: padId,
 				identifiant: this.identifiant
-			}).then(function (reponse) {
+			}).then(() => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
-					window.location.href = '/'
-				} else if (donnees === 'non_autorise') {
+				pad.favori = false
+				pad.dossier = ''
+				this.padsFavoris.forEach((favori, indexFavori) => {
+					if (favori.id === padId) {
+						this.padsFavoris.splice(indexFavori, 1)
+						pad.favori = true
+					}
+				})
+				this.dossiers.forEach((dossier, index) => {
+					if (dossier.pads.includes(padId)) {
+						this.dossiers[index].pads.splice(dossier.pads.indexOf(padId), 1)
+						pad.dossier = dossier.id
+					}
+				})
+				this.padsCorbeille.push(pad)
+				this.padsCrees.forEach((pad, index) => {
+					if (pad.id === padId) {
+						this.padsCrees.splice(index, 1)
+					}
+				})
+				this.pads.forEach((pad, index) => {
+					if (pad.id === padId) {
+						this.pads.splice(index, 1)
+					}
+				})
+				this.favoris.forEach((favori, index) => {
+					if (favori === padId) {
+						this.favoris.splice(index, 1)
+					}
+				})
+				this.resultats.forEach((pad, index) => {
+					if (pad.id === padId) {
+						this.resultats.splice(index, 1)
+					}
+				})
+				this.classer(this.classement)
+				this.notification = this.$t('padDansCorbeille')
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
-				} else if (donnees === 'pad_supprime') {
-					pad.favori = false
-					pad.dossier = ''
-					this.padsFavoris.forEach(function (favori, indexFavori) {
-						if (favori.id === padId) {
-							this.padsFavoris.splice(indexFavori, 1)
-							pad.favori = true
-						}
-					}.bind(this))
-					this.dossiers.forEach(function (dossier, index) {
-						if (dossier.pads.includes(padId)) {
-							const indexContenu = dossier.pads.indexOf(padId)
-							this.dossiers[index].pads.splice(indexContenu, 1)
-							pad.dossier = dossier.id
-						}
-					}.bind(this))
-					this.padsCorbeille.push(pad)
-					this.padsCrees.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							this.padsCrees.splice(index, 1)
-						}
-					}.bind(this))
-					this.pads.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							this.pads.splice(index, 1)
-						}
-					}.bind(this))
-					this.favoris.forEach(function (favori, index) {
-						if (favori === padId) {
-							this.favoris.splice(index, 1)
-						}
-					}.bind(this))
-					this.resultats.forEach(function (pad, index) {
-						if (pad.id === padId) {
-							this.resultats.splice(index, 1)
-						}
-					}.bind(this))
-					this.classer(this.classement)
-					this.notification = this.$t('padDansCorbeille')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		supprimerPad () {
 			this.modaleConfirmation = ''
@@ -1126,74 +1165,72 @@ export default {
 				type: type,
 				identifiant: this.identifiant,
 				admin: ''
-			}).then(function (reponse) {
+			}).then(() => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
-					window.location.replace('/')
-				} else if (donnees === 'non_autorise') {
-					this.message = this.$t('actionNonAutorisee')
-				} else if (donnees === 'erreur_suppression') {
-					this.message = this.$t('erreurSuppressionPad')
-				} else {
-					this.padsCorbeille.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.padsCorbeille.splice(index, 1)
-						}
-					}.bind(this))
-					this.padsRejoints.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.padsRejoints.splice(index, 1)
-						}
-					}.bind(this))
-					this.padsAdmins.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.padsAdmins.splice(index, 1)
-						}
-					}.bind(this))
-					this.padsFavoris.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.padsFavoris.splice(index, 1)
-						}
-					}.bind(this))
-					this.favoris.forEach(function (favori, index) {
-						if (favori === this.padId) {
-							this.favoris.splice(index, 1)
-						}
-					}.bind(this))
-					this.pads.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.pads.splice(index, 1)
-						}
-					}.bind(this))
-					this.resultats.forEach(function (pad, index) {
-						if (pad.id === this.padId) {
-							this.resultats.splice(index, 1)
-						}
-					}.bind(this))
-					this.dossiers.forEach(function (dossier, indexDossier) {
-						if (dossier.pads.includes(this.padId)) {
-							const indexPad = dossier.pads.indexOf(this.padId)
-							this.dossiers[indexDossier].pads.splice(indexPad, 1)
-						}
-					}.bind(this))
-					this.notification = this.$t('padSupprime')
-					this.padId = ''
-				}
-			}.bind(this)).catch(function () {
+				this.padsCorbeille.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.padsCorbeille.splice(index, 1)
+					}
+				})
+				this.padsRejoints.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.padsRejoints.splice(index, 1)
+					}
+				})
+				this.padsAdmins.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.padsAdmins.splice(index, 1)
+					}
+				})
+				this.padsFavoris.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.padsFavoris.splice(index, 1)
+					}
+				})
+				this.favoris.forEach((favori, index) => {
+					if (favori === this.padId) {
+						this.favoris.splice(index, 1)
+					}
+				})
+				this.pads.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.pads.splice(index, 1)
+					}
+				})
+				this.resultats.forEach((pad, index) => {
+					if (pad.id === this.padId) {
+						this.resultats.splice(index, 1)
+					}
+				})
+				this.dossiers.forEach((dossier, indexDossier) => {
+					if (dossier.pads.includes(this.padId)) {
+						this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(this.padId), 1)
+					}
+				})
+				this.notification = this.$t('padSupprime')
+				this.padId = ''
+			}).catch((err) => {
 				this.chargement = false
 				this.padId = ''
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'non_autorise') {
+					this.message = this.$t('actionNonAutorisee')
+				} else if (err.response?.data === 'erreur_suppression') {
+					this.message = this.$t('erreurSuppressionPad')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
+				}
+			})
 		},
 		definirTypePad (padId) {
 			let type = ''
-			this.padsRejoints.forEach(function (pad) {
+			this.padsRejoints.forEach((pad) => {
 				if (pad.id === padId) {
 					type = 'pad-rejoint'
 				}
 			})
-			this.padsAdmins.forEach(function (pad) {
+			this.padsAdmins.forEach((pad) => {
 				if (pad.id === padId) {
 					type = 'pad-admin'
 				}
@@ -1203,13 +1240,13 @@ export default {
 		rechercher () {
 			let resultats = []
 			if (this.requete === '!maj') {
-				resultats = this.pads.filter(function (element) {
+				resultats = this.pads.filter((element) => {
 					return element.notification && element.notification.includes(this.identifiant)
-				}.bind(this))
+				})
 			} else {
-				resultats = this.pads.filter(function (element) {
+				resultats = this.pads.filter((element) => {
 					return element.titre.toLowerCase().includes(this.requete.toLowerCase())
-				}.bind(this))
+				})
 			}
 			this.resultats = resultats
 		},
@@ -1220,28 +1257,28 @@ export default {
 			}
 			switch (classement) {
 			case 'date-asc':
-				pads.sort(function (a, b) {
+				pads.sort((a, b) => {
 					const dateA = new Date(a.date).getTime()
 					const dateB = new Date(b.date).getTime()
 					return dateA > dateB ? 1 : -1
 				})
 				break
 			case 'date-desc':
-				pads.sort(function (a, b) {
+				pads.sort((a, b) => {
 					const dateA = new Date(a.date).getTime()
 					const dateB = new Date(b.date).getTime()
 					return dateA < dateB ? 1 : -1
 				})
 				break
 			case 'alpha-asc':
-				pads.sort(function (a, b) {
+				pads.sort((a, b) => {
 					const a1 = a.titre.toLowerCase()
 					const b1 = b.titre.toLowerCase()
 					return a1 < b1 ? -1 : a1 > b1 ? 1 : 0
 				})
 				break
 			case 'alpha-desc':
-				pads.sort(function (a, b) {
+				pads.sort((a, b) => {
 					const a1 = a.titre.toLowerCase()
 					const b1 = b.titre.toLowerCase()
 					return a1 > b1 ? -1 : a1 < b1 ? 1 : 0
@@ -1260,22 +1297,19 @@ export default {
 				axios.post(this.hote + '/api/modifier-classement', {
 					identifiant: this.identifiant,
 					classement: classement
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.classer(classement)
+					this.classement = classement
+					this.notification = this.$t('classementModifie')
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'erreur') {
-						this.message = this.$t('erreurCommunicationServeur')
 					} else {
-						this.classer(classement)
-						this.classement = classement
-						this.notification = this.$t('classementModifie')
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		modifierInformations () {
@@ -1284,39 +1318,35 @@ export default {
 			if ((nom !== '' && nom !== this.nom) || (email !== '' && email !== this.email)) {
 				if (email !== '' && this.$verifierEmail(email) === false) {
 					this.message = this.$t('erreurEmail')
-					return false
+					return
 				}
-				this.menu = false
 				this.chargement = true
 				axios.post(this.hote + '/api/modifier-informations', {
 					identifiant: this.identifiant,
 					nom: nom,
 					email: email
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.nom = nom
+					this.email = email
+					this.notification = this.$t('informationsModifiees')
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'erreur') {
-						this.message = this.$t('erreurCommunicationServeur')
-					} else if (donnees === 'email_existe_deja') {
+					} else if (err.response?.data === 'email_existe_deja') {
 						this.message = this.$t('emailExisteDeja', { email: email })
 					} else {
-						this.nom = nom
-						this.email = email
-						this.notification = this.$t('informationsModifiees')
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		afficherModaleMotDePasse () {
 			this.menu = false
 			this.modale = 'mot-de-passe'
-			this.$nextTick(function () {
-				document.querySelector('#champ-motdepasse-actuel').focus()
+			this.$nextTick(() => {
+				document.querySelector('#champ-motdepasse-actuel')?.focus()
 			})
 		},
 		modifierMotDePasse () {
@@ -1330,24 +1360,21 @@ export default {
 					identifiant: this.identifiant,
 					motdepasse: motDePasse,
 					nouveaumotdepasse: nouveauMotDePasse
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.notification = this.$t('motDePasseModifie')
+					this.fermerModaleMotDePasse()
+				}).catch((err) => {
+					this.chargement = false
+					this.fermerModaleMotDePasse()
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'motdepasse_incorrect') {
+					} else if (err.response?.data === 'motdepasse_incorrect') {
 						this.message = this.$t('motDePasseActuelPasCorrect')
-					} else if (donnees === 'erreur') {
-						this.message = this.$t('erreurCommunicationServeur')
 					} else {
-						this.notification = this.$t('motDePasseModifie')
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-					this.fermerModaleMotDePasse()
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.fermerModaleMotDePasse()
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			} else if (nouveauMotDePasse !== confirmationNouveauMotDePasse) {
 				this.message = this.$t('nouveauxMotsDePasseCorrespondentPas')
 			}
@@ -1361,25 +1388,25 @@ export default {
 		},
 		modifierLangue (langue) {
 			if (this.langue !== langue) {
+				this.chargement = true
 				axios.post(this.hote + '/api/modifier-langue', {
 					identifiant: this.identifiant,
 					langue: langue
-				}).then(function (reponse) {
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
-						window.location.replace('/')
-					} else if (donnees === 'erreur') {
-						this.message = this.$t('erreurCommunicationServeur')
+				}).then((reponse) => {
+					this.chargement = false
+					this.$i18n.locale = langue
+					document.getElementsByTagName('html')[0].setAttribute('lang', langue)
+					this.langue = langue
+					this.notification = this.$t('langueModifiee')
+					localStorage.setItem('digipad_lang', langue)
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.$i18n.locale = langue
-						document.getElementsByTagName('html')[0].setAttribute('lang', langue)
-						this.langue = langue
-						this.notification = this.$t('langueModifiee')
-						localStorage.setItem('digipad_lang', langue)
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		modifierAffichage (affichage) {
@@ -1388,28 +1415,25 @@ export default {
 				axios.post(this.hote + '/api/modifier-affichage', {
 					identifiant: this.identifiant,
 					affichage: affichage
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.affichage = affichage
+					this.notification = this.$t('affichageModifie')
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'erreur') {
-						this.message = this.$t('erreurCommunicationServeur')
 					} else {
-						this.affichage = affichage
-						this.notification = this.$t('affichageModifie')
+						this.message = this.$t('erreurCommunicationServeur')
 					}
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		afficherModaleAjouterDossier () {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'ajouter-dossier'
-			this.$nextTick(function () {
-				document.querySelector('#ajout-dossier input').focus()
+			this.$nextTick(() => {
+				document.querySelector('#ajout-dossier input')?.focus()
 			})
 		},
 		ajouterDossier () {
@@ -1419,23 +1443,23 @@ export default {
 				axios.post(this.hote + '/api/ajouter-dossier', {
 					dossier: this.dossier,
 					identifiant: this.identifiant
-				}).then(function (reponse) {
+				}).then((reponse) => {
 					this.chargement = false
 					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
-						window.location.replace('/')
-					} else if (donnees === 'erreur_ajout_dossier') {
-						this.message = this.$t('erreurAjoutDossier')
-					} else {
-						this.dossiers.push(donnees)
-						this.notification = this.$t('dossierAjoute')
-					}
+					this.dossiers.push(donnees)
+					this.notification = this.$t('dossierAjoute')
 					this.dossier = ''
-				}.bind(this)).catch(function () {
+				}).catch((err) => {
 					this.chargement = false
 					this.dossier = ''
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+					if (err.response?.data === 'non_connecte') {
+						window.location.replace('/')
+					} else if (err.response?.data === 'erreur_ajout_dossier') {
+						this.message = this.$t('erreurAjoutDossier')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
 			}
 		},
 		fermerModaleAjouterDossier () {
@@ -1446,16 +1470,16 @@ export default {
 		afficherModaleModifierDossier (event, id) {
 			event.preventDefault()
 			event.stopPropagation()
-			this.dossiers.forEach(function (dossier) {
+			this.dossiers.forEach((dossier) => {
 				if (dossier.id === id) {
 					this.dossier = dossier.nom
 				}
-			}.bind(this))
+			})
 			this.dossierId = id
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'modifier-dossier'
-			this.$nextTick(function () {
-				document.querySelector('#modification-dossier input').focus()
+			this.$nextTick(() => {
+				document.querySelector('#modification-dossier input')?.focus()
 			})
 		},
 		modifierDossier () {
@@ -1466,27 +1490,24 @@ export default {
 					dossier: this.dossier,
 					dossierId: this.dossierId,
 					identifiant: this.identifiant
-				}).then(function (reponse) {
+				}).then(() => {
 					this.chargement = false
-					const donnees = reponse.data
-					if (donnees === 'non_connecte') {
+					this.dossiers.forEach((dossier, index) => {
+						if (dossier.id === this.dossierId) {
+							this.dossiers[index].nom = this.dossier
+						}
+					})
+					this.notification = this.$t('dossierModifie')
+					this.fermerModaleModifierDossier()
+				}).catch((err) => {
+					this.chargement = false
+					this.fermerModaleModifierDossier()
+					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
-					} else if (donnees === 'dossier_modifie') {
-						this.dossiers.forEach(function (dossier, index) {
-							if (dossier.id === this.dossierId) {
-								this.dossiers[index].nom = this.dossier
-							}
-						}.bind(this))
-						this.notification = this.$t('dossierModifie')
 					} else {
 						this.message = this.$t('erreurModificationDossier')
 					}
-					this.fermerModaleModifierDossier()
-				}.bind(this)).catch(function () {
-					this.chargement = false
-					this.fermerModaleModifierDossier()
-					this.message = this.$t('erreurCommunicationServeur')
-				}.bind(this))
+				})
 			}
 		},
 		fermerModaleModifierDossier () {
@@ -1501,28 +1522,25 @@ export default {
 			axios.post(this.hote + '/api/supprimer-dossier', {
 				dossierId: this.dossierId,
 				identifiant: this.identifiant
-			}).then(function (reponse) {
+			}).then(() => {
 				this.chargement = false
-				const donnees = reponse.data
-				if (donnees === 'non_connecte') {
+				this.dossiers.forEach((dossier, index) => {
+					if (dossier.id === this.dossierId) {
+						this.dossiers.splice(index, 1)
+					}
+				})
+				this.onglet = 'pads-crees'
+				this.notification = this.$t('dossierSupprime')
+				this.dossierId = ''
+			}).catch((err) => {
+				this.chargement = false
+				this.dossierId = ''
+				if (err.response?.data === 'non_connecte') {
 					window.location.replace('/')
-				} else if (donnees === 'dossier_supprime') {
-					this.dossiers.forEach(function (dossier, index) {
-						if (dossier.id === this.dossierId) {
-							this.dossiers.splice(index, 1)
-						}
-					}.bind(this))
-					this.onglet = 'pads-crees'
-					this.notification = this.$t('dossierSupprime')
-					this.dossierId = ''
 				} else {
 					this.message = this.$t('erreurSuppressionDossier')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.dossierId = ''
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		supprimerCompte () {
 			this.chargement = true
@@ -1531,37 +1549,46 @@ export default {
 			axios.post(this.hote + '/api/supprimer-compte', {
 				identifiant: identifiant,
 				admin: ''
-			}).then(function (reponse) {
-				const donnees = reponse.data
-				if (donnees === 'erreur') {
-					this.chargement = false
-					this.message = this.$t('erreurCommunicationServeur')
-				} else if (donnees === 'non_autorise') {
-					this.chargement = false
+			}).then(() => {
+				this.$socket.emit('deconnexion', identifiant)
+				window.location.replace('/')
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.$socket.emit('deconnexion', identifiant)
-					window.location.replace('/')
+					this.message = this.$t('erreurCommunicationServeur')
 				}
-			}.bind(this)).catch(function () {
-				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		deconnexion () {
 			this.chargement = true
 			const identifiant = this.identifiant
-			axios.post(this.hote + '/api/deconnexion').then(function () {
+			axios.post(this.hote + '/api/deconnexion').then(() => {
 				this.$socket.emit('deconnexion', identifiant)
 				window.location.replace('/')
-			}.bind(this)).catch(function () {
+			}).catch(() => {
 				this.chargement = false
 				this.message = this.$t('erreurCommunicationServeur')
-			}.bind(this))
+			})
 		},
 		fermerModale () {
-			this.modale = ''
-			this.gererFocus()
+			if (this.modale === 'mot-de-passe') {
+				this.fermerModaleMotDePasse()
+			} else if (this.modale === 'creer-pad') {
+				this.fermerModaleCreerPad()
+			} else if (this.modale === 'deplacer-pad') {
+				this.fermerModaleDeplacerPad()
+			} else if (this.modale === 'importer-pad') {
+				this.fermerModaleImporterPad()
+			} else if (this.modale === 'ajouter-dossier') {
+				this.fermerModaleAjouterDossier()
+			} else if (this.modale === 'modifier-dossier') {
+				this.fermerModaleModifierDossier()
+			} else {
+				this.modale = ''
+				this.gererFocus()
+			}
 		},
 		fermerMessage () {
 			this.message = ''
@@ -1569,12 +1596,6 @@ export default {
 		},
 		definirElementPrecedent (element) {
 			this.elementPrecedent = element
-		},
-		gererFocus () {
-			if (this.elementPrecedent) {
-				this.elementPrecedent.focus()
-				this.elementPrecedent = null
-			}
 		},
 		gererClavier (event) {
 			if (event.key === 'Escape' && this.message !== '') {
@@ -1585,6 +1606,71 @@ export default {
 				this.fermerModale()
 			} else if (event.key === 'Escape' && this.menu) {
 				this.fermerMenu()
+			} else if (event.key === 'Tab') {
+				if (this.message !== '') {
+					const modale = document.querySelector('#message')
+					this.piegerFocus(event, modale)
+				} else if (this.modaleConfirmation !== '' || this.modale !== '') {
+					const modale = document.querySelector('.modale')
+					this.piegerFocus(event, modale)
+				}
+			}
+		},
+		gererFocus () {
+			this.$nextTick(() => {
+				if (this.elementPrecedent) {
+					this.elementPrecedent.focus()
+					this.elementPrecedent = null
+				}
+			})
+		},
+		piegerFocus (event, conteneur) {
+			if (!conteneur) return
+			const isVisible = el => el.offsetWidth || el.offsetHeight || el.getClientRects().length
+			const focusables = Array.from(conteneur.querySelectorAll('label.bouton-interrupteur, label.bouton, a[href], button, textarea, input:not([type="checkbox"]):not([type="file"]), select, [tabindex]:not([tabindex="-1"])'))
+				.filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
+			if (focusables.length === 0) return
+			const premier = focusables[0]
+			const dernier = focusables[focusables.length - 1]
+			if (event.shiftKey) {
+				if (document.activeElement === premier) {
+					event.preventDefault()
+					dernier.focus()
+				}
+			} else {
+				if (document.activeElement === dernier) {
+					event.preventDefault()
+					premier.focus()
+				}
+			}
+		},
+		gererClavierMenu (event) {
+			const items = [...document.querySelectorAll('#menu-utilisateur [role="menuitem"]')]
+			if (items.length === 0) return
+			const index = items.indexOf(document.activeElement)
+			switch (event.key) {
+			case 'ArrowDown':
+				event.preventDefault()
+				items[(index + 1) % items.length].focus()
+				break
+			case 'ArrowUp':
+				event.preventDefault()
+				items[(index - 1 + items.length) % items.length].focus()
+				break
+			case 'Home':
+				event.preventDefault()
+				items[0].focus()
+				break
+			case 'End':
+				event.preventDefault()
+				items[items.length - 1].focus()
+				break
+			case 'Escape':
+				this.fermerMenu()
+				break
+			case 'Tab':
+				this.fermerMenu()
+				break
 			}
 		}
 	}
@@ -1610,17 +1696,17 @@ export default {
 	justify-content: center;
 	align-items: center;
 	width: 220px;
-    line-height: 1;
-    font-size: 1.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
+	line-height: 1;
+	font-size: 1.6rem;
+	font-weight: 700;
+	text-transform: uppercase;
 	padding: 0.75em 1em;
-    border: 2px solid #00ced1;
+	border: 2px solid #00ced1;
 	border-radius: 2em;
 	margin-bottom: 1.5rem;
 	background: #46fbff;
 	cursor: pointer;
-    transition: all 0.1s ease-in;
+	transition: all 0.1s ease-in;
 	text-align: center;
 }
 
@@ -1661,9 +1747,9 @@ export default {
 
 #onglets {
 	position: absolute;
-    top: 4rem;
+	top: 4rem;
 	left: 4rem;
-    height: calc(100% - 4rem);
+	height: calc(100% - 4rem);
 	width: 30rem;
 	padding: 3rem 1.5rem;
 	border-right: 1px solid #ddd;
@@ -1674,6 +1760,7 @@ export default {
 #onglets .onglet {
 	position: relative;
 	display: block;
+	width: 100%;
 	text-align: left;
 	padding-bottom: 0.5rem;
 	margin-bottom: 2rem;
@@ -1705,9 +1792,9 @@ export default {
 	text-align: center;
 	transition: all 0.1s ease-in;
 	white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	width: 100%;
 	margin-bottom: 3rem;
 }
 
@@ -1736,13 +1823,13 @@ export default {
 	opacity: 1;
 }
 
-#onglets .onglet .menu-dossier span.supprimer {
+#onglets .onglet .menu-dossier button.supprimer {
 	color: #ff6259;
 	cursor: pointer;
 }
 
-#onglets .onglet .menu-dossier span + span {
-	margin-left: 0.7rem;
+#onglets .onglet .menu-dossier button + button {
+	margin-left: 1rem;
 }
 
 #onglets .onglet > span {
@@ -1766,7 +1853,7 @@ export default {
 
 #pads {
 	position: absolute;
-    top: 4rem;
+	top: 4rem;
 	left: 34rem;
 	padding: 3rem 1.5rem;
 	height: calc(100% - 4rem);
@@ -1786,10 +1873,10 @@ export default {
 .vide {
 	text-align: center;
 	font-size: 1.7rem;
-    padding: 2.5rem 0;
-    border-top: 1px dotted #ddd;
-    border-bottom: 1px dotted #ddd;
-    margin: 0 0 3rem;
+	padding: 2.5rem 0;
+	border-top: 1px dotted #ddd;
+	border-bottom: 1px dotted #ddd;
+	margin: 0 0 3rem;
 }
 
 #afficher {
@@ -1818,14 +1905,14 @@ export default {
 	margin-right: 2rem;
 }
 
-#afficher .afficher span,
+#afficher .afficher button,
 #afficher .classer label,
 #afficher .rechercher label {
 	font-size: 24px;
 	margin-right: 1rem;
 }
 
-#afficher .afficher span {
+#afficher .afficher button {
 	display: inline-block;
 	width: 24px;
 	height: 24px;
@@ -1851,11 +1938,11 @@ export default {
 	padding-right: 3rem;
 }
 
-#afficher .afficher span {
+#afficher .afficher button {
 	cursor: pointer;
 }
 
-#afficher .afficher span:last-child {
+#afficher .afficher button:last-child {
 	margin-right: 0;
 }
 
@@ -1876,14 +1963,14 @@ export default {
 	border-radius: 4px;
 }
 
-#actions-dossier span {
+#actions-dossier button {
 	color: #fff;
 	font-size: 24px;
-	margin-left: 1.5rem;
+	margin-left: 1.4rem;
 	cursor: pointer;
 }
 
-#actions-dossier span.supprimer {
+#actions-dossier button.supprimer {
 	color: #ff6259;
 	cursor: pointer;
 }
@@ -1942,6 +2029,7 @@ export default {
 	line-height: 1;
 }
 
+.pad.liste .actions button,
 .pad.liste .actions span {
 	margin-left: 1.5rem;
 	font-size: 24px;
@@ -1949,13 +2037,13 @@ export default {
 	cursor: pointer;
 }
 
-.pad.mosaique .actions span.supprimer-favori,
-.pad.liste .actions span.supprimer-favori {
+.pad.mosaique .actions button.supprimer-favori,
+.pad.liste .actions button.supprimer-favori {
 	color: #fdcc33;
 }
 
-.pad.mosaique .actions span.deplacer.actif,
-.pad.liste .actions span.deplacer.actif {
+.pad.mosaique .actions button.deplacer.actif,
+.pad.liste .actions button.deplacer.actif {
 	color: #e32f6c;
 }
 
@@ -1966,11 +2054,11 @@ export default {
 }
 
 .pad.mosaique {
-    padding: 0 0 4rem;
+	padding: 0 0 4rem;
 	width: calc(50% - 1.5rem);
 	height: 20rem;
-    border: 2px solid #001d1d;
-    margin: 0 0.75rem 1.5rem;
+	border: 2px solid #001d1d;
+	margin: 0 0.75rem 1.5rem;
 	position: relative;
 	border-radius: 1rem;
 }
@@ -1996,7 +2084,7 @@ export default {
 .pad.mosaique .meta {
 	width: 100%;
 	padding: 1.5rem;
-    background: rgba(0, 0, 0, 0.7);
+	background: rgba(0, 0, 0, 0.7);
 	text-align: center;
 }
 
@@ -2004,7 +2092,7 @@ export default {
 	display: block;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
-    font-size: 2rem;
+	font-size: 2rem;
 	line-height: 1.4;
 	font-weight: 700;
 }
@@ -2012,10 +2100,10 @@ export default {
 .pad.mosaique .vues,
 .pad.mosaique .auteur,
 .pad.mosaique .date {
-    margin-top: 0.5rem;
-    color: #ddd;
-    font-size: 1.2rem;
-    display: inline-block;
+	margin-top: 0.5rem;
+	color: #ddd;
+	font-size: 1.2rem;
+	display: inline-block;
 }
 
 .pad.mosaique .vues {
@@ -2032,12 +2120,12 @@ export default {
 	right: 0;
 	bottom: 0;
 	width: 100%;
-    font-size: 24px;
+	font-size: 24px;
 	border-top: 1px dashed #ddd;
 	line-height: 1;
 }
 
-.pad.mosaique .actions span {
+.pad.mosaique .actions button {
 	color: #001d1d;
 	cursor: pointer;
 	text-align: center;
@@ -2162,7 +2250,7 @@ export default {
 }
 
 @media screen and (orientation: landscape) and (max-height: 479px) {
-	#motdepasse {
+	#modale-motdepasse {
 		height: 90%;
 	}
 }
@@ -2217,7 +2305,7 @@ export default {
 		border-top: 1px dotted #ddd;
 	}
 
-	.pad.liste .actions span {
+	.pad.liste .actions button {
 		margin-left: 0;
 	}
 }
@@ -2236,6 +2324,7 @@ export default {
 	}
 
 	#onglets .onglet {
+		width: auto;
 		text-align: left;
 		padding-bottom: 0;
 		margin-right: 2rem;
