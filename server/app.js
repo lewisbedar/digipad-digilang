@@ -2667,7 +2667,7 @@ async function demarrerServeur () {
 				let favicons = [
 					...$('meta[property="og:image"]')
 				]
-				if (favicons.length > 0 && favicons[0].hasOwnProperty('attribs')) {
+				if (favicons.length > 0 && favicons[0].hasOwnProperty('attribs') && typeof favicons[0].attribs.content === 'string') {
 					favicon = favicons[0].attribs.content
 				} else {
 					favicons = [
@@ -2675,7 +2675,7 @@ async function demarrerServeur () {
 					].sort((a, b) => {
 						return recupererTaille(b) - recupererTaille(a)
 					})
-					if (favicons.length > 0 && favicons[0].hasOwnProperty('attribs')) {
+					if (favicons.length > 0 && favicons[0].hasOwnProperty('attribs') && typeof favicons[0].attribs.href === 'string') {
 						favicon = favicons[0].attribs.href
 					}
 				}
