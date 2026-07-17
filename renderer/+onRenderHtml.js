@@ -34,6 +34,9 @@ async function render (pageContext) {
 				<meta name="description" content="Une application en ligne pour créer des murs multimédias collaboratifs proposée par La Digitale">
 				<meta name="robots" content="${robots}">
 				<meta name="theme-color" content="#00ced1">
+				<meta name="apple-mobile-web-app-capable" content="yes">
+				<meta name="apple-mobile-web-app-status-bar-style" content="default">
+				<meta name="apple-mobile-web-app-title" content="Digipad">
 				<meta property="og:title" content="${titre}">
 				<meta property="og:description" content="Une application en ligne pour créer des murs multimédias collaboratifs proposée par La Digitale">
 				<meta property="og:type" content="website">
@@ -42,6 +45,8 @@ async function render (pageContext) {
 				<meta property="og:locale" content="fr_FR">
 				<title>${titre}</title>
 				<link rel="icon" type="image/png" href="/img/favicon.png">
+				<link rel="apple-touch-icon" href="/img/icones/apple-touch-icon.png">
+				<link rel="manifest" href="/manifest.json">
 				${umami}
 			</head>
 			<body>

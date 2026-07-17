@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title id="titre">Hors ligne - Digipad</title>
+	<link rel="icon" type="image/png" href="/img/favicon.png">
+	<style>
+		body { text-align: center; padding: 150px; }
+		h1 { font-size: 50px; }
+		body { font: 20px Helvetica, sans-serif; color: #001d1d; }
+		article { display: block; text-align: left; width: 650px; margin: 0 auto; }
+		a { color: #00ced1; text-decoration: none; }
+		a:hover { color: #001d1d; text-decoration: none; }
+	</style>
+</head>
+<body>
+	<article>
+		<h1 id="titre-page">Pas de connexion Internet</h1>
+		<div>
+			<p id="texte">Digipad nécessite une connexion Internet pour fonctionner : l'application est collaborative et affiche les mises à jour en temps réel.</p>
+			<p id="reessayer">Vérifiez votre connexion puis <a href="#" onclick="location.reload(); return false;">réessayez</a>.</p>
+		</div>
+	</article>
+	<script>
+		const traductions = {
+			fr: { titre: 'Hors ligne - Digipad', titrePage: 'Pas de connexion Internet', texte: "Digipad nécessite une connexion Internet pour fonctionner : l'application est collaborative et affiche les mises à jour en temps réel.", avant: 'Vérifiez votre connexion puis', lien: 'réessayez' },
+			en: { titre: 'Offline - Digipad', titrePage: 'No Internet connection', texte: 'Digipad requires an Internet connection to work: the application is collaborative and displays updates in real time.', avant: 'Check your connection then', lien: 'try again' },
+			es: { titre: 'Sin conexión - Digipad', titrePage: 'Sin conexión a Internet', texte: 'Digipad necesita una conexión a Internet para funcionar: la aplicación es colaborativa y muestra las actualizaciones en tiempo real.', avant: 'Comprueba tu conexión y', lien: 'vuelve a intentarlo' },
+			it: { titre: 'Offline - Digipad', titrePage: 'Nessuna connessione Internet', texte: "Digipad richiede una connessione Internet per funzionare: l'applicazione è collaborativa e mostra gli aggiornamenti in tempo reale.", avant: 'Verifica la tua connessione e', lien: 'riprova' },
+			de: { titre: 'Offline - Digipad', titrePage: 'Keine Internetverbindung', texte: 'Digipad benötigt eine Internetverbindung, um zu funktionieren: Die Anwendung ist kollaborativ und zeigt Aktualisierungen in Echtzeit an.', avant: 'Überprüfe deine Verbindung und', lien: 'versuche es erneut' },
+			hr: { titre: 'Izvan mreže - Digipad', titrePage: 'Nema internetske veze', texte: 'Digipad zahtijeva internetsku vezu za rad: aplikacija je kolaborativna i prikazuje ažuriranja u stvarnom vremenu.', avant: 'Provjerite vezu i', lien: 'pokušajte ponovno' }
+		}
+
+		function detecterLangue () {
+			const lang = localStorage.getItem('digipad_lang')
+			if (lang && traductions.hasOwnProperty(lang)) return lang
+			const navigateur = (navigator.language || 'fr').substring(0, 2)
+			if (traductions.hasOwnProperty(navigateur)) return navigateur
+			return 'fr'
+		}
+
+		const langue = detecterLangue()
+		const t = traductions[langue]
+		document.documentElement.setAttribute('lang', langue)
+		document.querySelector('#titre').textContent = t.titre
+		document.querySelector('#titre-page').textContent = t.titrePage
+		document.querySelector('#texte').textContent = t.texte
+		document.querySelector('#reessayer').firstChild.textContent = t.avant + ' '
+		document.querySelector('#reessayer').querySelector('a').textContent = t.lien
+	</script>
+</body>
+</html>

@@ -13,6 +13,12 @@ function render (pageContext) {
 	}
 }
 
+if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+	window.addEventListener('load', () => {
+		navigator.serviceWorker.register('/sw.js').catch(() => {})
+	})
+}
+
 if (process.env.NODE_ENV === 'production' && import.meta.env.VITE_MATOMO && import.meta.env.VITE_MATOMO !== '') {
 	const matomo = import.meta.env.VITE_MATOMO
 	let matomoSiteId = 1
