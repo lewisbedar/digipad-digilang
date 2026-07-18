@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Otvorite poveznicu u novoj kartici",
 	"erreurTranscodage": "Došlo je do pogreške tijekom transkodiranja datoteke.",
 	"capsuleSupprimeeUtilisateur": "Kapsula koju ste uređivali upravo je izbrisana.",
-	"erreurTentativesNombreuses": "Unijeli ste pogrešne podatke previše puta. Molimo pričekajte neko vrijeme prije nego što ponovno pokušate."
+	"erreurTentativesNombreuses": "Unijeli ste pogrešne podatke previše puta. Molimo pričekajte neko vrijeme prije nego što ponovno pokušate.",
+	"parametresColonne": "Postavke stupca",
+	"ajouterColonneGauche": "Dodaj stupac lijevo",
+	"ajouterColonneDroite": "Dodaj stupac desno",
+	"viderColonne": "Isprazni stupac",
+	"confirmationViderColonne": "Želite li stvarno isprazniti sadržaj ovog stupca?",
+	"colonneVidee": "Stupac je ispražnjen.",
+	"aVideColonne": "ispraznio/ispraznila sadržaj stupca \"{titre}\"",
+	"verrouColonnes": "Administratorska brava aktivna je za radnje sa stupcima. Molimo pokušajte ponovno za nekoliko trenutaka."
 }

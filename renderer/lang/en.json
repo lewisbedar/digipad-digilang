@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Open link in a new tab",
 	"erreurTranscodage": "Error while transcoding the file.",
 	"capsuleSupprimeeUtilisateur": "The capsule you were editing has just been deleted.",
-	"erreurTentativesNombreuses": "Too many incorrect attempts. Please wait before trying again."
+	"erreurTentativesNombreuses": "Too many incorrect attempts. Please wait before trying again.",
+	"parametresColonne": "Column settings",
+	"ajouterColonneGauche": "Add a column on the left",
+	"ajouterColonneDroite": "Add a column on the right",
+	"viderColonne": "Empty the column",
+	"confirmationViderColonne": "Do you really want to empty this column's contents?",
+	"colonneVidee": "Column emptied.",
+	"aVideColonne": "emptied the contents of the column \"{titre}\"",
+	"verrouColonnes": "An admin lock is currently active on column actions. Please try again in a few moments."
 }

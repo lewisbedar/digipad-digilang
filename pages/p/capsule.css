@@ -53,7 +53,8 @@
 }
 
 #blocs.colonnes .colonne.masquee {
-	opacity: 0.75;
+	opacity: 0.85;
+	background-color: #ddd;
 }
 
 #blocs.colonnes .conteneur-colonne {
@@ -131,14 +132,21 @@
 }
 
 #blocs.colonnes .bloc.haut {
-	text-align: center;
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 #blocs.colonnes .bloc.haut .titre-colonne {
 	display: flex;
 	align-items: center;
+	text-align: center;
     padding: 1rem;
     color: #001d1d;
+}
+
+#blocs.colonnes .bloc.haut .titre-colonne.admin {
+	width: calc(100% - (0.5rem + 24px));
 }
 
 #blocs.colonnes .bloc.haut .titre-colonne span {
@@ -157,36 +165,18 @@
 	line-height: 1;
 	font-size: 0;
     padding: 3px 1rem;
-    background: rgba(0, 0, 0, 0.25);
-}
-
-#blocs.colonnes .bloc.haut .menu-colonne .bouton:first-child,
-#blocs.colonnes .bloc.haut .menu-colonne .bouton:nth-child(2) {
-	font-size: 24px;
-	color: #fff;
-	cursor: pointer;
-}
-
-#blocs.colonnes .bloc.haut .menu-colonne .bouton:nth-child(2) {
-	margin-left: 1.4rem;
-}
-
-#blocs.colonnes .bloc.haut .menu-colonne .bouton.supprimer {
-	font-size: 24px;
-	color: #ff6259;
-	margin-left: 1.4rem;
-	cursor: pointer;
+	border-bottom-left-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .organiser #blocs.colonnes .bloc.haut .menu-colonne .bouton {
 	font-size: 24px;
 	color: #fff;
 	cursor: pointer;
-	margin-right: 0;
 }
 
 .organiser #blocs.colonnes .bloc.haut .menu-colonne .bouton.gauche + .bouton.droite {
-	margin-left: 0.7rem;
+	margin-left: 1.4rem;
 }
 
 #blocs.colonnes .bloc.haut:hover .menu-colonne {
@@ -221,6 +211,48 @@
 	text-align: center;
 	cursor: pointer;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+#blocs.colonnes .menu-deroulant {
+	position: relative;
+	width: calc(0.5rem + 24px);
+}
+
+#blocs.colonnes .bouton-menu {
+	font-size: 24px;
+	margin: 0 0.5rem 0 0;
+	cursor: pointer;
+}
+
+#blocs.colonnes .contenu-menu-deroulant {
+	position: absolute;
+	right: 0;
+	background-color: #f9f9f9;
+	min-width: 30rem;
+	opacity: 1;
+	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+	z-index: 1;
+}
+
+#blocs.colonnes .contenu-menu-deroulant button {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 1rem 1.2rem;
+}
+
+#blocs.colonnes .contenu-menu-deroulant button i {
+	font-size: 24px;
+	margin-right: 0.8rem;
+	line-height: 1;
+}
+
+#blocs.colonnes .contenu-menu-deroulant button svg {
+	margin-right: 0.8rem;
+}
+
+#blocs.colonnes .contenu-menu-deroulant button:hover {
+	background-color: #ddd;
 }
 
 #blocs .bloc.sortable-drag {
@@ -263,7 +295,7 @@
 }
 
 #blocs .bloc .titre i {
-	font-size: 1.7rem;
+	font-size: 1.8rem;
 	width: 2.5rem;
 	text-align: right;
 	position: absolute;

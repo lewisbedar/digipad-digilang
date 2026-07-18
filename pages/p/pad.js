@@ -70,6 +70,7 @@ export default {
 			chargementLien: false,
 			chargementMedia: false,
 			menu: '',
+			menuColonne: null,
 			commentaires: [],
 			commentaire: '',
 			commentaireId: '',
@@ -444,6 +445,7 @@ export default {
 			document.querySelector('#pad').addEventListener('dragover', this.gererDrag, false)
 			document.querySelector('#pad').addEventListener('dragenter', this.gererDrag, false)
 			document.querySelector('#pad').addEventListener('drop', this.gererDrop, false)
+			document.addEventListener('click', this.gererClic, false)
 			document.addEventListener('keydown', this.gererClavier, false)
 			window.addEventListener('paste', this.gererColler, false)
 
@@ -472,6 +474,7 @@ export default {
 		document.querySelector('#pad').removeEventListener('dragover', this.gererDrag, false)
 		document.querySelector('#pad').removeEventListener('dragenter', this.gererDrag, false)
 		document.querySelector('#pad').removeEventListener('drop', this.gererDrop, false)
+		document.removeEventListener('click', this.gererClic, false)
 		document.removeEventListener('keydown', this.gererClavier, false)
 		window.removeEventListener('paste', this.gererColler, false)
 	},
@@ -758,25 +761,48 @@ export default {
 		definirNomLienFichier (fichier) {
 			return fichier.split('\\').pop().split('/').pop()
 		},
+		gererMenuColonne (indexCol) {
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.menuColonne = this.menuColonne === indexCol ? null : indexCol
+			if (this.menuColonne === indexCol) {
+				this.$nextTick(() => {
+					const menu = document.querySelectorAll('.menu-deroulant')[indexCol]
+					if (menu) menu.querySelector('[role="menuitem"]')?.focus()
+				})
+			}
+		},
 		ouvrirModaleColonne (type, index) {
 			if (type === 'edition') {
 				this.colonne = index
 				this.titreModaleColonne = this.$t('modifierColonne')
 				this.titreColonne = this.pad.colonnes[index]
+				this.menuColonne = null
+				const menu = document.querySelectorAll('.menu-deroulant')[index]
+				this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
 			} else {
 				this.titreModaleColonne = this.$t('ajouterColonne')
+				this.elementPrecedent = (document.activeElement || document.body)
 			}
 			this.modeColonne = type
-			this.elementPrecedent = (document.activeElement || document.body)
 			this.modale = 'colonne'
 			this.$nextTick(() => {
 				document.querySelector('#champ-nom-colonne')?.focus()
 			})
 		},
-		ajouterColonne () {
-			if (this.titreColonne !== '') {
-				this.chargement = true
-				this.$socket.emit('ajoutercolonne', this.pad.id, this.titreColonne, this.pad.colonnes, this.pad.affichageColonnes, this.identifiant, this.nom)
+		ajouterColonne (indexColonne) {
+			let titre = ''
+			if ((this.modale === 'colonne' && this.titreColonne === '') || (this.modale === '' && this.menuColonne === null)) {
+				return
+			}
+			if (this.menuColonne !== null) {
+				this.menuColonne = null
+				titre = this.$t('colonneSansTitre')
+			} else {
+				titre = this.titreColonne
+			}
+			this.chargement = true
+			this.$socket.emit('ajoutercolonne', this.pad.id, titre, indexColonne, this.identifiant, this.nom)
+			if (this.modale === 'colonne') {
 				this.fermerModaleColonne()
 			}
 		},
@@ -788,19 +814,42 @@ export default {
 			}
 		},
 		afficherColonne (colonne) {
+			this.menuColonne = null
 			this.chargement = true
 			this.$socket.emit('modifieraffichagecolonne', this.pad.id, true, colonne, this.identifiant)
 		},
 		masquerColonne (colonne) {
+			this.menuColonne = null
 			this.chargement = true
 			this.$socket.emit('modifieraffichagecolonne', this.pad.id, false, colonne, this.identifiant)
+		},
+		afficherViderColonne (index) {
+			this.colonne = index
+			this.titreColonne = this.pad.colonnes[index]
+			this.messageConfirmation = this.$t('confirmationViderColonne')
+			this.typeConfirmation = 'vider-colonne'
+			const menu = document.querySelectorAll('.menu-deroulant')[index]
+			this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
+			this.menuColonne = null
+			this.modaleConfirmation = true
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
+			})
+		},
+		viderColonne () {
+			this.modaleConfirmation = false
+			this.chargement = true
+			this.$socket.emit('vidercolonne', this.pad.id, this.titreColonne, this.colonne, this.identifiant, this.nom)
+			this.fermerModaleColonne()
 		},
 		afficherSupprimerColonne (index) {
 			this.colonne = index
 			this.titreColonne = this.pad.colonnes[index]
 			this.messageConfirmation = this.$t('confirmationSupprimerColonne')
 			this.typeConfirmation = 'supprimer-colonne'
-			this.elementPrecedent = (document.activeElement || document.body)
+			const menu = document.querySelectorAll('.menu-deroulant')[index]
+			this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
+			this.menuColonne = null
 			this.modaleConfirmation = true
 			this.$nextTick(() => {
 				document.querySelector('.modale .bouton')?.focus()
@@ -1091,7 +1140,7 @@ export default {
 		supprimerFichier () {
 			if (this.verifierURL(this.media) && this.media.includes(this.etherpad)) {
 				const etherpadId = this.media.replace(this.etherpad + '/p/', '')
-				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId })
+				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId, pad: this.pad.id, token: this.pad.token })
 			}
 			this.media = ''
 			this.lien = ''
@@ -1375,7 +1424,7 @@ export default {
 		supprimerLien () {
 			if (this.iframe.includes(this.etherpad)) {
 				const etherpadId = this.iframe.replace(this.etherpad + '/p/', '')
-				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId })
+				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId, pad: this.pad.id, token: this.pad.token })
 			}
 			this.media = ''
 			this.lien = ''
@@ -3025,13 +3074,13 @@ export default {
 		},
 		modifierFond (fond) {
 			if (this.pad.fond !== fond) {
-				this.$socket.emit('modifierfond', this.pad.id, '/img/' + fond, this.pad.fond, this.identifiant)
+				this.$socket.emit('modifierfond', this.pad.id, '/img/' + fond, this.identifiant)
 				this.chargement = true
 			}
 		},
 		modifierCouleurFond (event) {
 			if (this.pad.fond !== event.target.value) {
-				this.$socket.emit('modifiercouleurfond', this.pad.id, event.target.value, this.pad.fond, this.identifiant)
+				this.$socket.emit('modifiercouleurfond', this.pad.id, event.target.value, this.identifiant)
 				this.chargement = true
 			}
 		},
@@ -3657,6 +3706,11 @@ export default {
 				}, 500)
 			}
 		},
+		gererClic (event) {
+			if (this.menuColonne !== null && !event.target.closest('.menu-deroulant')) {
+				this.menuColonne = null
+			}
+		},
 		gererColler (event) {
 			if (event.clipboardData.files && event.clipboardData.files[0] && event.clipboardData.files[0].type.includes('image') && this.accesAutorise && !this.recherche && this.pad.fichiers === 'actives' && ((this.admin && this.action !== 'organiser') || (!this.admin && this.pad.contributions !== 'fermees')) && this.modale === '' && this.menu === '') {
 				let indexColonne = 0
@@ -3798,11 +3852,21 @@ export default {
 				items[items.length - 1].focus()
 				break
 			case 'Escape':
-				this.menu = ''
+				if (this.menu !== '') {
+					this.menu = ''
+				}
+				if (this.menuColonne !== null) {
+					this.menuColonne = null
+				}
 				this.gererFocus()
 				break
 			case 'Tab':
-				this.menu = ''
+				if (this.menu !== '') {
+					this.menu = ''
+				}
+				if (this.menuColonne !== null) {
+					this.menuColonne = null
+				}
 				this.gererFocus()
 				break
 			}
@@ -3821,6 +3885,11 @@ export default {
 			this.$socket.on('erreur', () => {
 				this.chargement = false
 				this.message = this.$t('erreurActionServeur')
+			})
+
+			this.$socket.on('colonnesverrouillees', () => {
+				this.chargement = false
+				this.message = this.$t('verrouColonnes')
 			})
 
 			this.$socket.on('verifieracces', (donnees) => {
@@ -4410,13 +4479,28 @@ export default {
 			})
 
 			this.$socket.on('ajoutercolonne', (donnees) => {
-				this.colonnes.push([])
-				this.affichageColonnes.push(true)
+				this.menuColonne = null
+				this.colonnes.splice(donnees.indexColonne, 0, [])
+				this.affichageColonnes.splice(donnees.indexColonne, 0, true)
+				const blocs = []
+				this.colonnes.forEach((colonne, index) => {
+					colonne.forEach((bloc) => {
+						bloc.colonne = index
+					})
+					blocs.push(...colonne)
+				})
 				this.pad.colonnes = donnees.colonnes
 				this.pad.affichageColonnes = donnees.affichageColonnes
+				this.blocs = blocs
 				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-ajoutee' })
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneAjoutee')
+					this.$nextTick(() => {
+						const menu = document.querySelectorAll('.menu-deroulant')[donnees.indexColonne]
+						if (menu) menu.querySelector('.bouton-menu')?.focus()
+					})
+				} else if ((this.modale === 'bloc' || (this.modale === 'colonne' && this.modeColonne === 'edition')) && parseInt(this.colonne, 10) >= parseInt(donnees.indexColonne, 10)) {
+					this.colonne = parseInt(this.colonne, 10) + 1
 				}
 				this.chargement = false
 			})
@@ -4449,8 +4533,21 @@ export default {
 				this.chargement = false
 			})
 
+			this.$socket.on('vidercolonne', (donnees) => {
+				const blocs = JSON.parse(JSON.stringify(this.blocs))
+				this.blocs = blocs.filter(bloc => parseInt(bloc.colonne, 10) !== parseInt(donnees.colonne, 10))
+				this.definirColonnes(this.blocs)
+				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-videe' })
+				if (this.admin && this.identifiant === donnees.identifiant) {
+					this.notification = this.$t('colonneVidee')
+				}
+				this.chargement = false
+			})
+
 			this.$socket.on('supprimercolonne', (donnees) => {
+				this.menuColonne = null
 				this.colonnes.splice(parseInt(donnees.colonne, 10), 1)
+				this.affichageColonnes.splice(parseInt(donnees.colonne, 10), 1)
 				const blocs = []
 				this.colonnes.forEach((colonne, index) => {
 					colonne.forEach((bloc) => {
@@ -4464,14 +4561,17 @@ export default {
 				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-supprimee' })
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneSupprimee')
-				} else if (!this.admin && this.modale === 'bloc' && parseInt(this.colonne, 10) === parseInt(donnees.colonne, 10)) {
+				} else if (this.modale === 'bloc' && parseInt(this.colonne, 10) === parseInt(donnees.colonne, 10)) {
 					this.fermerModaleBloc()
 					this.notification = this.$t('colonneActuelleSupprimee')
+				} else if (this.modale === 'bloc' && parseInt(this.colonne, 10) > parseInt(donnees.colonne, 10)) {
+					this.colonne = parseInt(this.colonne, 10) - 1
 				}
 				this.chargement = false
 			})
 
 			this.$socket.on('deplacercolonne', (donnees) => {
+				this.menuColonne = null
 				const blocs = []
 				const colonne = parseInt(donnees.colonne, 10)
 				const donneesColonnes = this.colonnes[colonne]

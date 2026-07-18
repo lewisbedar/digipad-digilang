@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Link in einem neuen Tab öffnen",
 	"erreurTranscodage": "Fehler beim Transkodieren der Datei.",
 	"capsuleSupprimeeUtilisateur": "Die Kapsel, die Sie gerade bearbeitet haben, wurde soeben gelöscht.",
-	"erreurTentativesNombreuses": "Die Anzahl der falschen Eingaben ist zu hoch. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen."
+	"erreurTentativesNombreuses": "Die Anzahl der falschen Eingaben ist zu hoch. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.",
+	"parametresColonne": "Spalteneinstellungen",
+	"ajouterColonneGauche": "Spalte links hinzufügen",
+	"ajouterColonneDroite": "Spalte rechts hinzufügen",
+	"viderColonne": "Spalte leeren",
+	"confirmationViderColonne": "Möchten Sie den Inhalt dieser Spalte wirklich leeren?",
+	"colonneVidee": "Spalte geleert.",
+	"aVideColonne": "hat den Inhalt der Spalte \"{titre}\" geleert",
+	"verrouColonnes": "Eine Administratorsperre ist für Spaltenaktionen aktiv. Bitte versuchen Sie es in Kürze erneut."
 }

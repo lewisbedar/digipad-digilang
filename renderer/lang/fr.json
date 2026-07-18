@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Ouvrir le lien dans un nouvel onglet",
 	"erreurTranscodage": "Erreur lors du transcodage du fichier.",
 	"capsuleSupprimeeUtilisateur": "La capsule que vous étiez en train de modifier vient d'être supprimée.",
-	"erreurTentativesNombreuses": "Le nombre de tentatives incorrectes est trop élevé. Veuillez patienter avant de réessayer."
+	"erreurTentativesNombreuses": "Le nombre de tentatives incorrectes est trop élevé. Veuillez patienter avant de réessayer.",
+	"parametresColonne": "Paramètres de la colonne",
+	"ajouterColonneGauche": "Ajouter une colonne à gauche",
+	"ajouterColonneDroite": "Ajouter une colonne à droite",
+	"viderColonne": "Vider la colonne",
+	"confirmationViderColonne": "Souhaitez-vous vraiment vider cette colonne de son contenu&nbsp;?",
+	"colonneVidee": "Colonne vidée.",
+	"aVideColonne": "a vidé la colonne «&nbsp;{titre}&nbsp;» de son contenu",
+	"verrouColonnes": "Un verrou admin est actif sur les actions des colonnes. Veuillez essayer à nouveau dans quelques instants."
 }

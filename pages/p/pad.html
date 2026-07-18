@@ -87,6 +87,12 @@
 							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
+					<li v-else-if="entree.type === 'colonne-videe' && pad.affichage === 'colonnes'" :key="'colonne-videe_' + indexEntree">
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aVideColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="menu-entree" v-if="admin">
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+						</div>
+					</li>
 					<li v-else-if="entree.type === 'colonne-supprimee' && pad.affichage === 'colonnes'" :key="'colonne-supprimee_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aSupprimeColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
@@ -456,14 +462,20 @@
 			<template v-for="(col, indexCol) in pad.colonnes">
 				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol])" :key="'colonne_' + indexCol">
 					<div class="bloc haut">
-						<div class="titre-colonne">
+						<div class="titre-colonne" :class="{'admin': admin}">
 							<span>{{ col }}</span>
 						</div>
-						<div class="menu-colonne" v-if="admin">
-							<button type="button" class="bouton" :disabled="disabled" :title="$t('masquerColonne')" :aria-label="$t('masquerColonne')" @click="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
-							<button type="button" class="bouton" :disabled="disabled" :title="$t('afficherColonne')" :aria-label="$t('afficherColonne')" @click="afficherColonne(indexCol)" v-else-if="pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility</i></button>
-							<button type="button" class="bouton" :disabled="disabled" :title="$t('modifierColonne')" :aria-label="$t('modifierColonne')" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i></button>
-							<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerColonne')" :aria-label="$t('supprimerColonne')" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i></button>
+						<div class="menu-deroulant" v-if="admin">
+							<button type="button" class="bouton-menu" :disabled="disabled" :aria-label="$t('parametresColonne')" aria-haspopup="true" :aria-expanded="menuColonne === indexCol" @click="gererMenuColonne(indexCol)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
+							<div :id="'menu-colonne-' + indexCol" class="contenu-menu-deroulant" role="menu" @keydown="gererClavierMenu($event, 'menu-colonne-' + indexCol)" v-show="menuColonne === indexCol">
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M800-200v-560H560v560h240Zm-640 80v-160h80v80h240v-560H240v80h-80v-160h720v720H160Zm320-360Zm80 0h-80 80Zm0 0ZM160-360v-80H80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneGauche') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol + 1)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M160-760v560h240v-560H160ZM80-120v-720h720v160h-80v-80H480v560h240v-80h80v160H80Zm400-360Zm-80 0h80-80Zm0 0Zm320 120v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneDroite') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i>{{ $t('masquerColonne') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherColonne(indexCol)" v-else><i class="material-icons" aria-hidden="true">visibility</i>{{ $t('afficherColonne') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierColonne') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherViderColonne(indexCol)"><i class="material-icons" aria-hidden="true">circle</i>{{ $t('viderColonne') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i>{{ $t('supprimerColonne') }}</button>
+							</div>
 						</div>
 					</div>
 					<div class="conteneur-colonne ascenseur" v-if="colonnes[indexCol].length > 0">
@@ -547,10 +559,10 @@
 			<div class="conteneur">
 				<div class="contenu">
 					<label for="champ-nom-colonne">{{ $t('nomColonne') }}</label>
-					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" :disabled="disabledModale" @input="titreColonne = $event.target.value" @keydown.enter.prevent="ajouterColonne" v-if="modeColonne === 'creation'">
+					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" :disabled="disabledModale" @input="titreColonne = $event.target.value" @keydown.enter.prevent="ajouterColonne(this.colonnes.length)" v-if="modeColonne === 'creation'">
 					<input id="champ-nom-colonne" type="text" maxlength="96" :value="titreColonne" :disabled="disabledModale" @input="titreColonne = $event.target.value" @keydown.enter.prevent="modifierColonne" v-else>
 					<div class="actions">
-						<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterColonne" v-if="modeColonne === 'creation'">{{ $t('valider') }}</button>
+						<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterColonne(this.colonnes.length)" v-if="modeColonne === 'creation'">{{ $t('valider') }}</button>
 						<button type="button" class="bouton" :disabled="disabledModale" @click="modifierColonne" v-else>{{ $t('valider') }}</button>
 					</div>
 				</div>
@@ -1022,6 +1034,7 @@
 					<div class="actions">
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="fermerModaleConfirmation">{{ $t('non') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerBloc" v-if="typeConfirmation === 'supprimer-bloc'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="viderColonne" v-else-if="typeConfirmation === 'vider-colonne'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerColonne" v-else-if="typeConfirmation === 'supprimer-colonne'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCommentaire" v-else-if="typeConfirmation === 'supprimer-commentaire'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="seDeconnecterPad" v-else-if="typeConfirmation === 'deconnecter-pad'">{{ $t('oui') }}</button>

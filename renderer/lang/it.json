@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Apri il link in una nuova scheda",
 	"erreurTranscodage": "Si è verificato un errore durante la transcodifica del file.",
 	"capsuleSupprimeeUtilisateur": "La capsula che stavi modificando è stata appena eliminata.",
-	"erreurTentativesNombreuses": "Il numero di tentativi non corretti è troppo elevato. Attendi qualche istante prima di riprovare."
+	"erreurTentativesNombreuses": "Il numero di tentativi non corretti è troppo elevato. Attendi qualche istante prima di riprovare.",
+	"parametresColonne": "Parametri della colonna",
+	"ajouterColonneGauche": "Aggiungi una colonna a sinistra",
+	"ajouterColonneDroite": "Aggiungi una colonna a destra",
+	"viderColonne": "Svuota la colonna",
+	"confirmationViderColonne": "Vuoi davvero svuotare il contenuto di questa colonna?",
+	"colonneVidee": "Colonna svuotata.",
+	"aVideColonne": "ha svuotato il contenuto della colonna «&nbsp;{titre}&nbsp;»",
+	"verrouColonnes": "È attivo un blocco amministratore sulle azioni delle colonne. Riprova tra qualche istante."
 }

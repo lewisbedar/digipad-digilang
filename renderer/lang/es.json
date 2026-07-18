@@ -416,5 +416,13 @@
 	"ouvrirLienNouvelOnglet": "Abrir el enlace en una nueva pestaña",
 	"erreurTranscodage": "Se ha producido un error al transcodificar el archivo.",
 	"capsuleSupprimeeUtilisateur": "La cápsula que estabas editando acaba de ser eliminada.",
-	"erreurTentativesNombreuses": "Se han introducido demasiados datos incorrectos. Por favor, espera un momento antes de volver a intentarlo."
+	"erreurTentativesNombreuses": "Se han introducido demasiados datos incorrectos. Por favor, espera un momento antes de volver a intentarlo.",
+	"parametresColonne": "Parámetros de la columna",
+	"ajouterColonneGauche": "Añadir una columna a la izquierda",
+	"ajouterColonneDroite": "Añadir una columna a la derecha",
+	"viderColonne": "Vaciar la columna",
+	"confirmationViderColonne": "¿Desea realmente vaciar el contenido de esta columna?",
+	"colonneVidee": "Columna vaciada.",
+	"aVideColonne": "ha vaciado el contenido de la columna «{titre}»",
+	"verrouColonnes": "Hay un bloqueo de administrador activo sobre las acciones de columna. Por favor, inténtalo de nuevo dentro de unos instantes."
 }
