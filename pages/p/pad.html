@@ -473,7 +473,7 @@
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i>{{ $t('masquerColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherColonne(indexCol)" v-else><i class="material-icons" aria-hidden="true">visibility</i>{{ $t('afficherColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierColonne') }}</button>
-								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherViderColonne(indexCol)"><i class="material-icons" aria-hidden="true">circle</i>{{ $t('viderColonne') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherViderColonne(indexCol)"><i class="material-icons" aria-hidden="true">radio_button_unchecked</i>{{ $t('viderColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i>{{ $t('supprimerColonne') }}</button>
 							</div>
 						</div>
