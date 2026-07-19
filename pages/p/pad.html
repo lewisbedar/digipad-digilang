@@ -387,6 +387,9 @@
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
 				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad">{{ $t('exporterPad') }}</button>
 			</div>
+			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && (statut === 'auteur' || statut === 'utilisateur')">
+				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherViderPad">{{ $t('viderPad') }}</button>
+			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
 				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherSupprimerPad">{{ $t('supprimerPad') }}</button>
 			</div>
@@ -1031,6 +1034,13 @@
 			<div class="conteneur">
 				<div class="contenu">
 					<div class="message" v-html="messageConfirmation" />
+					<div class="conteneur-interrupteur confirmation" v-if="typeConfirmation === 'vider-pad' && pad.affichage === 'colonnes'">
+						<span>{{ $t('suppressionColonnes') }}</span>
+						<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('confirmation-supprimer-colonnes')">
+							<input id="confirmation-supprimer-colonnes" type="checkbox" :checked="suppressionColonnes" @change="suppressionColonnes = !suppressionColonnes">
+							<span class="barre" />
+						</label>
+					</div>
 					<div class="actions">
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="fermerModaleConfirmation">{{ $t('non') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerBloc" v-if="typeConfirmation === 'supprimer-bloc'">{{ $t('oui') }}</button>
@@ -1038,6 +1048,7 @@
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerColonne" v-else-if="typeConfirmation === 'supprimer-colonne'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCommentaire" v-else-if="typeConfirmation === 'supprimer-commentaire'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="seDeconnecterPad" v-else-if="typeConfirmation === 'deconnecter-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="viderPad" v-else-if="typeConfirmation === 'vider-pad'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="typeConfirmation === 'supprimer-pad'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserMessages" v-else-if="typeConfirmation === 'reinitialiser-messages'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserActivite" v-else-if="typeConfirmation === 'reinitialiser-activite'">{{ $t('oui') }}</button>

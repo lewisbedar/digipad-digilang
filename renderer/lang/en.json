@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "Do you really want to empty this column's contents?",
 	"colonneVidee": "Column emptied.",
 	"aVideColonne": "emptied the contents of the column \"{titre}\"",
-	"verrouColonnes": "An admin lock is currently active on column actions. Please try again in a few moments."
+	"verrouColonnes": "An admin lock is currently active on column actions. Please try again in a few moments.",
+	"viderPad": "Empty the pad",
+	"confirmationViderPad": "Do you really want to empty this pad of all its content?",
+	"suppressionColonnes": "Delete existing columns",
+	"erreurVidagePad": "Error while emptying the pad's content.",
+	"padVide": "Pad emptied.",
+	"padVideAdmin": "This pad's content has just been reset by its owner."
 }

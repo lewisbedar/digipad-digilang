@@ -1135,6 +1135,12 @@
 	line-height: 2.2rem;
 }
 
+.modale .conteneur-interrupteur.confirmation {
+	justify-content: center;
+	margin-top: 20px;
+	margin-bottom: 0;
+}
+
 .menu .conteneur-interrupteur > span {
 	font-size: 16px;
 }

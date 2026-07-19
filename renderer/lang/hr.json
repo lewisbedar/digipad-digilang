@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "Želite li stvarno isprazniti sadržaj ovog stupca?",
 	"colonneVidee": "Stupac je ispražnjen.",
 	"aVideColonne": "ispraznio/ispraznila sadržaj stupca \"{titre}\"",
-	"verrouColonnes": "Administratorska brava aktivna je za radnje sa stupcima. Molimo pokušajte ponovno za nekoliko trenutaka."
+	"verrouColonnes": "Administratorska brava aktivna je za radnje sa stupcima. Molimo pokušajte ponovno za nekoliko trenutaka.",
+	"viderPad": "Isprazni podlogu",
+	"confirmationViderPad": "Želite li stvarno isprazniti sav sadržaj ove podloge?",
+	"suppressionColonnes": "Izbriši postojeće stupce",
+	"erreurVidagePad": "Pogreška prilikom pražnjenja sadržaja podloge.",
+	"padVide": "Podloga je ispražnjena.",
+	"padVideAdmin": "Sadržaj ove podloge upravo je resetirao njezin vlasnik."
 }

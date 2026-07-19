@@ -696,6 +696,7 @@ label.bouton-bleu {
 
 .modale .conteneur-interrupteur > span {
 	margin-right: 1.5rem;
+	text-align: left;
 }
 
 .modale-diapositive {

@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "Vuoi davvero svuotare il contenuto di questa colonna?",
 	"colonneVidee": "Colonna svuotata.",
 	"aVideColonne": "ha svuotato il contenuto della colonna «&nbsp;{titre}&nbsp;»",
-	"verrouColonnes": "È attivo un blocco amministratore sulle azioni delle colonne. Riprova tra qualche istante."
+	"verrouColonnes": "È attivo un blocco amministratore sulle azioni delle colonne. Riprova tra qualche istante.",
+	"viderPad": "Svuota il pad",
+	"confirmationViderPad": "Vuoi davvero svuotare tutto il contenuto di questo pad?",
+	"suppressionColonnes": "Elimina le colonne esistenti",
+	"erreurVidagePad": "Errore durante lo svuotamento del contenuto del pad.",
+	"padVide": "Pad svuotato.",
+	"padVideAdmin": "Il contenuto di questo pad è stato appena reimpostato dal proprietario."
 }

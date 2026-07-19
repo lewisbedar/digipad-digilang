@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "Möchten Sie den Inhalt dieser Spalte wirklich leeren?",
 	"colonneVidee": "Spalte geleert.",
 	"aVideColonne": "hat den Inhalt der Spalte \"{titre}\" geleert",
-	"verrouColonnes": "Eine Administratorsperre ist für Spaltenaktionen aktiv. Bitte versuchen Sie es in Kürze erneut."
+	"verrouColonnes": "Eine Administratorsperre ist für Spaltenaktionen aktiv. Bitte versuchen Sie es in Kürze erneut.",
+	"viderPad": "Pad leeren",
+	"confirmationViderPad": "Möchten Sie den gesamten Inhalt dieses Pads wirklich leeren?",
+	"suppressionColonnes": "Vorhandene Spalten löschen",
+	"erreurVidagePad": "Fehler beim Leeren des Pad-Inhalts.",
+	"padVide": "Pad geleert.",
+	"padVideAdmin": "Der Inhalt dieses Pads wurde soeben von seinem Besitzer zurückgesetzt."
 }

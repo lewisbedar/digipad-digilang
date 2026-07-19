@@ -96,6 +96,7 @@ export default {
 			modaleConfirmation: false,
 			messageConfirmation: '',
 			typeConfirmation: '',
+			suppressionColonnes: false,
 			modaleDiaporama: false,
 			donneesBloc: {},
 			motDePasse: '',
@@ -3056,7 +3057,8 @@ export default {
 		},
 		modifierAffichage (affichage) {
 			if (this.pad.affichage !== affichage) {
-				this.$socket.emit('modifieraffichage', this.pad.id, affichage, this.identifiant)
+				const titreColonne = (affichage === 'colonnes' && (!this.pad.colonnes || this.pad.colonnes.length === 0)) ? this.$t('colonneSansTitre') : ''
+				this.$socket.emit('modifieraffichage', this.pad.id, affichage, titreColonne, this.identifiant)
 				this.chargement = true
 			}
 		},
@@ -3465,6 +3467,60 @@ export default {
 				}
 			})
 		},
+		afficherViderPad () {
+			this.messageConfirmation = this.$t('confirmationViderPad')
+			this.typeConfirmation = 'vider-pad'
+			this.suppressionColonnes = false
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.modaleConfirmation = true
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
+			})
+		},
+		viderPad () {
+			this.fermerModaleConfirmation()
+			this.chargement = true
+			const suppressionColonnes = this.pad.affichage === 'colonnes' && this.suppressionColonnes
+			const titreColonne = (suppressionColonnes && this.pad.affichage === 'colonnes') ? this.$t('colonneSansTitre') : ''
+			axios.post(this.hote + '/api/vider-pad', {
+				padId: this.pad.id,
+				identifiant: this.identifiant,
+				suppressionColonnes: suppressionColonnes,
+				titreColonne: titreColonne
+			}).then((reponse) => {
+				this.chargement = false
+				this.activite = []
+				this.pad.vues = 0
+				this.pad.notification = []
+				if (reponse.data && reponse.data.colonnes) {
+					this.pad.colonnes = reponse.data.colonnes
+					this.pad.affichageColonnes = reponse.data.affichageColonnes
+				}
+				if (this.pad.affichage === 'colonnes') {
+					this.definirColonnes([])
+				} else {
+					this.blocs = []
+				}
+				this.commentaires = []
+				this.evaluations = []
+				this.messagesChat = []
+				this.messageChat = ''
+				this.nouveauxMessagesChat = 0
+				this.notification = this.$t('padVide')
+				this.$socket.emit('viderpad', this.pad.id, this.identifiant)
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'erreur_vidage') {
+					this.message = this.$t('erreurVidagePad')
+				} else if (err.response?.data === 'non_autorise') {
+					this.message = this.$t('actionNonAutorisee')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
+				}
+			})
+		},
 		afficherSupprimerPad () {
 			this.messageConfirmation = this.$t('confirmationSupprimerPad')
 			this.typeConfirmation = 'supprimer-pad'
@@ -3837,10 +3893,22 @@ export default {
 			switch (event.key) {
 			case 'ArrowDown':
 				event.preventDefault()
+				if (this.menu === 'activite') {
+					document.querySelectorAll('.menu-entree').forEach(menu => {
+						menu.style.display = 'none'
+					})
+					if (items[(index + 1) % items.length].closest('.menu-entree')) items[(index + 1) % items.length].closest('.menu-entree').style.display = 'block'
+				}
 				items[(index + 1) % items.length].focus()
 				break
 			case 'ArrowUp':
 				event.preventDefault()
+				if (this.menu === 'activite') {
+					document.querySelectorAll('.menu-entree').forEach(menu => {
+						menu.style.display = 'none'
+					})
+					if (items[(index - 1 + items.length) % items.length].closest('.menu-entree')) items[(index - 1 + items.length) % items.length].closest('.menu-entree').style.display = 'block'
+				}
 				items[(index - 1 + items.length) % items.length].focus()
 				break
 			case 'Home':
@@ -4278,7 +4346,11 @@ export default {
 				}
 			})
 
-			this.$socket.on('modifieraffichage', (affichage, identifiant) => {
+			this.$socket.on('modifieraffichage', (affichage, colonnes, affichageColonnes, identifiant) => {
+				if (colonnes) {
+					this.pad.colonnes = colonnes
+					this.pad.affichageColonnes = affichageColonnes
+				}
 				this.pad.affichage = affichage
 				this.affichage = affichage
 				this.chargement = false
@@ -4615,6 +4687,28 @@ export default {
 					}
 				}
 				this.chargement = false
+			})
+
+			this.$socket.on('viderpad', (colonnes, affichageColonnes) => {
+				this.activite = []
+				this.pad.vues = 0
+				this.pad.notification = []
+				this.pad.colonnes = colonnes
+				this.pad.affichageColonnes = affichageColonnes
+				if (this.pad.affichage === 'colonnes') {
+					this.definirColonnes([])
+				} else {
+					this.blocs = []
+				}
+				this.commentaires = []
+				this.evaluations = []
+				this.messagesChat = []
+				this.messageChat = ''
+				this.nouveauxMessagesChat = 0
+				this.fermerModaleBloc()
+				if (this.modaleDiaporama) this.fermerModaleDiaporama()
+				this.fermerMenu()
+				this.notification = this.$t('padVideAdmin')
 			})
 
 			this.$socket.on('modifiernotification', (donnees) => {

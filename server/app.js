@@ -1415,6 +1415,80 @@ async function demarrerServeur () {
 		}
 	})
 
+	app.post('/api/vider-pad', async (req, res) => {
+		if (maintenance === true) return res.redirect(302, '/maintenance')
+		const identifiant = req.body.identifiant
+		const pad = req.body.padId
+		const suppressionColonnes = req.body.suppressionColonnes === true
+		const titreColonne = req.body.titreColonne
+		if (req.session.identifiant && req.session.identifiant === identifiant && ((req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || req.session.statut === 'auteur')) {
+			try {
+				let donneesPad = {}
+				const padExiste = await db.EXISTS('pads:' + pad)
+				if (padExiste === 1) {
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
+				} else if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+					donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
+					if (typeof donneesPad !== 'object' || !donneesPad) return res.status(500).send('erreur_vidage')
+				} else if (padExiste === 0) return res.status(500).send('erreur_vidage')
+				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur_vidage')
+				const adminPad = await verifierAdmin(pad, donneesPad, req.session)
+				if (!adminPad) return res.status(403).send('non_autorise')
+				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+				if (blocs) {
+					const pipelineBlocs = db.multi()
+					for (const blocId of blocs) {
+						pipelineBlocs
+							.UNLINK('commentaires:' + blocId)
+							.UNLINK('evaluations:' + blocId)
+							.UNLINK('pad-' + pad + ':' + blocId)
+					}
+					await pipelineBlocs.exec()
+				}
+				await db.multi()
+					.UNLINK('blocs:' + pad)
+					.UNLINK('activite:' + pad)
+					.exec()
+				let colonnes = null
+				let affichageColonnes = null
+				const champsReinitialises = ['bloc', 0, 'activite', 0, 'vues', 0, 'notification', JSON.stringify([])]
+				if (donneesPad.affichage === 'colonnes' && !suppressionColonnes) {
+					colonnes = donneesPad.hasOwnProperty('colonnes') ? JSON.parse(donneesPad.colonnes) : []
+					affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : []
+				} else {
+					colonnes = donneesPad.affichage === 'colonnes' ? [titreColonne || ''] : []
+					affichageColonnes = donneesPad.affichage === 'colonnes' ? [true] : []
+					champsReinitialises.push('colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes))
+				}
+				await db.HSET('pads:' + pad, champsReinitialises)
+				// Suppression des fichiers
+				if (stockage === 'fs') {
+					const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad)
+					await fs.remove(dossier)
+				} else if (stockage === 's3') {
+					try {
+						const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
+						if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
+							const promessesFichiersS3 = []
+							for (const objet of liste.Contents) {
+								promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+							}
+							await Promise.all(promessesFichiersS3)
+						}
+					} catch {}
+				}
+				res.status(200).json({ colonnes, affichageColonnes })
+			} catch (err) {
+				console.error(err.stack)
+				res.status(500).send('erreur_vidage')
+			}
+		} else {
+			supprimerSession(req)
+			res.status(401).send('non_connecte')
+		}
+	})
+
 	app.post('/api/supprimer-pad', async (req, res) => {
 		if (maintenance === true) return res.redirect(302, '/maintenance')
 		const identifiant = req.body.identifiant
@@ -1436,7 +1510,7 @@ async function demarrerServeur () {
 				} else if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
 					donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
 					if (typeof donneesPad !== 'object' || !donneesPad) return res.status(500).send('erreur_suppression')
-				}
+				} else if (padExiste === 0) return res.status(500).send('erreur_suppression')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur_suppression')
 				if (donneesPad.identifiant === identifiant) { // pad créé
 					const adminPad = admin || (await verifierAdmin(pad, donneesPad, req.session) === true)
@@ -4029,7 +4103,7 @@ async function demarrerServeur () {
 			}
 		})
 
-		socket.on('modifieraffichage', async (pad, affichage, identifiant) => {
+		socket.on('modifieraffichage', async (pad, affichage, titreColonne, identifiant) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
@@ -4037,8 +4111,18 @@ async function demarrerServeur () {
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				await db.HSET('pads:' + pad, 'affichage', affichage)
-				io.to('pad-' + pad).emit('modifieraffichage', affichage, identifiant)
+				
+				let colonnes = null
+				let affichageColonnes = null
+				const colonnesExistantes = donneesPad.hasOwnProperty('colonnes') ? JSON.parse(donneesPad.colonnes) : []
+				if (affichage === 'colonnes' && colonnesExistantes.length === 0) {
+					colonnes = [titreColonne || '']
+					affichageColonnes = [true]
+					await db.HSET('pads:' + pad, ['affichage', affichage, 'colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
+				} else {
+					await db.HSET('pads:' + pad, 'affichage', affichage)
+				}
+				io.to('pad-' + pad).emit('modifieraffichage', affichage, colonnes, affichageColonnes, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -4404,8 +4488,8 @@ async function demarrerServeur () {
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
 				const colonnes = JSON.parse(donneesPad.colonnes)
-				if (!Number.isInteger(indexColonne) || indexColonne < 0 || indexColonne > colonnes.length) return socket.emit('erreur')
 				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : colonnes.map(() => true)
+				if (!Number.isInteger(indexColonne) || indexColonne < 0 || indexColonne > colonnes.length) return socket.emit('erreur')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				colonnes.splice(indexColonne, 0, titre)
@@ -4694,6 +4778,23 @@ async function demarrerServeur () {
 				socket.emit('erreur')
 			} finally {
 				await libererVerrouColonnes(pad)
+			}
+		})
+
+		socket.on('viderpad', async (pad, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				const colonnes = donneesPad.hasOwnProperty('colonnes') ? JSON.parse(donneesPad.colonnes) : []
+				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : []
+				socket.to('pad-' + pad).emit('viderpad', colonnes, affichageColonnes)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
 			}
 		})
 

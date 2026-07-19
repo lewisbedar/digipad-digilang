@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "¿Desea realmente vaciar el contenido de esta columna?",
 	"colonneVidee": "Columna vaciada.",
 	"aVideColonne": "ha vaciado el contenido de la columna «{titre}»",
-	"verrouColonnes": "Hay un bloqueo de administrador activo sobre las acciones de columna. Por favor, inténtalo de nuevo dentro de unos instantes."
+	"verrouColonnes": "Hay un bloqueo de administrador activo sobre las acciones de columna. Por favor, inténtalo de nuevo dentro de unos instantes.",
+	"viderPad": "Vaciar el pad",
+	"confirmationViderPad": "¿Desea realmente vaciar todo el contenido de este pad?",
+	"suppressionColonnes": "Eliminar las columnas existentes",
+	"erreurVidagePad": "Error al vaciar el contenido del pad.",
+	"padVide": "Pad vaciado.",
+	"padVideAdmin": "El contenido de este pad acaba de ser reiniciado por su propietario."
 }

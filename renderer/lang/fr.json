@@ -424,5 +424,11 @@
 	"confirmationViderColonne": "Souhaitez-vous vraiment vider cette colonne de son contenu&nbsp;?",
 	"colonneVidee": "Colonne vidée.",
 	"aVideColonne": "a vidé la colonne «&nbsp;{titre}&nbsp;» de son contenu",
-	"verrouColonnes": "Un verrou admin est actif sur les actions des colonnes. Veuillez essayer à nouveau dans quelques instants."
+	"verrouColonnes": "Un verrou admin est actif sur les actions des colonnes. Veuillez essayer à nouveau dans quelques instants.",
+	"viderPad": "Vider le pad",
+	"confirmationViderPad": "Souhaitez-vous vraiment vider ce pad de tout son contenu&nbsp;?",
+	"suppressionColonnes": "Supprimer les colonnes existantes",
+	"erreurVidagePad": "Erreur lors de la suppression du contenu du pad.",
+	"padVide": "Pad vidé.",
+	"padVideAdmin": "Le contenu de ce pad vient d'être réintialisé par son propriétaire."
 }
