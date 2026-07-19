@@ -1515,55 +1515,8 @@ async function demarrerServeur () {
 				if (donneesPad.identifiant === identifiant) { // pad créé
 					const adminPad = admin || (await verifierAdmin(pad, donneesPad, req.session) === true)
 					if (!adminPad) return res.status(403).send('non_autorise')
-					const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
-					if (blocs) {
-						const pipelineBlocs = db.multi()
-						for (const blocId of blocs) {
-							pipelineBlocs
-								.UNLINK('commentaires:' + blocId)
-								.UNLINK('evaluations:' + blocId)
-								.UNLINK('pad-' + pad + ':' + blocId)
-						}
-						await pipelineBlocs.exec()
-					}
-					await db.multi()
-						.UNLINK('blocs:' + pad)
-						.UNLINK('pads:' + pad)
-						.UNLINK('activite:' + pad)
-						.UNLINK('dates-pads:' + pad)
-						.SREM('pads-crees:' + identifiant, pad.toString())
-						.SREM('pads-supprimes:' + identifiant, pad.toString())
-						.exec()
-					const utilisateurs = await db.SMEMBERS('utilisateurs-pads:' + pad)
-					if (utilisateurs === null) return res.status(500).send('erreur_suppression')
-					if (utilisateurs.length > 0) {
-						const pipelineUtilisateurs = db.multi()
-						for (const utilisateur of utilisateurs) {
-							pipelineUtilisateurs
-								.SREM('pads-rejoints:' + utilisateur, pad.toString())
-								.SREM('pads-utilisateurs:' + utilisateur, pad.toString())
-								.SREM('pads-admins:' + utilisateur, pad.toString())
-								.SREM('pads-favoris:' + utilisateur, pad.toString())
-						}
-						await pipelineUtilisateurs.exec()
-					}
-					await db.UNLINK('utilisateurs-pads:' + pad)
-					// Suppression des fichiers
-					if (suppressionFichiers === true && stockage === 'fs') {
-						const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad)
-						await fs.remove(dossier)
-					} else if (suppressionFichiers === true && stockage === 's3') {
-						try {
-							const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
-							if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-								const promessesFichiersS3 = []
-								for (const objet of liste.Contents) {
-									promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
-								}
-								await Promise.all(promessesFichiersS3)
-							}
-						} catch {}
-					}
+					const resultat = await supprimerPad(pad, identifiant, suppressionFichiers)
+					if (!resultat) return res.status(500).send('erreur_suppression')
 				} else { // pad rejoint
 					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
@@ -1605,6 +1558,29 @@ async function demarrerServeur () {
 		} else {
 			supprimerSession(req)
 			res.status(401).send('non_connecte')
+		}
+	})
+
+	app.post('/api/vider-corbeille', async (req, res) => {
+		if (maintenance === true) return res.redirect(302, '/maintenance')
+		const identifiant = req.body.identifiant
+		const pads = req.body.pads
+		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(401).send('non_connecte')
+		if (!Array.isArray(pads) || pads.length === 0) return res.status(400).send('erreur_suppression')
+		try {
+			const padsSupprimes = await db.SMEMBERS('pads-supprimes:' + identifiant)
+			const padsASupprimer = pads.filter((pad) => padsSupprimes.includes(pad.toString()))
+			if (padsASupprimer.length === 0) return res.status(403).send('non_autorise')
+			for (const pad of padsASupprimer) {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (Object.keys(donneesPad).length === 0 || donneesPad.identifiant !== identifiant) continue
+				await supprimerPad(pad, identifiant, true)
+			}
+			res.status(200).send('corbeille_videe')
+		} catch (err) {
+			console.error(err.stack)
+			res.status(500).send('erreur_suppression')
 		}
 	})
 
@@ -3064,54 +3040,8 @@ async function demarrerServeur () {
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				const autorisation = await verifierAutorisationApi(donneesPad, identifiant, motdepasse)
 				if (!autorisation) return res.status(403).send('non_autorise')
-				// Suppression des contenus des blocs
-				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
-				if (blocs && blocs.length > 0) {
-					const pipelineBlocs = db.multi()
-					for (const blocId of blocs) {
-						pipelineBlocs
-							.UNLINK('commentaires:' + blocId)
-							.UNLINK('evaluations:' + blocId)
-							.UNLINK('pad-' + pad + ':' + blocId)
-					}
-					await pipelineBlocs.exec()
-				}
-				// Suppression des métadonnées du pad
-				await db.multi()
-					.UNLINK('blocs:' + pad)
-					.UNLINK('pads:' + pad)
-					.UNLINK('activite:' + pad)
-					.UNLINK('dates-pads:' + pad)
-					.SREM('pads-crees:' + identifiant, pad.toString())
-					.SREM('pads-supprimes:' + identifiant, pad.toString())
-					.exec()
-				// Nettoyage des références chez les autres utilisateurs
-				const utilisateurs = await db.SMEMBERS('utilisateurs-pads:' + pad)
-				if (utilisateurs && utilisateurs.length > 0) {
-					const pipelineUtilisateurs = db.multi()
-					for (const utilisateur of utilisateurs) {
-						pipelineUtilisateurs
-							.SREM('pads-rejoints:' + utilisateur, pad.toString())
-							.SREM('pads-utilisateurs:' + utilisateur, pad.toString())
-							.SREM('pads-admins:' + utilisateur, pad.toString())
-							.SREM('pads-favoris:' + utilisateur, pad.toString())
-					}
-					await pipelineUtilisateurs.exec()
-				}
-				await db.UNLINK('utilisateurs-pads:' + pad)
-				// Suppression des fichiers
-				if (stockage === 'fs') {
-					const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad)
-					await fs.remove(dossier)
-				} else if (stockage === 's3') {
-					const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
-					if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-						const promessesFichiersS3 = liste.Contents.map(objet => 
-							s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key)))
-						)
-						await Promise.all(promessesFichiersS3)
-					}
-				}
+				const resultat = await supprimerPad(pad, identifiant, true)
+				if (!resultat) return res.status(500).send('erreur')
 				return res.status(200).send('contenu_supprime')
 			}
 			// Action non reconnue
@@ -5574,6 +5504,58 @@ async function demarrerServeur () {
 			await fs.remove(path.join(__dirname, '..', '/static/temp', id.toString()))
 			return erreur
 		}
+	}
+
+	async function supprimerPad (pad, identifiant, suppressionFichiers) {
+		const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+		if (blocs) {
+			const pipelineBlocs = db.multi()
+			for (const blocId of blocs) {
+				pipelineBlocs
+					.UNLINK('commentaires:' + blocId)
+					.UNLINK('evaluations:' + blocId)
+					.UNLINK('pad-' + pad + ':' + blocId)
+			}
+			await pipelineBlocs.exec()
+		}
+		await db.multi()
+			.UNLINK('blocs:' + pad)
+			.UNLINK('pads:' + pad)
+			.UNLINK('activite:' + pad)
+			.UNLINK('dates-pads:' + pad)
+			.SREM('pads-crees:' + identifiant, pad.toString())
+			.SREM('pads-supprimes:' + identifiant, pad.toString())
+			.exec()
+		const utilisateurs = await db.SMEMBERS('utilisateurs-pads:' + pad)
+		if (utilisateurs && utilisateurs.length > 0) {
+			const pipelineUtilisateurs = db.multi()
+			for (const utilisateur of utilisateurs) {
+				pipelineUtilisateurs
+					.SREM('pads-rejoints:' + utilisateur, pad.toString())
+					.SREM('pads-utilisateurs:' + utilisateur, pad.toString())
+					.SREM('pads-admins:' + utilisateur, pad.toString())
+					.SREM('pads-favoris:' + utilisateur, pad.toString())
+			}
+			await pipelineUtilisateurs.exec()
+		}
+		await db.UNLINK('utilisateurs-pads:' + pad)
+		// Suppression des fichiers
+		if (suppressionFichiers === true && stockage === 'fs') {
+			const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad)
+			await fs.remove(dossier)
+		} else if (suppressionFichiers === true && stockage === 's3') {
+			try {
+				const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
+				if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
+					const promessesFichiersS3 = []
+					for (const objet of liste.Contents) {
+						promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+					}
+					await Promise.all(promessesFichiersS3)
+				}
+			} catch {}
+		}
+		return true
 	}
 
 	async function fetchSockets (room) {

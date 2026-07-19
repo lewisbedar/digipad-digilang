@@ -430,5 +430,8 @@
 	"suppressionColonnes": "Eliminar las columnas existentes",
 	"erreurVidagePad": "Error al vaciar el contenido del pad.",
 	"padVide": "Pad vaciado.",
-	"padVideAdmin": "El contenido de este pad acaba de ser reiniciado por su propietario."
+	"padVideAdmin": "El contenido de este pad acaba de ser reiniciado por su propietario.",
+	"viderCorbeille": "Vaciar la papelera",
+	"confirmationViderCorbeille": "¿Realmente desea eliminar definitivamente todos los pads de la papelera?",
+	"corbeilleVidee": "Papelera vaciada."
 }

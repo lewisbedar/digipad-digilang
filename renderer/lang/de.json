@@ -430,5 +430,8 @@
 	"suppressionColonnes": "Vorhandene Spalten löschen",
 	"erreurVidagePad": "Fehler beim Leeren des Pad-Inhalts.",
 	"padVide": "Pad geleert.",
-	"padVideAdmin": "Der Inhalt dieses Pads wurde soeben von seinem Besitzer zurückgesetzt."
+	"padVideAdmin": "Der Inhalt dieses Pads wurde soeben von seinem Besitzer zurückgesetzt.",
+	"viderCorbeille": "Papierkorb leeren",
+	"confirmationViderCorbeille": "Möchten Sie wirklich alle Pads im Papierkorb endgültig löschen?",
+	"corbeilleVidee": "Papierkorb geleert."
 }

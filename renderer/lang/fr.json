@@ -430,5 +430,8 @@
 	"suppressionColonnes": "Supprimer les colonnes existantes",
 	"erreurVidagePad": "Erreur lors de la suppression du contenu du pad.",
 	"padVide": "Pad vidé.",
-	"padVideAdmin": "Le contenu de ce pad vient d'être réintialisé par son propriétaire."
+	"padVideAdmin": "Le contenu de ce pad vient d'être réintialisé par son propriétaire.",
+	"viderCorbeille": "Vider la corbeille",
+	"confirmationViderCorbeille": "Souhaitez-vous vraiment supprimer définitivement tous les pads de la corbeille&nbsp;?",
+	"corbeilleVidee": "Corbeille vidée."
 }

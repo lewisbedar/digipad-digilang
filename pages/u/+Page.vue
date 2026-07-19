@@ -117,6 +117,9 @@
 						<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerDossier')" :aria-label="$t('supprimerDossier')" @click="afficherModaleConfirmation($event, onglet, 'supprimer-dossier')"><i class="material-icons" aria-hidden="true">delete</i></button>
 					</div>
 				</div>
+				<div id="actions-corbeille" v-else-if="onglet === 'pads-corbeille'">
+					<button type="button" :disabled="disabled || padsCorbeille.length === 0" @click="afficherModaleConfirmation($event, '', 'vider-corbeille')">{{ $t('viderCorbeille') }}</button>
+				</div>
 				<div class="pads" aria-live="polite" v-if="pads.length > 0 && requete === ''">
 					<template v-for="pad in pads" :key="'pad_' + pad.id">
 						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
@@ -416,6 +419,7 @@
 						<div class="message" v-html="$t('confirmationSupprimerPadAdmin')" v-else-if="modaleConfirmation === 'supprimer-admin'" />
 						<div class="message" v-html="$t('confirmationSupprimerCompte')" v-else-if="modaleConfirmation === 'supprimer-compte'" />
 						<div class="message" v-html="$t('confirmationSupprimerDossier')" v-else-if="modaleConfirmation === 'supprimer-dossier'" />
+						<div class="message" v-html="$t('confirmationViderCorbeille')" v-else-if="modaleConfirmation === 'vider-corbeille'" />
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="fermerModaleConfirmation">{{ $t('non') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="dupliquerPad" v-if="modaleConfirmation === 'dupliquer'">{{ $t('oui') }}</button>
@@ -424,6 +428,7 @@
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="modaleConfirmation === 'supprimer-admin'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCompte" v-else-if="modaleConfirmation === 'supprimer-compte'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerDossier" v-else-if="modaleConfirmation === 'supprimer-dossier'">{{ $t('oui') }}</button>
+							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="viderCorbeille" v-else-if="modaleConfirmation === 'vider-corbeille'">{{ $t('oui') }}</button>
 						</div>
 					</div>
 				</div>
@@ -808,27 +813,11 @@ export default {
 				identifiant: this.identifiant
 			}).then((reponse) => {
 				this.chargement = false
-				this.padsFavoris.forEach((pad, indexPad) => {
-					if (pad.id === padId) {
-						this.padsFavoris.splice(indexPad, 1)
-					}
-				})
-				this.favoris.forEach((favori, indexFavori) => {
-					if (favori === padId) {
-						this.favoris.splice(indexFavori, 1)
-					}
-				})
+				this.padsFavoris = this.padsFavoris.filter((pad) => pad.id !== padId)
+				this.favoris = this.favoris.filter((favori) => favori !== padId)
 				if (this.onglet === 'pads-favoris') {
-					this.pads.forEach((pad, indexPad) => {
-						if (pad.id === padId) {
-							this.pads.splice(indexPad, 1)
-						}
-					})
-					this.resultats.forEach((pad, indexPad) => {
-						if (pad.id === padId) {
-							this.resultats.splice(indexPad, 1)
-						}
-					})
+					this.pads = this.pads.filter((pad) => pad.id !== padId)
+					this.resultats = this.resultats.filter((pad) => pad.id !== padId)
 				}
 				this.notification = this.$t('padSupprimeFavoris')
 				this.$nextTick(() => {
@@ -891,15 +880,11 @@ export default {
 						if (dossier.id === destination && !dossier.pads.includes(this.padId)) {
 							this.dossiers[indexDossier].pads.push(this.padId)
 						} else if (dossier.pads.includes(this.padId)) {
-							this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(this.padId), 1)
+							this.dossiers[indexDossier].pads = dossier.pads.filter((padId) => padId !== this.padId)
 						}
 					})
 					if (this.onglet === this.dossierActuel.id) {
-						this.pads.forEach((pad, indexPad) => {
-							if (pad.id === this.padId) {
-								this.pads.splice(indexPad, 1)
-							}
-						})
+						this.pads = this.pads.filter((pad) => pad.id !== this.padId)
 					}
 					this.notification = this.$t('padDeplace')
 					this.fermerModaleDeplacerPad()
@@ -943,15 +928,11 @@ export default {
 							if (dossier.id === destination && !dossier.pads.includes(padId)) {
 								this.dossiers[indexDossier].pads.push(padId)
 							} else if (dossier.pads.includes(padId)) {
-								this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(padId), 1)
+								this.dossiers[indexDossier].pads = dossier.pads.filter((id) => id !== padId)
 							}
 						})
 						if (this.onglet === dossierActuel.id) {
-							this.pads.forEach((pad, indexPad) => {
-								if (pad.id === padId) {
-									this.pads.splice(indexPad, 1)
-								}
-							})
+							this.pads = this.pads.filter((pad) => pad.id !== padId)
 						}
 						this.notification = this.$t('padDeplace')
 					}).catch((err) => {
@@ -1061,7 +1042,7 @@ export default {
 			}).then(() => {
 				this.chargement = false
 				this.padsCrees.push(pad)
-				this.padsCorbeille.forEach((pad, index) => {
+				this.padsCorbeille = this.padsCorbeille.filter((pad) => {
 					if (pad.id === padId) {
 						if (pad.favori === true) {
 							this.padsFavoris.push(pad)
@@ -1074,19 +1055,12 @@ export default {
 								}
 							})
 						}
-						this.padsCorbeille.splice(index, 1)
+						return false
 					}
+					return true
 				})
-				this.pads.forEach((pad, index) => {
-					if (pad.id === padId) {
-						this.pads.splice(index, 1)
-					}
-				})
-				this.resultats.forEach((pad, index) => {
-					if (pad.id === padId) {
-						this.resultats.splice(index, 1)
-					}
-				})
+				this.pads = this.pads.filter((pad) => pad.id !== padId)
+				this.resultats = this.resultats.filter((pad) => pad.id !== padId)
 				this.classer(this.classement)
 				this.notification = this.$t('padRestaure')
 			}).catch((err) => {
@@ -1110,39 +1084,24 @@ export default {
 				this.chargement = false
 				pad.favori = false
 				pad.dossier = ''
-				this.padsFavoris.forEach((favori, indexFavori) => {
+				this.padsFavoris = this.padsFavoris.filter((favori) => {
 					if (favori.id === padId) {
-						this.padsFavoris.splice(indexFavori, 1)
 						pad.favori = true
+						return false
 					}
+					return true
 				})
 				this.dossiers.forEach((dossier, index) => {
 					if (dossier.pads.includes(padId)) {
-						this.dossiers[index].pads.splice(dossier.pads.indexOf(padId), 1)
+						this.dossiers[index].pads = dossier.pads.filter((id) => id !== padId)
 						pad.dossier = dossier.id
 					}
 				})
 				this.padsCorbeille.push(pad)
-				this.padsCrees.forEach((pad, index) => {
-					if (pad.id === padId) {
-						this.padsCrees.splice(index, 1)
-					}
-				})
-				this.pads.forEach((pad, index) => {
-					if (pad.id === padId) {
-						this.pads.splice(index, 1)
-					}
-				})
-				this.favoris.forEach((favori, index) => {
-					if (favori === padId) {
-						this.favoris.splice(index, 1)
-					}
-				})
-				this.resultats.forEach((pad, index) => {
-					if (pad.id === padId) {
-						this.resultats.splice(index, 1)
-					}
-				})
+				this.padsCrees = this.padsCrees.filter((pad) => pad.id !== padId)
+				this.pads = this.pads.filter((pad) => pad.id !== padId)
+				this.favoris = this.favoris.filter((favori) => favori !== padId)
+				this.resultats = this.resultats.filter((pad) => pad.id !== padId)
 				this.classer(this.classement)
 				this.notification = this.$t('padDansCorbeille')
 			}).catch((err) => {
@@ -1167,44 +1126,16 @@ export default {
 				admin: ''
 			}).then(() => {
 				this.chargement = false
-				this.padsCorbeille.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.padsCorbeille.splice(index, 1)
-					}
-				})
-				this.padsRejoints.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.padsRejoints.splice(index, 1)
-					}
-				})
-				this.padsAdmins.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.padsAdmins.splice(index, 1)
-					}
-				})
-				this.padsFavoris.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.padsFavoris.splice(index, 1)
-					}
-				})
-				this.favoris.forEach((favori, index) => {
-					if (favori === this.padId) {
-						this.favoris.splice(index, 1)
-					}
-				})
-				this.pads.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.pads.splice(index, 1)
-					}
-				})
-				this.resultats.forEach((pad, index) => {
-					if (pad.id === this.padId) {
-						this.resultats.splice(index, 1)
-					}
-				})
+				this.padsCorbeille = this.padsCorbeille.filter((pad) => pad.id !== this.padId)
+				this.padsRejoints = this.padsRejoints.filter((pad) => pad.id !== this.padId)
+				this.padsAdmins = this.padsAdmins.filter((pad) => pad.id !== this.padId)
+				this.padsFavoris = this.padsFavoris.filter((pad) => pad.id !== this.padId)
+				this.favoris = this.favoris.filter((favori) => favori !== this.padId)
+				this.pads = this.pads.filter((pad) => pad.id !== this.padId)
+				this.resultats = this.resultats.filter((pad) => pad.id !== this.padId)
 				this.dossiers.forEach((dossier, indexDossier) => {
 					if (dossier.pads.includes(this.padId)) {
-						this.dossiers[indexDossier].pads.splice(dossier.pads.indexOf(this.padId), 1)
+						this.dossiers[indexDossier].pads = dossier.pads.filter((id) => id !== this.padId)
 					}
 				})
 				this.notification = this.$t('padSupprime')
@@ -1218,6 +1149,30 @@ export default {
 					this.message = this.$t('actionNonAutorisee')
 				} else if (err.response?.data === 'erreur_suppression') {
 					this.message = this.$t('erreurSuppressionPad')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
+				}
+			})
+		},
+		viderCorbeille () {
+			this.modaleConfirmation = ''
+			this.chargement = true
+			const pads = this.padsCorbeille.map((pad) => pad.id)
+			axios.post(this.hote + '/api/vider-corbeille', {
+				pads: pads,
+				identifiant: this.identifiant
+			}).then(() => {
+				this.chargement = false
+				this.padsCorbeille = []
+				this.pads = this.pads.filter((pad) => !pads.includes(pad.id))
+				this.resultats = this.resultats.filter((pad) => !pads.includes(pad.id))
+				this.notification = this.$t('corbeilleVidee')
+			}).catch((err) => {
+				this.chargement = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'non_autorise') {
+					this.message = this.$t('actionNonAutorisee')
 				} else {
 					this.message = this.$t('erreurCommunicationServeur')
 				}
@@ -1524,11 +1479,7 @@ export default {
 				identifiant: this.identifiant
 			}).then(() => {
 				this.chargement = false
-				this.dossiers.forEach((dossier, index) => {
-					if (dossier.id === this.dossierId) {
-						this.dossiers.splice(index, 1)
-					}
-				})
+				this.dossiers = this.dossiers.filter((dossier) => dossier.id !== this.dossierId)
 				this.onglet = 'pads-crees'
 				this.notification = this.$t('dossierSupprime')
 				this.dossierId = ''
@@ -1774,6 +1725,7 @@ export default {
 	border-bottom: 3px solid #00ced1;
 }
 
+#actions-corbeille button,
 #onglets .bouton-ajouter {
 	display: inline-block;
 	font-weight: 700;
@@ -1782,7 +1734,6 @@ export default {
 	height: 32px;
 	line-height: 32px;
 	padding: 0 20px;
-	cursor: pointer;
 	color: #001d1d;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
 	background: #00ced1;
@@ -1796,11 +1747,19 @@ export default {
 	text-overflow: ellipsis;
 	width: 100%;
 	margin-bottom: 3rem;
+	cursor: pointer;
 }
 
+#actions-corbeille button:hover,
 #onglets .bouton-ajouter:hover {
 	color: #fff;
 	background: #001d1d;
+}
+
+#actions-corbeille button:disabled,
+#actions-corbeille button:disabled:hover {
+	color: #001d1d;
+	background: #bfbfbf;
 }
 
 #onglets .onglet .menu-dossier {
@@ -1946,6 +1905,7 @@ export default {
 	margin-right: 0;
 }
 
+#actions-corbeille,
 #actions-dossier {
 	display: flex;
 	justify-content: flex-end;
@@ -1967,12 +1927,15 @@ export default {
 	color: #fff;
 	font-size: 24px;
 	margin-left: 1.4rem;
-	cursor: pointer;
+}
+
+#actions-corbeille button {
+	width: auto;
+	margin-bottom: 0;
 }
 
 #actions-dossier button.supprimer {
 	color: #ff6259;
-	cursor: pointer;
 }
 
 .pads {

@@ -430,5 +430,8 @@
 	"suppressionColonnes": "Elimina le colonne esistenti",
 	"erreurVidagePad": "Errore durante lo svuotamento del contenuto del pad.",
 	"padVide": "Pad svuotato.",
-	"padVideAdmin": "Il contenuto di questo pad è stato appena reimpostato dal proprietario."
+	"padVideAdmin": "Il contenuto di questo pad è stato appena reimpostato dal proprietario.",
+	"viderCorbeille": "Svuota il cestino",
+	"confirmationViderCorbeille": "Vuoi davvero eliminare definitivamente tutti i pad nel cestino?",
+	"corbeilleVidee": "Cestino svuotato."
 }

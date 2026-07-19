@@ -430,5 +430,8 @@
 	"suppressionColonnes": "Delete existing columns",
 	"erreurVidagePad": "Error while emptying the pad's content.",
 	"padVide": "Pad emptied.",
-	"padVideAdmin": "This pad's content has just been reset by its owner."
+	"padVideAdmin": "This pad's content has just been reset by its owner.",
+	"viderCorbeille": "Empty trash",
+	"confirmationViderCorbeille": "Do you really want to permanently delete all pads in the trash?",
+	"corbeilleVidee": "Trash emptied."
 }
