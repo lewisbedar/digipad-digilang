@@ -3104,7 +3104,7 @@ export default {
 						}
 					}).then((reponse) => {
 						const donnees = reponse.data
-						this.$socket.emit('modifierfond', this.pad.id, donnees, this.pad.fond, this.identifiant)
+						this.$socket.emit('modifierfond', this.pad.id, donnees, this.identifiant)
 						this.progressionFond = 0
 						champ.value = ''
 					}).catch((err) => {
