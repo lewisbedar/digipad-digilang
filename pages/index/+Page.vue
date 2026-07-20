@@ -333,7 +333,9 @@ export default {
 					if (donnees === 'activation_demandee') {
 						this.chargement = false
 						this.fermerModaleInscription()
-						this.message = this.$t('activationEnvoyee')
+						setTimeout(() => {
+							this.message = this.$t('activationEnvoyee')
+						}, 100)
 					} else if (donnees === 'compte_cree') {
 						window.location.href = '/u/' + identifiant
 					}
