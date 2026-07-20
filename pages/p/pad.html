@@ -290,7 +290,7 @@
 					<progress class="barre-progression" max="100" :value="progressionFond" />
 					<div class="chargement" />
 				</div>
-				<div class="conteneur-interrupteur" v-if="pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'">
+				<div class="conteneur-interrupteur" v-if="pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && progressionFond === 0">
 					<span>{{ $t('repeterImageFond') }}</span>
 					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
 						<input id="parametre-fond-repete" type="checkbox" :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
