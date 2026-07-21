@@ -1,13 +1,19 @@
 export { onBeforeRender }
 
-async function onBeforeRender (pageContext) {
+import { render } from 'vike/abort'
+
+function onBeforeRender (pageContext) {
 	let pageProps
 	let redirection = '/'
 	const identifiant = pageContext.identifiant
 	const statut = pageContext.statut
 	let pads = pageContext.pads
 	const donneesPad = pageContext.donneesPad
-	if (typeof donneesPad !== 'object' || !donneesPad || !donneesPad.hasOwnProperty('pad') || !donneesPad.hasOwnProperty('blocs') || !donneesPad.hasOwnProperty('activite')) {
+	if (donneesPad === 'pad_inexistant') {
+		throw render(404, 'pad_inexistant')
+	} else if (donneesPad === 'erreur') {
+		throw render(500, 'erreur')
+	} else if (typeof donneesPad !== 'object' || !donneesPad || !donneesPad.hasOwnProperty('pad') || !donneesPad.hasOwnProperty('blocs') || !donneesPad.hasOwnProperty('activite')) {
 		if (statut === 'utilisateur') {
 			redirection = '/u/' + identifiant
 		}

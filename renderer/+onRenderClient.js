@@ -3,9 +3,7 @@ export { render as onRenderClient }
 import { createPageApp } from './app'
 
 function render (pageContext) {
-	if (pageContext.pageProps.hasOwnProperty('erreur')) {
-		window.location.href = '/'
-	} else if (pageContext.pageProps.hasOwnProperty('redirection')) {
+	if (pageContext.pageProps.hasOwnProperty('redirection')) {
 		window.location.href = pageContext.pageProps.redirection
 	} else {
 		const app = createPageApp(pageContext)

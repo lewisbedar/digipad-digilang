@@ -501,14 +501,19 @@ async function demarrerServeur () {
 			const userAgent = req.headers['user-agent']
 			const id = req.params.id
 			const token = req.params.token
-			let donneesPad = 'erreur'
+			let donneesPad
 			try {
 				const padExiste = await db.EXISTS('pads:' + id)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
 					await recupererDonneesPadJSON(id)
+				} else if (padExiste === 0) {
+					donneesPad = 'pad_inexistant'
 				}
-				donneesPad = await recupererDonneesPad(id, token, req.session.identifiant, req.session.statut, req.session.pads)
+				if (donneesPad !== 'pad_inexistant') {
+					donneesPad = await recupererDonneesPad(id, token, req.session.identifiant, req.session.statut, req.session.pads)
+				}
 			} catch (err) {
+				donneesPad = 'erreur'
 				console.error(err.stack)
 			}
 			const pageContextInit = {

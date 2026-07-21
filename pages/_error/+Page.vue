@@ -2,7 +2,8 @@
 	<div id="page">
 		<div id="erreur">
 			<h1>{{ $t('erreur') }}</h1>
-			<h3>{{ $t('erreurChargementPage') }}</h3>
+			<h3 v-if="contenuInexistant">{{ $t('padInexistant') }}</h3>
+			<h3 v-else>{{ $t('erreurChargementPage') }}</h3>
 			<a href="/">{{ $t('retourAccueil') }}</a>
 		</div>
 
@@ -22,7 +23,8 @@ export default {
 		return {
 			chargementPage: true,
 			langues: this.$pageContext.pageProps.langues,
-			langue: this.$pageContext.pageProps.langue
+			langue: this.$pageContext.pageProps.langue,
+			contenuInexistant: this.$pageContext.pageProps.is404
 		}
 	},
 	created () {
