@@ -2140,11 +2140,11 @@ async function demarrerServeur () {
 			const code = req.body.code
 			let donneesPad = await db.HGETALL('pads:' + pad)
 			donneesPad = donneesPad ? { ...donneesPad } : {}
-			if (!donneesPad.hasOwnProperty('code')) return res.status(500).send('erreur')
+			if (!donneesPad.hasOwnProperty('code')) res.status(500).json({ message: 'erreur' })
 			const codeBuffer = Buffer.from(String(code))
 			const codeBufferDb = Buffer.from(String(donneesPad.code))
 			if (codeBuffer.length !== codeBufferDb.length || !timingSafeEqual(codeBuffer, codeBufferDb)) {
-				return res.status(401).send('code_incorrect')
+				return res.status(401).json({ message: 'code_incorrect' })
 			}
 			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant)
 			if (!req.session.hasOwnProperty('acces')) {
