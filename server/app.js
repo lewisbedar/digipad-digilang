@@ -107,12 +107,16 @@ async function demarrerServeur () {
 			url: 'redis://default:' + process.env.DB_PWD  + '@' + process.env.DB_HOST + ':' + db_port
 		}).on('error', (err) => {
 			console.error('Erreur Redis : ' + err)
+		}).on('ready', () => {
+			console.log('Redis prêt')
 		}).connect()
 	} else {
 		db = await createClient({
 			url: 'redis://localhost:' + db_port
 		}).on('error', (err) => {
 			console.error('Erreur Redis : ' + err)
+		}).on('ready', () => {
+			console.log('Redis prêt')
 		}).connect()
 	}
 	const cookieSecurise = parseInt(process.env.COOKIE_SECURE) !== 0
