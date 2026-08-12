@@ -1213,13 +1213,14 @@ export default {
 			if (this.lien !== '') {
 				const regexIframe = /<iframe(.+)<\/iframe>/
 				if (regexIframe.test(this.lien)) {
-					const regexDigiview = /\/digiview\/inc\/video(.*?)vignette=/
-					if (regexDigiview.test(this.lien)) {
-						const matchVignette = this.lien.match(/https:\/\/i.ytimg(.*)hqdefault.jpg/g)
-						if (matchVignette) {
-							this.vignette = matchVignette[0]
-							this.vignetteDefaut = matchVignette[0]
-						}
+					const regexDigiview = /\/digiview\/inc\/video(.*?)vignette=([^&"]*)/
+					const matchDigiview = this.lien.match(regexDigiview)
+					if (matchDigiview) {
+						try {
+							const vignette = decodeURIComponent(matchDigiview[2])
+							this.vignette = vignette
+							this.vignetteDefaut = vignette
+						} catch {}
 					}
 					const matchIframe = this.lien.match(/<iframe [^>]*src="[^"]*"[^>]*>/g)
 					if (matchIframe) {
