@@ -2127,8 +2127,9 @@ async function demarrerServeur () {
 			if (acces === true) {
 				res.status(200).json({ message: 'motdepasse_correct', identifiant, nom, langue })
 			} else {
-				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant)
-				res.status(200).json({ message: 'motdepasse_correct', identifiant, nom, langue, pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite.reverse() })
+				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, true)
+				if (donneesPadProtege === 'erreur') return res.status(500).json({ message: 'erreur' })
+				res.status(200).json({ message: 'motdepasse_correct', identifiant, nom, langue, pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite })
 			}
 		} catch (err) {
 			console.error(err.stack)
@@ -2150,7 +2151,8 @@ async function demarrerServeur () {
 			if (codeBuffer.length !== codeBufferDb.length || !timingSafeEqual(codeBuffer, codeBufferDb)) {
 				return res.status(401).json({ message: 'code_incorrect' })
 			}
-			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant)
+			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, false)
+			if (donneesPadProtege === 'erreur') return res.status(500).json({ message: 'erreur' })
 			if (!req.session.hasOwnProperty('acces')) {
 				req.session.acces = []
 			}
@@ -2169,7 +2171,7 @@ async function demarrerServeur () {
 			} else {
 				req.session.acces.push({ code: code, pad: parseInt(pad, 10) })
 			}
-			res.status(200).json({ message: 'code_correct', pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite.reverse() })
+			res.status(200).json({ message: 'code_correct', pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite })
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).json({ message: 'erreur' })
@@ -3364,8 +3366,9 @@ async function demarrerServeur () {
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('code')) return socket.emit('erreur')
 				if (code !== donneesPad.code) return socket.emit('verifieracces', { acces: false })
-				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant)
-				socket.emit('verifieracces', { acces: true, pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite.reverse() })
+				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, false)
+				if (donneesPadProtege === 'erreur') return socket.emit('erreur')
+				socket.emit('verifieracces', { acces: true, pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite })
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('verifieracces', { acces: false })
@@ -4366,6 +4369,25 @@ async function demarrerServeur () {
 			}
 		})
 
+		socket.on('modifiervisionneuse', async (pad, visionneuse, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (!['viewer', 'viewer-alt'].includes(visionneuse)) return socket.emit('erreur')
+				await db.HSET('pads:' + pad, 'visionneuse', visionneuse)
+				io.to('pad-' + pad).emit('modifiervisionneuse', visionneuse, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
 		socket.on('message', async (pad, texte, identifiant, nom) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
@@ -4532,7 +4554,16 @@ async function demarrerServeur () {
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
-				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant)
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				const accesCode = donneesPad.hasOwnProperty('code') && donneesPad.acces === 'code'
+				const accesPrive = donneesPad.acces === 'prive'
+				let accesLecture = admin || (!accesCode && !accesPrive)
+				if (!accesLecture && accesCode && req.session.hasOwnProperty('acces')) {
+					accesLecture = req.session.acces.some((e) => e.hasOwnProperty('pad') && parseInt(e.pad, 10) === parseInt(pad, 10) && e.code === donneesPad.code)
+				}
+				if (!accesLecture) return socket.emit('nonautorise')
+				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, admin)
+				if (donneesPadProtege === 'erreur') return socket.emit('erreur')
 				socket.emit('verifierblocscolonnes', donneesPadProtege.blocs)
 			} catch (err) {
 				console.error(err.stack)
@@ -5045,11 +5076,12 @@ async function demarrerServeur () {
 		if (!pad.hasOwnProperty('ordre')) pad.ordre = 'croissant'
 		if (!pad.hasOwnProperty('largeur')) pad.largeur = 'normale'
 		if (!pad.hasOwnProperty('enregistrements')) pad.enregistrements = 'desactives'
+		if (!pad.hasOwnProperty('visionneuse')) pad.visionneuse = 'viewer'
 		if (accesLecture) {
 			if (pad.hasOwnProperty('affichageColonnes')) {
 				try {
 					pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
-					if (pad.affichageColonnes.length === 0 || pad.affichageColonnes.length < pad.colonnes.length) {
+					if (pad.affichageColonnes.length === 0 || pad.affichageColonnes.length !== pad.colonnes.length) {
 						pad.affichageColonnes = pad.colonnes.map(() => true)
 					}
 				} catch {
@@ -5065,7 +5097,7 @@ async function demarrerServeur () {
 		// Masquage des données sensibles
 		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
 		if (!admin) {
-			if (accesCode) pad.code = ''
+			if (pad.hasOwnProperty('code')) pad.code = ''
 			if (accesCode || accesPrive) {
 				pad.colonnes = []
 				pad.affichageColonnes = []
@@ -5169,28 +5201,42 @@ async function demarrerServeur () {
 		return { pad, blocs: donneesBlocs, activite: donneesEntrees }
 	}
 
-	async function recupererDonneesPadProtege (pad, id, identifiant) {
-		let nombreColonnes = 0
-		let colonnes = []
-		let affichageColonnes = []
+	async function recupererDonneesPadProtege (pad, id, identifiant, admin) {
 		try {
-			colonnes = JSON.parse(pad.colonnes)
-			affichageColonnes = JSON.parse(pad.affichageColonnes)
-			nombreColonnes = colonnes.length
+			pad.colonnes = JSON.parse(pad.colonnes)
 			if (pad.hasOwnProperty('notification')) {
 				pad.notification = JSON.parse(pad.notification)
 			}
 		} catch {
-			colonnes = []
-			affichageColonnes = []
-			nombreColonnes = 0
+			return 'erreur'
 		}
-		pad.colonnes = colonnes
-		// Fix bug update 0.9.11 : recalcul affichageColonnes si nécessaire
-		if (affichageColonnes.length === 0 || affichageColonnes.length < colonnes.length) {
-			affichageColonnes = colonnes.map(() => true)
+		const nombreColonnes = pad.colonnes.length
+		if (pad.hasOwnProperty('affichageColonnes')) {
+			try {
+				pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
+				if (pad.affichageColonnes.length === 0 || pad.affichageColonnes.length !== pad.colonnes.length) {
+					pad.affichageColonnes = pad.colonnes.map(() => true)
+				}
+			} catch {
+				pad.affichageColonnes = pad.colonnes.map(() => true)
+			}
+		} else {
+			pad.affichageColonnes = pad.colonnes.map(() => true)
 		}
-		pad.affichageColonnes = affichageColonnes
+		// Valeurs par défaut et compatibilité
+		if (!pad.hasOwnProperty('digidrive')) pad.digidrive = 0
+		if (!pad.hasOwnProperty('fondRepete')) pad.fondRepete = 'desactive'
+		if (!pad.hasOwnProperty('ordre')) pad.ordre = 'croissant'
+		if (!pad.hasOwnProperty('largeur')) pad.largeur = 'normale'
+		if (!pad.hasOwnProperty('enregistrements')) pad.enregistrements = 'desactives'
+		if (!pad.hasOwnProperty('visionneuse')) pad.visionneuse = 'viewer'
+		if (pad.hasOwnProperty('fond') && typeof pad.fond === 'string' && pad.fond !== '' && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#') {
+			pad.fond = path.basename(pad.fond)
+		}
+		// Masquage des données sensibles
+		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
+		if (!admin && pad.hasOwnProperty('code')) pad.code = ''
+		pad.admins = []
 		const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 		let donneesBlocs = []
 		let listeBlocsValides = []
@@ -5202,8 +5248,8 @@ async function demarrerServeur () {
 				if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
 				// Filtres de visibilité
 				const blocVisible = !((pad.contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
-				const colonneMasquee = (pad.affichage === 'colonnes' && affichageColonnes[bloc.colonne] === false)
-				if ((!blocVisible || colonneMasquee) && bloc.identifiant !== identifiant) return null
+				const colonneMasquee = (pad.affichage === 'colonnes' && pad.affichageColonnes[bloc.colonne] === false)
+				if ((!blocVisible || colonneMasquee) && bloc.identifiant !== identifiant && !admin) return null
 				// Correction colonne inexistante
 				if (parseInt(bloc.colonne, 10) >= nombreColonnes) {
 					bloc.colonne = nombreColonnes - 1
