@@ -433,5 +433,9 @@
 	"padVideAdmin": "Il contenuto di questo pad è stato appena reimpostato dal proprietario.",
 	"viderCorbeille": "Svuota il cestino",
 	"confirmationViderCorbeille": "Vuoi davvero eliminare definitivamente tutti i pad nel cestino?",
-	"corbeilleVidee": "Cestino svuotato."
+	"corbeilleVidee": "Cestino svuotato.",
+	"visionneuseOffice": "Visualizzatore per i documenti Office",
+	"visionneuse": "Collabora (LibreOffice)",
+	"visionneuseAlt": "Microsoft",
+	"visionneuseModifiee": "Visualizzatore documenti modificato."
 }

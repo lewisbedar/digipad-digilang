@@ -8,7 +8,7 @@
 		<div class="media" v-if="item.media !== '' && action !== 'organiser'">
 			<button type="button" class="bouton-image" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-if="item.type === 'image'" @click="parent.afficherVisionneuse(item)"><img :src="parent.definirCheminFichiers() + '/' + pad.id + '/' + item.media" loading="lazy" :alt="item.media"></button>
 			<button type="button" class="bouton-image" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'lien-image'" @click="parent.afficherVisionneuse(item)"><img :src="item.media" loading="lazy" :alt="item.media"></button>
-			<button type="button" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'audio' || item.type === 'video' || (item.type === 'document' && visionneuseDocx && visionneuseDocx !== '' && visionneuseDocx !== null) || item.type === 'pdf' || (item.type === 'office' && visionneuseDocx && visionneuseDocx !== '' && visionneuseDocx !== null) || item.type === 'embed'" @click="parent.afficherVisionneuse(item)"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy"></button>
+			<button type="button" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'audio' || item.type === 'video' || (item.type === 'document' && visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && visionneuse !== '') || item.type === 'embed'" @click="parent.afficherVisionneuse(item)"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy"></button>
 			<a :href="item.media" target="_blank" :title="$t('ouvrirLienNouvelOnglet')" :aria-label="$t('ouvrirLienNouvelOnglet')" v-else-if="item.type === 'lien'"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy"></a>
 			<a :href="parent.definirCheminFichiers() + '/' + pad.id + '/' + item.media" :title="$t('telecharger')" :aria-label="$t('telecharger')" download v-else><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy"></a>
 		</div>
@@ -60,12 +60,8 @@ export default {
 		disabledAlt: Boolean,
 		action: String,
 		statut: String,
-		viaDigidrive: Boolean
-	},
-	data () {
-		return {
-			visionneuseDocx: import.meta.env.VITE_DOCX_VIEWER
-		}
+		viaDigidrive: Boolean,
+		visionneuse: String
 	},
 	methods: {
 		definirEtoiles (evaluations) {

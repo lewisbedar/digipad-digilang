@@ -1131,6 +1131,7 @@
 .menu .conteneur-interrupteur {
 	display: flex;
 	justify-content: space-between;
+	align-items: center;
 	margin-bottom: 1rem;
 	line-height: 2.2rem;
 }
@@ -1143,6 +1144,26 @@
 
 .menu .conteneur-interrupteur > span {
 	font-size: 16px;
+}
+
+.menu .conteneur-interrupteur label {
+	font-size: 16px;
+	margin-bottom: 0;
+	font-weight: 400;
+}
+
+.menu .conteneur-interrupteur select {
+	display: block;
+	width: 11rem;
+	height: 2.6rem;
+	font-size: 16px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 0 10px;
+	margin-left: 1rem;
+	background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" height="14" viewBox="0 0 19 14" width="19"><path fill="%23000000" d="M9.37727 3.625l5.08154 6.93523L19.54036 3.625" /></svg>') no-repeat;
+	background-position: right 8px center;
+	padding-right: 30px;
 }
 
 .modale .bouton-interrupteur,

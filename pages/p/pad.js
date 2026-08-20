@@ -143,7 +143,8 @@ export default {
 			fichiersAutorises: import.meta.env.VITE_UPLOAD_FILE_TYPES,
 			stockage: import.meta.env.VITE_STORAGE,
 			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK,
-			visionneuseDocx: import.meta.env.VITE_DOCX_VIEWER
+			visionneuseDocx: import.meta.env.VITE_DOCX_VIEWER,
+			visionneuseDocxAlt: import.meta.env.VITE_DOCX_VIEWER_ALT
 		}
 	},
 	computed: {
@@ -246,6 +247,19 @@ export default {
 				resultats = blocs
 			}
 			return resultats
+		},
+		visionneuse () {
+			if (this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null && this.visionneuseDocxAlt && this.visionneuseDocxAlt !== '' && this.visionneuseDocxAlt !== null) {
+				if (this.pad.visionneuse && this.pad.visionneuse === 'viewer-alt') {
+					return this.visionneuseDocxAlt
+				} else {
+					return this.visionneuseDocx
+				}
+			} else if (this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) {
+				return this.visionneuseDocx
+			} else {
+				return ''
+			}
 		}
 	},
 	watch: {
@@ -1086,7 +1100,7 @@ export default {
 						case 'document':
 						case 'office':
 							this.$nextTick(() => {
-								if (this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) {
+								if (this.visionneuse !== '') {
 									const iframe = document.querySelector('#document')
 									iframe.addEventListener('load', () => {
 										imagesLoaded('#vignette', () => {
@@ -1762,7 +1776,7 @@ export default {
 					break
 				case 'document':
 				case 'office':
-					html = '<iframe src="' + this.visionneuseDocx + this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" allowfullscreen></iframe>'
+					html = '<iframe src="' + this.visionneuse + this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" allowfullscreen></iframe>'
 					break
 				case 'embed':
 					if (item.source === 'etherpad') {
@@ -2269,7 +2283,7 @@ export default {
 			}
 		},
 		definirAriaLabelBloc (item) {
-			if (item.media !== '' && (item.type === 'image' || item.type === 'lien-image' || item.type === 'audio' || item.type === 'video' || (item.type === 'document' && this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) || item.type === 'pdf' || (item.type === 'office' && this.visionneuseDocx && this.visionneuseDocx !== '' && this.visionneuseDocx !== null) || item.type === 'embed')) {
+			if (item.media !== '' && (item.type === 'image' || item.type === 'lien-image' || item.type === 'audio' || item.type === 'video' || (item.type === 'document' && this.visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && this.visionneuse !== '') || item.type === 'embed')) {
 				return this.$t('afficherDansVisionneuse')
 			} else if (item.media !== '' && item.type === 'lien') {
 				return this.$t('ouvrirLienNouvelOnglet')
@@ -3232,6 +3246,12 @@ export default {
 			}
 			this.chargement = true
 		},
+		modifierVisionneuse (visionneuse) {
+			if (!this.pad.visionneuse || this.pad.visionneuse !== visionneuse) {
+				this.$socket.emit('modifiervisionneuse', this.pad.id, visionneuse, this.identifiant)
+				this.chargement = true
+			}
+		},
 		fermerMenuOptions () {
 			this.menu = ''
 			const titrePad = document.querySelector('#titre-pad')
@@ -3991,16 +4011,16 @@ export default {
 				this.utilisateur = donnees.identifiant
 				if (donnees.visibilite === 'visible' || this.admin || (this.pad.contributions === 'moderees' && (this.utilisateur === this.identifiant))) {
 					if (this.pad.affichage === 'colonnes') {
-						if (this.pad.ordre === 'croissant') {
-							this.colonnes[donnees.colonne].push(donnees)
-						} else {
+						if (this.pad.ordre === 'decroissant') {
 							this.colonnes[donnees.colonne].unshift(donnees)
+						} else {
+							this.colonnes[donnees.colonne].push(donnees)
 						}
 					}
-					if (this.pad.ordre === 'croissant') {
-						this.blocs.push(donnees)
-					} else {
+					if (this.pad.ordre === 'decroissant') {
 						this.blocs.unshift(donnees)
+					} else {
+						this.blocs.push(donnees)
 					}
 					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
 					if (this.admin || this.pad.affichage !== 'colonnes' || (this.pad.affichage === 'colonnes' && this.affichageColonnes[donnees.colonne])) {
@@ -4513,6 +4533,14 @@ export default {
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('parametreCopieBlocModifie')
+				}
+			})
+
+			this.$socket.on('modifiervisionneuse', (visionneuse, identifiant) => {
+				this.pad.visionneuse = visionneuse
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('visionneuseModifiee')
 				}
 			})
 

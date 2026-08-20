@@ -433,5 +433,9 @@
 	"padVideAdmin": "El contenido de este pad acaba de ser reiniciado por su propietario.",
 	"viderCorbeille": "Vaciar la papelera",
 	"confirmationViderCorbeille": "¿Realmente desea eliminar definitivamente todos los pads de la papelera?",
-	"corbeilleVidee": "Papelera vaciada."
+	"corbeilleVidee": "Papelera vaciada.",
+	"visionneuseOffice": "Visor de documentos de Office",
+	"visionneuse": "Collabora (LibreOffice)",
+	"visionneuseAlt": "Microsoft",
+	"visionneuseModifiee": "Visor de documentos modificado."
 }

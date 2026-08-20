@@ -433,5 +433,9 @@
 	"padVideAdmin": "Sadržaj ove podloge upravo je resetirao njezin vlasnik.",
 	"viderCorbeille": "Isprazni koš za smeće",
 	"confirmationViderCorbeille": "Želite li stvarno trajno izbrisati sve podloge iz koša za smeće?",
-	"corbeilleVidee": "Koš za smeće ispražnjen."
+	"corbeilleVidee": "Koš za smeće ispražnjen.",
+	"visionneuseOffice": "Preglednik za Office dokumente",
+	"visionneuse": "Collabora (LibreOffice)",
+	"visionneuseAlt": "Microsoft",
+	"visionneuseModifiee": "Preglednik dokumenata promijenjen."
 }

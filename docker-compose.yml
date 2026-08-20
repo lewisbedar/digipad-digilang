@@ -39,6 +39,7 @@ services:
         - VITE_STORAGE=${VITE_STORAGE}
         - VITE_S3_PUBLIC_LINK=${VITE_S3_PUBLIC_LINK}
         - VITE_DOCX_VIEWER=${VITE_DOCX_VIEWER}
+        - VITE_DOCX_VIEWER_ALT=${VITE_DOCX_VIEWER_ALT}
         - VITE_LEGAL_TERMS_LINK=${VITE_LEGAL_TERMS_LINK}
     restart: unless-stopped
     env_file: .env

@@ -433,5 +433,9 @@
 	"padVideAdmin": "Le contenu de ce pad vient d'être réintialisé par son propriétaire.",
 	"viderCorbeille": "Vider la corbeille",
 	"confirmationViderCorbeille": "Souhaitez-vous vraiment supprimer définitivement tous les pads de la corbeille&nbsp;?",
-	"corbeilleVidee": "Corbeille vidée."
+	"corbeilleVidee": "Corbeille vidée.",
+	"visionneuseOffice": "Visionneuse Office",
+	"visionneuse": "Collabora (LibreOffice)",
+	"visionneuseAlt": "Microsoft",
+	"visionneuseModifiee": "Visionneuse de documents modifiée."
 }
