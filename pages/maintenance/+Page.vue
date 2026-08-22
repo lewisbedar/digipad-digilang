@@ -29,7 +29,6 @@ export default {
 	},
 	mounted () {
 		document.getElementsByTagName('html')[0].setAttribute('lang', this.langue)
-
 		this.chargementPage = false
 	}
 }
