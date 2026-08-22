@@ -11,7 +11,7 @@ RUN apt-get update \
 # Force les dépendances Git comme lamejs en HTTPS anonyme
 RUN git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 RUN npm install --allow-git=root
 
 COPY . .
@@ -24,6 +24,7 @@ ARG VITE_UPLOAD_FILE_TYPES
 ARG VITE_PAD_LIMIT
 ARG VITE_PAD_WITHOUT_ACCOUNT
 ARG VITE_CREATE_ACCOUNT
+ARG VITE_DEFAULT_LANGUAGE
 ARG VITE_MATOMO
 ARG VITE_MATOMO_SITE_ID
 ARG VITE_STORAGE
@@ -38,6 +39,7 @@ ENV VITE_ETHERPAD=${VITE_ETHERPAD} \
 	VITE_PAD_LIMIT=${VITE_PAD_LIMIT} \
 	VITE_PAD_WITHOUT_ACCOUNT=${VITE_PAD_WITHOUT_ACCOUNT} \
 	VITE_CREATE_ACCOUNT=${VITE_CREATE_ACCOUNT} \
+	VITE_DEFAULT_LANGUAGE=${VITE_DEFAULT_LANGUAGE} \
 	VITE_MATOMO=${VITE_MATOMO} \
 	VITE_MATOMO_SITE_ID=${VITE_MATOMO_SITE_ID} \
 	VITE_STORAGE=${VITE_STORAGE} \
@@ -53,6 +55,9 @@ FROM node:24-bookworm-slim AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
+ARG VITE_DEFAULT_LANGUAGE
+ENV VITE_DEFAULT_LANGUAGE=${VITE_DEFAULT_LANGUAGE}
+
 # GraphicsMagick + Ghostscript (traitement des images/PDF) et LibreOffice (conversion des documents en PDF)
 RUN apt-get update && apt-get install -y --no-install-recommends \
 		graphicsmagick ghostscript libreoffice curl \
@@ -60,7 +65,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY server ./server
 COPY public ./public
 COPY static ./static

@@ -74,6 +74,10 @@ async function demarrerServeur () {
 	const hoteWs = hote.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
 	const hoteTeleversement = process.env.UPLOAD_HOST || hote
 	const langues = ['fr', 'es', 'it', 'de', 'en', 'hr']
+	let langueParDefaut = 'fr'
+	if (process.env.VITE_DEFAULT_LANGUAGE && langues.includes(process.env.VITE_DEFAULT_LANGUAGE)) {
+		langueParDefaut = process.env.VITE_DEFAULT_LANGUAGE
+	}
 	let stockage = 'fs'
 	const lienPublicS3 = process.env.VITE_S3_PUBLIC_LINK
 	let s3Client = ''
@@ -302,7 +306,7 @@ async function demarrerServeur () {
 	app.get('/', async (req, res, next) => {
 		if (maintenance === true) return res.redirect(302, '/maintenance')
 		if (req.session.identifiant && req.session.statut === 'utilisateur') return res.redirect(302, '/u/' + req.session.identifiant)
-		let langue = 'fr'
+		let langue = langueParDefaut
 		if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 			langue = req.session.langue
 		}
@@ -470,7 +474,7 @@ async function demarrerServeur () {
 				req.session.motdepasse = ''
 				req.session.nom = identifiant.slice(0, 8).toUpperCase()
 				req.session.email = ''
-				req.session.langue = 'fr'
+				req.session.langue = langueParDefaut
 				req.session.statut = 'invite'
 				req.session.acces = []
 				req.session.pads = []
@@ -576,7 +580,7 @@ async function demarrerServeur () {
 			if (typeof donneesBlocs !== 'object' || !donneesBlocs) return res.redirect(302, '/')
 			const titre = donneesPad.titre
 			const lien = hote + '/p/' + id + '/' + token
-			const langue = req.session.langue || 'fr'
+			const langue = req.session.langue || langueParDefaut
 			const xml = genererXML(hote, id, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
 			if (xml === null || xml === '') {
 				res.redirect(302, '/p/' + id + '/' + token)
@@ -592,7 +596,7 @@ async function demarrerServeur () {
 
 	app.get('/maintenance', async (req, res, next) => {
 		if (maintenance === false) return res.redirect(302, '/')
-		let langue = 'fr'
+		let langue = langueParDefaut
 		if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 			langue = req.session.langue
 		}
@@ -617,7 +621,7 @@ async function demarrerServeur () {
   	})
 	
 	app.get('/admin', async (req, res, next) => {
-		let langue = 'fr'
+		let langue = langueParDefaut
 		if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 			langue = req.session.langue
 		}
@@ -663,8 +667,8 @@ async function demarrerServeur () {
 				codeActivation = codeActivation.toString('hex')
 				const hash = await bcrypt.hash(motdepasse, 10)
 				const date = dayjs().format()
-				let langue = 'fr'
-				if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+				let langue = langueParDefaut
+				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
 				await db.multi()
@@ -684,8 +688,8 @@ async function demarrerServeur () {
 			} else if (emailExiste === 0 && validationInscription === 0) {
 				const hash = await bcrypt.hash(motdepasse, 10)
 				const date = dayjs().format()
-				let langue = 'fr'
-				if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+				let langue = langueParDefaut
+				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
 				await db.multi()
@@ -960,8 +964,8 @@ async function demarrerServeur () {
 			const token = Math.random().toString(16).slice(2)
 			const date = dayjs().format()
 			const id = await db.INCR('pad')
-			let langue = 'fr'
-			if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+			let langue = langueParDefaut
+			if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 				langue = req.session.langue
 			}
 			const donneesPad = await creerPadSansCompte(id, token, titre, hash, date, identifiant, nom, langue, '')
@@ -2091,8 +2095,8 @@ async function demarrerServeur () {
 			if (!motdepasseCorrect) return res.status(401).json({ message: 'motdepasse_incorrect' })
 			const identifiant = req.body.identifiant
 			const acces = req.body.acces
-			let langue = 'fr'
-			if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+			let langue = langueParDefaut
+			if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 				langue = req.session.langue
 			}
 			let nom = ''
@@ -2814,8 +2818,8 @@ async function demarrerServeur () {
 				const hash = await bcrypt.hash(motdepasse, 10)
 				const token = Math.random().toString(16).slice(10)
 				const date = dayjs().format()
-				let langue = 'fr'
-				if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+				let langue = langueParDefaut
+				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
 				const padId = await db.INCR('pad')
@@ -2891,8 +2895,8 @@ async function demarrerServeur () {
 				}
 				if (!autorisation) return res.status(403).send('non_autorise')
 				const date = dayjs().format()
-				let langue = 'fr'
-				if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+				let langue = langueParDefaut
+				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
 				if (typePad === 'sans-compte') {
@@ -3089,8 +3093,8 @@ async function demarrerServeur () {
 				const titre = req.body.titre
 				const motdepasse = req.body.motdepasse
 				const hash = await bcrypt.hash(motdepasse, 10)
-				let langue = 'fr'
-				if (req.session.hasOwnProperty('langue') && req.session.langue !== '' && req.session.langue !== undefined) {
+				let langue = langueParDefaut
+				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
 				const source = path.join(__dirname, '..', '/static/temp/' + req.file.filename)
@@ -5422,7 +5426,7 @@ async function demarrerServeur () {
 
 	async function exporterPad (id, erreur, langue) {
 		if (!langues.includes(langue)) {
-			langue = 'fr'
+			langue = langueParDefaut
 		}
 		try {
 			let [donneesPad, listeBlocs, activite] = await Promise.all([

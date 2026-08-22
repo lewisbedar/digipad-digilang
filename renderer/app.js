@@ -32,8 +32,12 @@ function createPageApp (pageContext) {
     	}
   	}
 
+	let langue = pageProps.langue || import.meta.env.VITE_DEFAULT_LANGUAGE || 'fr'
+	if (!messages.hasOwnProperty(langue)) {
+		langue = 'fr'
+	}
 	const i18n = createI18n({
-		locale: 'fr',
+		locale: langue,
 		fallbackLocale: 'fr',
 		warnHtmlInMessage: 'off',
 		messages

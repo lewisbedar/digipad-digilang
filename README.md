@@ -39,6 +39,7 @@ VITE_UPLOAD_FILE_TYPES (types de fichiers autorisés pour le téléversement / p
 VITE_PAD_LIMIT (nombre maximum de pads par compte utilisateur)
 VITE_PAD_WITHOUT_ACCOUNT (0 ou 1 / pour autoriser la création de pads sans compte)
 VITE_CREATE_ACCOUNT (0 ou 1 / pour autoriser la création de comptes)
+VITE_DEFAULT_LANGUAGE (de, en, es, fr, hr ou it / fr par défaut)
 ADMIN_PASSWORD (mot de passe pour accéder à la page d'administration /admin)
 CRON_TASK_DATE (régularité de la tâche cron pour supprimer les fichiers temporaires / 59 23 * * Saturday par défaut)
 EMAIL_HOST (hôte pour l'envoi d'e-mails)
