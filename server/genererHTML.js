@@ -690,8 +690,7 @@ function genererHTML (pad, blocs, langue) {
 						piegerFocus (event, conteneur) {
 							if (!conteneur) return
 							const isVisible = el => el.offsetWidth || el.offsetHeight || el.getClientRects().length
-							const focusables = Array.from(conteneur.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])'))
-								.filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
+							const focusables = Array.from(conteneur.querySelectorAll('a[href], button, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
 							if (focusables.length === 0) return
 							const premier = focusables[0]
 							const dernier = focusables[focusables.length - 1]
