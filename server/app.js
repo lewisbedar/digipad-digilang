@@ -3956,6 +3956,24 @@ async function demarrerServeur () {
 			}
 		})
 
+		socket.on('reinitialiservues', async (pad, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin || donneesPad.identifiant !== identifiant) return socket.emit('nonautorise')
+				await db.HSET('pads:' + pad, 'vues', 0)
+				io.to('pad-' + pad).emit('reinitialiservues', identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
 		socket.on('modifiercodeacces', async (pad, code, identifiant) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')

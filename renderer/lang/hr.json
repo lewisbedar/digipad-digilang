@@ -437,5 +437,8 @@
 	"visionneuseOffice": "Preglednik za Office dokumente",
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
-	"visionneuseModifiee": "Preglednik dokumenata promijenjen."
+	"visionneuseModifiee": "Preglednik dokumenata promijenjen.",
+	"reinitialiserVues": "Poništi brojač pregleda",
+	"confirmationReinitialiserVues": "Jeste li sigurni da želite poništiti brojač pregleda?",
+	"vuesReinitialisees": "Brojač pregleda je poništen."
 }

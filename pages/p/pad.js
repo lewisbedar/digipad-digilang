@@ -2972,6 +2972,20 @@ export default {
 				document.querySelector('.modale .fermer')?.focus()
 			})
 		},
+		afficherReinitialiserVues () {
+			this.messageConfirmation = this.$t('confirmationReinitialiserVues')
+			this.typeConfirmation = 'reinitialiser-vues'
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.modaleConfirmation = true
+			this.$nextTick(() => {
+				document.querySelector('.modale .bouton')?.focus()
+			})
+		},
+		reinitialiserVues () {
+			this.$socket.emit('reinitialiservues', this.pad.id, this.identifiant)
+			this.chargement = true
+			this.fermerModaleConfirmation()
+		},
 		modifierAcces (acces) {
 			if (this.pad.acces !== acces) {
 				this.$socket.emit('modifieracces', this.pad.id, acces, this.identifiant)
@@ -4336,6 +4350,21 @@ export default {
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('listeAdminsModifiee')
+				}
+			})
+
+			this.$socket.on('reinitialiservues', (identifiant) => {
+				this.pad.vues = 0
+				this.chargement = false
+				if (this.admin) {
+					this.notification = this.$t('vuesReinitialisees')
+				}
+				if (this.identifiant === identifiant) {
+					this.$nextTick(() => {
+						if (document.querySelector('#menu-options.ouvert')) {
+							document.querySelector('#menu-options .fermer')?.focus()
+						}
+					})
 				}
 			})
 

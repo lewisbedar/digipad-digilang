@@ -161,9 +161,12 @@
 					<button type="button" class="icone lien" role="menuitem" tabindex="-1" :title="$t('copierCode')" :aria-label="$t('copierCode')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 				</div>
 			</div>
-			<div class="conteneur" v-if="pad.vues && pad.vues > 0">
+			<div class="conteneur" v-if="pad.vues !== undefined && pad.vues !== null">
 				<label>{{ $t('nombreVues') }}</label>
-				<div>{{ pad.vues }}</div>
+				<div id="vues">
+					<span>{{ pad.vues }}</span>
+					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('reinitialiserVues')" :aria-label="$t('reinitialiserVues')" @click="afficherReinitialiserVues" v-if="pad.identifiant === identifiant && pad.vues > 0"><i class="material-icons" aria-hidden="true">restart_alt</i></button>
+				</div>
 			</div>
 			<div class="conteneur">
 				<label>{{ $t('langue') }}</label>
@@ -1060,6 +1063,7 @@
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserMessages" v-else-if="typeConfirmation === 'reinitialiser-messages'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserActivite" v-else-if="typeConfirmation === 'reinitialiser-activite'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad" v-else-if="typeConfirmation === 'exporter-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserVues" v-else-if="typeConfirmation === 'reinitialiser-vues'">{{ $t('oui') }}</button>
 					</div>
 				</div>
 			</div>

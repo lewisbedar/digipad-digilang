@@ -437,5 +437,8 @@
 	"visionneuseOffice": "Visor de documentos de Office",
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
-	"visionneuseModifiee": "Visor de documentos modificado."
+	"visionneuseModifiee": "Visor de documentos modificado.",
+	"reinitialiserVues": "Restablecer el contador de vistas",
+	"confirmationReinitialiserVues": "¿Realmente desea restablecer el contador de vistas?",
+	"vuesReinitialisees": "Contador de vistas restablecido."
 }

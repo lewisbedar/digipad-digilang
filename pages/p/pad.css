@@ -79,6 +79,7 @@
 	margin-right: 10px;
 }
 
+#vues button i,
 #ajouter-admin button i,
 #code-acces button i,
 #copier-code button i,
@@ -94,10 +95,19 @@
 	margin-left: 10px;
 }
 
+#vues button:active i,
 #ajouter-admin button:active i,
 #copier-code button:active i,
 #copier-lien button:active i {
 	opacity: 0.5;
+}
+
+#vues {
+	display: flex;
+}
+
+#vues button {
+	margin-left: 1.5rem;
 }
 
 #ajouter-admin input {

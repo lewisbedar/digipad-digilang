@@ -437,5 +437,8 @@
 	"visionneuseOffice": "Visionneuse Office",
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
-	"visionneuseModifiee": "Visionneuse de documents modifiée."
+	"visionneuseModifiee": "Visionneuse de documents modifiée.",
+	"reinitialiserVues": "Réinitialiser le compteur de vues",
+	"confirmationReinitialiserVues": "Souhaitez-vous vraiment réinitialiser le compteur de vues&nbsp;?",
+	"vuesReinitialisees": "Compteur de vues réinitialisé."
 }

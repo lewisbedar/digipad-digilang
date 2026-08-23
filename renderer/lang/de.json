@@ -437,5 +437,8 @@
 	"visionneuseOffice": "Viewer für Office-Dokumente",
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
-	"visionneuseModifiee": "Dokumenten-Viewer geändert."
+	"visionneuseModifiee": "Dokumenten-Viewer geändert.",
+	"reinitialiserVues": "Aufrufzähler zurücksetzen",
+	"confirmationReinitialiserVues": "Möchten Sie den Aufrufzähler wirklich zurücksetzen?",
+	"vuesReinitialisees": "Aufrufzähler zurückgesetzt."
 }

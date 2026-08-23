@@ -437,5 +437,8 @@
 	"visionneuseOffice": "Visualizzatore per i documenti Office",
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
-	"visionneuseModifiee": "Visualizzatore documenti modificato."
+	"visionneuseModifiee": "Visualizzatore documenti modificato.",
+	"reinitialiserVues": "Reimposta il contatore delle visualizzazioni",
+	"confirmationReinitialiserVues": "Sei sicuro di voler reimpostare il contatore delle visualizzazioni?",
+	"vuesReinitialisees": "Contatore delle visualizzazioni reimpostato."
 }
