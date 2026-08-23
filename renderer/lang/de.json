@@ -441,5 +441,9 @@
 	"visionneuseModifiee": "Dokumenten-Viewer geändert.",
 	"reinitialiserVues": "Aufrufzähler zurücksetzen",
 	"confirmationReinitialiserVues": "Möchten Sie den Aufrufzähler wirklich zurücksetzen?",
-	"vuesReinitialisees": "Aufrufzähler zurückgesetzt."
+	"vuesReinitialisees": "Aufrufzähler zurückgesetzt.",
+	"emailManquant": "Fehlende E-Mail-Adresse",
+	"texteEmailManquant": "<p>Ihrem Konto ist keine E-Mail-Adresse zugeordnet.</p><p>Sie ist jedoch erforderlich, um Ihren Benutzernamen wiederherzustellen oder Ihr Passwort zurückzusetzen, falls Sie sie vergessen.</p>",
+	"renseignerEmail": "Meine E-Mail-Adresse angeben",
+	"erreurEmailVide": "Die E-Mail-Adresse kann nicht entfernt werden."
 }

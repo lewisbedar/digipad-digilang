@@ -441,5 +441,9 @@
 	"visionneuseModifiee": "Visualizzatore documenti modificato.",
 	"reinitialiserVues": "Reimposta il contatore delle visualizzazioni",
 	"confirmationReinitialiserVues": "Sei sicuro di voler reimpostare il contatore delle visualizzazioni?",
-	"vuesReinitialisees": "Contatore delle visualizzazioni reimpostato."
+	"vuesReinitialisees": "Contatore delle visualizzazioni reimpostato.",
+	"emailManquant": "Indirizzo e-mail mancante",
+	"texteEmailManquant": "<p>Nessun indirizzo e-mail è associato al tuo account.</p><p>È tuttavia indispensabile per recuperare il tuo identificativo o reimpostare la password in caso di smarrimento.</p>",
+	"renseignerEmail": "Inserisci il mio indirizzo e-mail",
+	"erreurEmailVide": "L'indirizzo e-mail non può essere rimosso."
 }

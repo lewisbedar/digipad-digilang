@@ -1647,22 +1647,23 @@ async function demarrerServeur () {
 			}
 			if (typeof req.body.email !== 'string') return res.status(400).send('erreur')
 			const email = req.body.email.toLowerCase().trim()
-			if (email !== ancienemail) {
+			if (ancienemail !== '' && email === '') return res.status(400).send('erreur')
+			if (email !== '' && verifierEmail(email) === false) return res.status(400).send('erreur')
+			if (email !== '' && email !== ancienemail) {
 				const emailExiste = await db.EXISTS('emails:' + email)
 				if (emailExiste === 1) return res.status(409).send('email_existe_deja')
 			}
-			if (ancienemail !== '' && email !== ancienemail) {
-				await db.multi()
-					.HSET('utilisateurs:' + identifiant, ['nom', nom, 'email', email])
-					.HSET('emails:' + email, 'identifiant', identifiant)
-					.DEL('emails:' + ancienemail)
-					.exec()
-				
+			if (email !== ancienemail) {
+				const transaction = db.multi().HSET('utilisateurs:' + identifiant, ['nom', nom, 'email', email])
+				if (email !== '') {
+					transaction.HSET('emails:' + email, 'identifiant', identifiant)
+				}
+				if (ancienemail !== '') {
+					transaction.DEL('emails:' + ancienemail)
+				}
+				await transaction.exec()
 			} else {
-				await db.multi()
-					.HSET('utilisateurs:' + identifiant, ['nom', nom, 'email', email])
-					.HSET('emails:' + email, 'identifiant', identifiant)
-					.exec()
+				await db.HSET('utilisateurs:' + identifiant, 'nom', nom)
 			}
 			req.session.nom = nom
 			req.session.email = email

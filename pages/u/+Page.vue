@@ -286,6 +286,23 @@
 			</div>
 		</div>
 
+		<div class="conteneur-modale" v-else-if="modale === 'email'">
+			<div id="modale-email" class="modale" role="dialog" aria-modal="true" :aria-label="$t('emailManquant')">
+				<div class="en-tete">
+					<span class="titre">{{ $t('emailManquant') }}</span>
+					<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleEmail"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<div class="message" v-html="$t('texteEmailManquant')" />
+						<div class="actions">
+							<button type="button" class="bouton" @click="renseignerEmail">{{ $t('renseignerEmail') }}</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="conteneur-modale" v-else-if="modale === 'creer-pad'">
 			<div id="creation" class="modale" role="dialog" aria-modal="true" :aria-label="$t('creerPad')">
 				<div class="en-tete">
@@ -602,6 +619,10 @@ export default {
 		})
 
 		document.addEventListener('keydown', this.gererClavier, false)
+
+		if (this.email === '') {
+			this.afficherModaleEmail()
+		}
 	},
 	beforeUnmount () {
 		document.removeEventListener('keydown', this.gererClavier, false)
@@ -1270,7 +1291,11 @@ export default {
 		modifierInformations () {
 			const nom = document.querySelector('#nom').value.trim()
 			const email = document.querySelector('#email').value.trim()
-			if ((nom !== '' && nom !== this.nom) || (email !== '' && email !== this.email)) {
+			if ((nom !== '' && nom !== this.nom) || (email !== this.email)) {
+				if (this.email !== '' && email === '') {
+					this.message = this.$t('erreurEmailVide')
+					return
+				}
 				if (email !== '' && this.$verifierEmail(email) === false) {
 					this.message = this.$t('erreurEmail')
 					return
@@ -1296,6 +1321,22 @@ export default {
 					}
 				})
 			}
+		},
+		afficherModaleEmail () {
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.modale = 'email'
+		},
+		renseignerEmail () {
+			this.modale = ''
+			this.menu = true
+			setTimeout(() => {
+				document.querySelector('.menu').classList.add('ouvert')
+				document.querySelector('#email')?.focus()
+			}, 0)
+		},
+		fermerModaleEmail () {
+			this.modale = ''
+			this.gererFocus()
 		},
 		afficherModaleMotDePasse () {
 			this.menu = false
@@ -2189,6 +2230,24 @@ export default {
 	transform: translateX(1.6rem);
 }
 
+#modale-email {
+	max-width: 500px;
+}
+
+#modale-email .message {
+	font-size: 18px;
+	text-align: center;
+	line-height: 1.5;
+}
+
+#modale-email .bouton {
+	margin-top: 20px;
+}
+
+#modale-email .actions {
+	font-size: 0;
+}
+
 @media screen and (max-width: 479px) {
 	#afficher {
 		flex-wrap: wrap;
@@ -2343,5 +2402,11 @@ export default {
 	.pad.mosaique {
 		width: calc(33.333333333% - 1.5rem);
 	}
+}
+</style>
+
+<style>
+#modale-email .message p:last-child {
+	margin-bottom: 0;
 }
 </style>

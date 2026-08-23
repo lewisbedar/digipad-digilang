@@ -441,5 +441,9 @@
 	"visionneuseModifiee": "Visionneuse de documents modifiée.",
 	"reinitialiserVues": "Réinitialiser le compteur de vues",
 	"confirmationReinitialiserVues": "Souhaitez-vous vraiment réinitialiser le compteur de vues&nbsp;?",
-	"vuesReinitialisees": "Compteur de vues réinitialisé."
+	"vuesReinitialisees": "Compteur de vues réinitialisé.",
+	"emailManquant": "Adresse e-mail manquante",
+	"texteEmailManquant": "<p>Aucune adresse e-mail n'est associée à votre compte.</p><p>Elle est pourtant indispensable pour récupérer votre identifiant ou réinitialiser votre mot de passe en cas d'oubli.</p>",
+	"renseignerEmail": "Renseigner mon adresse e-mail",
+	"erreurEmailVide": "L'adresse e-mail ne peut pas être vide."
 }

@@ -441,5 +441,9 @@
 	"visionneuseModifiee": "Preglednik dokumenata promijenjen.",
 	"reinitialiserVues": "Poništi brojač pregleda",
 	"confirmationReinitialiserVues": "Jeste li sigurni da želite poništiti brojač pregleda?",
-	"vuesReinitialisees": "Brojač pregleda je poništen."
+	"vuesReinitialisees": "Brojač pregleda je poništen.",
+	"emailManquant": "Nedostaje e-mail adresa",
+	"texteEmailManquant": "<p>Uz vaš račun nije povezana nijedna e-mail adresa.</p><p>Ona je ipak potrebna za povrat korisničkog imena ili poništavanje lozinke u slučaju zaborava.</p>",
+	"renseignerEmail": "Unesi svoju e-mail adresu",
+	"erreurEmailVide": "E-mail adresa se ne može ukloniti."
 }
