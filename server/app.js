@@ -826,37 +826,67 @@ async function demarrerServeur () {
 			const identifiant = req.body.identifiant
 			let email = req.body.email.toLowerCase().trim()
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
-			if (utilisateurExiste !== 1) return res.status(400).send('identifiant_invalide')
-			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
-			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-			if ((donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email.toLowerCase() === email) || (verifierEmail(identifiant) === true)) {
-				if (!donneesUtilisateur.hasOwnProperty('email') || (donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email === '')) {
-					email = identifiant
+			if (utilisateurExiste === 1) {
+				let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+				donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+				if ((donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email.toLowerCase() === email) || (verifierEmail(identifiant) === true)) {
+					if (!donneesUtilisateur.hasOwnProperty('email') || (donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email === '')) {
+						email = identifiant
+					}
+					const motdepasse = genererMotDePasse(12)
+					const message = {
+						from: process.env.EMAIL_ADDRESS,
+						to: email,
+						subject: 'Mot de passe Digipad',
+						html: '<p>Votre nouveau mot de passe : ' + motdepasse + '</p><p>Identifiant : ' + identifiant + '</p>'
+					}
+					try {
+						await new Promise((resolve, reject) => {
+							transporter.sendMail(message, (err) => { if (err) reject(err); else resolve() })
+						})
+						const hash = await bcrypt.hash(motdepasse, 10)
+						await db.HSET('utilisateurs:' + identifiant, 'motdepassetemp', hash)
+					} catch (err) {
+						console.error(err.stack)
+					}
 				}
-				const motdepasse = genererMotDePasse(12)
-				const message = {
-					from: process.env.EMAIL_ADDRESS,
-					to: email,
-					subject: 'Mot de passe Digipad',
-					html: '<p>Votre nouveau mot de passe : ' + motdepasse + '</p><p>Identifiant : ' + identifiant + '</p>'
-				}
-				try {
-					await new Promise((resolve, reject) => {
-						transporter.sendMail(message, (err) => { if (err) reject(err); else resolve() })
-					})
-				} catch (err) {
-					console.error(err.stack)
-					return res.status(500).send('erreur_email')
-				}
-				const hash = await bcrypt.hash(motdepasse, 10)
-				await db.HSET('utilisateurs:' + identifiant, 'motdepassetemp', hash)
-				res.status(200).send('message_envoye')
-			} else {
-				res.status(400).send('email_invalide')
 			}
+			res.status(200).send('message_envoye')
 		} catch (err) {
 			console.error(err.stack)
-			res.status(500).send('erreur_email')
+			res.status(200).send('message_envoye')
+		}
+	})
+
+	app.post('/api/identifiant-oublie', limiteAuth, async (req, res) => {
+		try {
+			if (typeof req.body.email !== 'string') return res.status(400).send('erreur')
+			const email = req.body.email.toLowerCase().trim()
+			if (verifierEmail(email) === false) return res.status(400).send('erreur')
+			const emailExiste = await db.EXISTS('emails:' + email)
+			if (emailExiste === 1) {
+				let donneesEmail = await db.HGETALL('emails:' + email)
+				donneesEmail = donneesEmail ? { ...donneesEmail } : {}
+				if (donneesEmail.hasOwnProperty('identifiant')) {
+					const message = {
+						from: process.env.EMAIL_ADDRESS,
+						to: email,
+						subject: 'Identifiant Digipad',
+						html: '<p>Voici l\'identifiant associé à votre compte Digipad : <strong>' + v.escapeHtml(donneesEmail.identifiant) + '</strong></p>'
+					}
+					try {
+						await new Promise((resolve, reject) => {
+							transporter.sendMail(message, (err) => { if (err) reject(err); else resolve() })
+						})
+					} catch (err) {
+						console.error(err.stack)
+					}
+				}
+			}
+			res.status(200).send('message_envoye')
+		} catch (err) {
+			console.error(err.stack)
+			res.status(200).send('message_envoye')
 		}
 	})
 

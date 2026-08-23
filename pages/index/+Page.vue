@@ -61,7 +61,7 @@
 			</div>
 		</div>
 
-		<div class="conteneur-modale" v-else-if="modale === 'connexion' || modale === 'mot-de-passe-oublie'">
+		<div class="conteneur-modale" v-else-if="modale === 'connexion' || modale === 'mot-de-passe-oublie' || modale === 'identifiant-oublie'">
 			<div id="connexion" class="modale" role="dialog" aria-modal="true" :aria-label="$t('seConnecter')" v-if="modale === 'connexion'">
 				<div class="en-tete">
 					<span class="titre">{{ $t('seConnecter') }}</span>
@@ -79,6 +79,7 @@
 							<button type="button" class="icone" :disabled="disabledModale" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="modifierMotDePasseVisible(true)" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 						</div>
 						<button type="button" class="mot-de-passe-oublie" :disabled="disabledModale" @click="afficherModaleMotDePasseOublie" v-html="$t('motDePasseOublie')" />
+						<button type="button" class="identifiant-oublie" :disabled="disabledModale" @click="afficherModaleIdentifiantOublie" v-html="$t('identifiantOublie')" />
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="seConnecter" v-if="!chargement">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
@@ -88,7 +89,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="modale" role="dialog" aria-modal="true" :aria-label="$t('motDePasseOublie')" v-else-if="modale === 'mot-de-passe-oublie'">
+			<div id="motdepasse-oublie" class="modale" role="dialog" aria-modal="true" :aria-label="$t('motDePasseOublie')" v-else-if="modale === 'mot-de-passe-oublie'">
 				<div class="en-tete">
 					<span class="titre">{{ $t('motDePasseOublie') }}</span>
 					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleMotDePasseOublie"><i class="material-icons" aria-hidden="true">close</i></button>
@@ -99,8 +100,27 @@
 						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
 						<label for="champ-email">{{ $t('email') }}</label>
 						<input id="champ-email" type="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerMotDePasse">
+						<button type="button" class="identifiant-oublie" :disabled="disabledModale" @click="afficherModaleIdentifiantOublie" v-html="$t('identifiantOublie')" />
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerMotDePasse" v-if="!chargement">{{ $t('valider') }}</button>
+							<div class="conteneur-chargement" v-else>
+								<div class="chargement" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div id="identifiant-oublie" class="modale" role="dialog" aria-modal="true" :aria-label="$t('identifiantOublie')" v-else-if="modale === 'identifiant-oublie'">
+				<div class="en-tete">
+					<span class="titre">{{ $t('identifiantOublie') }}</span>
+					<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleIdentifiantOublie"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<label for="champ-email">{{ $t('email') }}</label>
+						<input id="champ-email" type="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerIdentifiant">
+						<div class="actions">
+							<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerIdentifiant" v-if="!chargement">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -391,17 +411,13 @@ export default {
 				}).then(() => {
 					this.chargement = false
 					this.fermerModaleMotDePasseOublie()
-					this.notification = this.$t('emailEnvoye')
+					setTimeout(() => {
+						this.message = this.$t('emailEnvoye')
+					}, 100)
 				}).catch((err) => {
 					this.chargement = false
 					if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
-					} else if (err.response?.data === 'identifiant_invalide') {
-						this.message = this.$t('identifiantNonValide')
-					} else if (err.response?.data === 'email_invalide') {
-						this.message = this.$t('emailNonValide')
-					} else if (err.response?.data === 'erreur_email') {
-						this.message = this.$t('erreurEnvoiEmail')
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}
@@ -430,6 +446,43 @@ export default {
 		fermerModaleMotDePasseOublie () {
 			this.modale = ''
 			this.identifiant = ''
+			this.email = ''
+			this.gererFocus()
+		},
+		afficherModaleIdentifiantOublie () {
+			this.email = ''
+			this.modale = 'identifiant-oublie'
+			this.$nextTick(() => {
+				document.querySelector('.modale input')?.focus()
+			})
+		},
+		envoyerIdentifiant () {
+			if (this.email.trim() !== '' && this.$verifierEmail(this.email.trim()) === true) {
+				this.chargement = true
+				axios.post(this.hote + '/api/identifiant-oublie', {
+					email: this.email.trim()
+				}).then(() => {
+					this.chargement = false
+					this.fermerModaleIdentifiantOublie()
+					setTimeout(() => {
+						this.message = this.$t('identifiantEnvoye')
+					}, 100)
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.status === 429) {
+						this.message = this.$t('erreurTentativesNombreuses')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
+			} else if (this.email.trim() === '') {
+				this.message = this.$t('remplirChamps')
+			} else if (this.$verifierEmail(this.email.trim()) === false) {
+				this.message = this.$t('erreurEmail')
+			}
+		},
+		fermerModaleIdentifiantOublie () {
+			this.modale = ''
 			this.email = ''
 			this.gererFocus()
 		},
@@ -490,6 +543,8 @@ export default {
 				this.fermerModaleConnexion()
 			} else if (event.key === 'Escape' && this.modale === 'mot-de-passe-oublie') {
 				this.fermerModaleMotDePasseOublie()
+			} else if (event.key === 'Escape' && this.modale === 'identifiant-oublie') {
+				this.fermerModaleIdentifiantOublie()
 			} else if (event.key === 'Escape' && this.modale === 'inscription') {
 				this.fermerModaleInscription()
 			} else if (event.key === 'Escape' && this.hub) {
@@ -516,8 +571,7 @@ export default {
 		piegerFocus (event, conteneur) {
 			if (!conteneur) return
 			const isVisible = el => el.offsetWidth || el.offsetHeight || el.getClientRects().length
-			const focusables = Array.from(conteneur.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'))
-			.filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
+			const focusables = Array.from(conteneur.querySelectorAll('a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled && el.tabIndex >= 0 && isVisible(el))
 			if (focusables.length === 0) return
 			const premier = focusables[0]
 			const dernier = focusables[focusables.length - 1]
@@ -707,13 +761,14 @@ export default {
 	cursor: pointer;
 }
 
+#motdepasse-oublie #champ-email,
 #connexion .conteneur-motdepasse {
 	margin-bottom: 10px;
 }
 
-.modale .contenu .mot-de-passe-oublie {
+.modale .contenu .mot-de-passe-oublie,
+.modale .contenu .identifiant-oublie {
 	font-size: 12px;
-    margin-bottom: 20px;
 	cursor: pointer;
 	background: none;
 	border: none;
@@ -723,6 +778,14 @@ export default {
 	text-align: left;
 	font-family: inherit;
 	color: inherit;
+}
+
+.modale .contenu .mot-de-passe-oublie {
+	margin-bottom: 4px;
+}
+
+.modale .contenu .identifiant-oublie {
+	margin-bottom: 20px;
 }
 
 @media screen and (max-width: 359px) {
