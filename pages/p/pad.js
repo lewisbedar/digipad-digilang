@@ -4356,10 +4356,8 @@ export default {
 			this.$socket.on('reinitialiservues', (identifiant) => {
 				this.pad.vues = 0
 				this.chargement = false
-				if (this.admin) {
+				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('vuesReinitialisees')
-				}
-				if (this.identifiant === identifiant) {
 					this.$nextTick(() => {
 						if (document.querySelector('#menu-options.ouvert')) {
 							document.querySelector('#menu-options .fermer')?.focus()
