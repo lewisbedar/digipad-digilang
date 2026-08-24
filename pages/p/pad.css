@@ -259,8 +259,8 @@
 }
 
 #bloc .conteneur {
-	height: auto !important;
-	overflow: initial !important;
+	height: auto!important;
+	overflow: initial!important;
 }
 
 #texte {
@@ -581,7 +581,7 @@
 }
 
 #diapositive.privee {
-	border-color: #ccc !important;
+	border-color: #ccc!important;
 }
 
 #diapositive .contenu {
@@ -1418,7 +1418,7 @@
 	#media .supprimer,
 	#media .convertir {
 		width: 100%;
-		margin-left: 0 !important;
+		margin-left: 0!important;
 	}
 
 	#media .supprimer {
@@ -1517,28 +1517,28 @@
 	#conteneur-header-droit,
 	#masque,
 	.menu {
-		display: none !important;
+		display: none!important;
 	}
 
 	header {
-		height: auto !important;
+		height: auto!important;
 	}
 
 	#pad {
-		height: auto !important;
-		margin-left: 0 !important;
-		width: 100% !important;
-		padding-top: 1.5rem !important;
-		padding-bottom: 10rem !important;
+		height: auto!important;
+		margin-left: 0!important;
+		width: 100%!important;
+		padding-top: 1.5rem!important;
+		padding-bottom: 10rem!important;
 	}
 
 	#titre {
-		margin-left: 0 !important;
+		margin-left: 0!important;
 	}
 
 	.colonnes #pad {
-		display: block !important;
-		width: 100% !important;
-		overflow: auto !important;
+		display: block!important;
+		width: 100%!important;
+		overflow: auto!important;
 	}
 }
