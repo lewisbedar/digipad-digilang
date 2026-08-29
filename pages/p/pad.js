@@ -1038,7 +1038,13 @@ export default {
 				target: '_blank'
 			})
 			html = DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'rel'] })
-			return html
+			const div = document.createElement('div')
+			div.innerHTML = html
+			div.querySelectorAll('a[href]').forEach((lien) => {
+				lien.setAttribute('target', '_blank')
+				lien.setAttribute('rel', 'noreferrer')
+			})
+			return div.innerHTML
 		},
 		modifierCouleurTexte (event) {
 			pell.exec('foreColor', event.target.value)
