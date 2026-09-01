@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Se ha producido un error al transcodificar el archivo.",
 	"capsuleSupprimeeUtilisateur": "La cápsula que estabas editando acaba de ser eliminada.",
 	"erreurTentativesNombreuses": "Se han introducido demasiados datos incorrectos. Por favor, espera un momento antes de volver a intentarlo.",
+	"erreurTentativesIdentifiant": "Demasiados intentos de conexión fallidos para este identificador. Por seguridad, el acceso desde este dispositivo está bloqueado temporalmente. Vuelve a intentarlo dentro de unos 15 minutos.",
 	"parametresColonne": "Parámetros de la columna",
 	"ajouterColonneGauche": "Añadir una columna a la izquierda",
 	"ajouterColonneDroite": "Añadir una columna a la derecha",

@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Si è verificato un errore durante la transcodifica del file.",
 	"capsuleSupprimeeUtilisateur": "La capsula che stavi modificando è stata appena eliminata.",
 	"erreurTentativesNombreuses": "Il numero di tentativi non corretti è troppo elevato. Attendi qualche istante prima di riprovare.",
+	"erreurTentativesIdentifiant": "Troppi tentativi di accesso non riusciti per questo identificativo. Per sicurezza, l'accesso da questo dispositivo è temporaneamente bloccato. Riprova tra una quindicina di minuti.",
 	"parametresColonne": "Parametri della colonna",
 	"ajouterColonneGauche": "Aggiungi una colonna a sinistra",
 	"ajouterColonneDroite": "Aggiungi una colonna a destra",

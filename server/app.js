@@ -203,6 +203,25 @@ async function demarrerServeur () {
 
 	const validationInscription = parseInt(process.env.ACCOUNT_VALIDATION) || 0
 
+	const limiteRequetesAuth = parseInt(process.env.RATE_LIMIT_AUTH) || 10
+	const limiteRequetesInscription = parseInt(process.env.RATE_LIMIT_SIGNUP) || 50
+	const limiteRequetesConnexion = parseInt(process.env.RATE_LIMIT_LOGIN) || 30
+	const limiteEchecsConnexionParIdentifiant = parseInt(process.env.RATE_LIMIT_LOGIN_USERNAME) || 10
+	const fenetreEchecsConnexionParIdentifiant = 15 * 60
+
+	let trustProxy = process.env.TRUST_PROXY
+	if (trustProxy === undefined || trustProxy.trim() === '') {
+		trustProxy = 1
+	} else if (trustProxy.trim() === 'true') {
+		trustProxy = true
+	} else if (trustProxy.trim() === 'false') {
+		trustProxy = false
+	} else if (/^\d+$/.test(trustProxy.trim())) {
+		trustProxy = parseInt(trustProxy.trim())
+	} else {
+		trustProxy = trustProxy.trim()
+	}
+
 	// Augmenter nombre de tâches asynchrones par défaut
 	EventEmitter.defaultMaxListeners = 20
 	
@@ -226,7 +245,7 @@ async function demarrerServeur () {
 
 	const limiteAuth = rateLimit({
 		windowMs: 15 * 60 * 1000,
-		limit: 10,
+		limit: limiteRequetesAuth,
 		standardHeaders: 'draft-7',
 		legacyHeaders: false,
 		store: new RateLimitRedisStore({
@@ -234,6 +253,46 @@ async function demarrerServeur () {
 			prefix: 'rl-auth:'
 		}),
 		skipSuccessfulRequests: true,
+		validate: { trustProxy: false }
+	})
+
+	const limiteInscription = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesInscription,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-inscription:'
+		}),
+		skipSuccessfulRequests: true,
+		validate: { trustProxy: false }
+	})
+
+	const limitePadSansCompte = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesInscription,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-pad-sans-compte:'
+		}),
+		skipSuccessfulRequests: true,
+		validate: { trustProxy: false }
+	})
+
+	const limiteConnexion = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesConnexion,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-connexion:'
+		}),
+		skipSuccessfulRequests: true,
+		requestWasSuccessful: (req, res) => res.statusCode !== 401 && res.statusCode !== 429,
 		validate: { trustProxy: false }
 	})
 
@@ -270,7 +329,7 @@ async function demarrerServeur () {
 	if (production) {
 		hoteVite = ''
 	}
-	app.set('trust proxy', true)
+	app.set('trust proxy', trustProxy)
 	app.use(
 		helmet.contentSecurityPolicy({
 			directives: {
@@ -349,7 +408,10 @@ async function demarrerServeur () {
 			}
 			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-			if (!donneesUtilisateur.motdepasse) return res.redirect(302, '/')
+			if (!donneesUtilisateur.motdepasse) {
+				supprimerSession(req)
+				return res.redirect(302, '/')
+			}
 			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
 			if (!motdepasseCorrect) {
 				supprimerSession(req)
@@ -648,7 +710,7 @@ async function demarrerServeur () {
 		res.status(statusCode).send(body)
   	})
 
-	app.post('/api/inscription', limiteAuth, async (req, res) => {
+	app.post('/api/inscription', limiteInscription, async (req, res) => {
 		if (creationCompte !== 1) return res.status(403).send('non_autorise')
 		try {
 			const identifiant = req.body.identifiant
@@ -773,15 +835,18 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/connexion', limiteAuth, async (req, res) => {
+	app.post('/api/connexion', limiteConnexion, async (req, res) => {
 		try {
 			const identifiant = req.body.identifiant
 			const motdepasse = req.body.motdepasse
+			const ipConnexion = req.ip
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
 			if (utilisateurExiste !== 1) return res.status(401).send('erreur_connexion')
 			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 			if (Object.keys(donneesUtilisateur).length === 0) return res.status(401).send('erreur_connexion')
+			const tentativesConnexion = await enregistrerTentativeConnexion(identifiant, ipConnexion)
+			if (tentativesConnexion > limiteEchecsConnexionParIdentifiant) return res.status(429).send('erreur_tentatives_identifiant')
 			let comparaison = false
 			if (motdepasse.trim() !== '' && donneesUtilisateur.hasOwnProperty('motdepasse') && donneesUtilisateur.motdepasse.trim() !== '') {
 				comparaison = await bcrypt.compare(motdepasse, donneesUtilisateur.motdepasse)
@@ -791,6 +856,7 @@ async function demarrerServeur () {
 				comparaisonTemp = await bcrypt.compare(motdepasse, donneesUtilisateur.motdepassetemp)
 			}
 			if (comparaison === false && comparaisonTemp === false) return res.status(401).send('erreur_connexion')
+			await reinitialiserEchecsConnexion(identifiant, ipConnexion)
 			let hashSession = donneesUtilisateur.motdepasse
 			if (comparaisonTemp === true) {
 				hashSession = await bcrypt.hash(motdepasse, 10)
@@ -838,7 +904,7 @@ async function demarrerServeur () {
 						from: process.env.EMAIL_ADDRESS,
 						to: email,
 						subject: 'Mot de passe Digipad',
-						html: '<p>Votre nouveau mot de passe : ' + motdepasse + '</p><p>Identifiant : ' + identifiant + '</p>'
+						html: '<p>Votre nouveau mot de passe :<br>' + motdepasse + '</p><p>Identifiant :<br>' + identifiant + '</p>'
 					}
 					try {
 						await new Promise((resolve, reject) => {
@@ -967,7 +1033,7 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/creer-pad-sans-compte', limiteAuth, async (req, res) => {
+	app.post('/api/creer-pad-sans-compte', limitePadSansCompte, async (req, res) => {
 		if (maintenance === true) return res.redirect(302, '/maintenance')
 		if (creationPadSansCompte !== 1) return res.status(401).send('non_connecte')
 		let identifiant, nom
@@ -4895,6 +4961,37 @@ async function demarrerServeur () {
 			}
 		})
 	})
+
+	function obtenirCleEchecConnexion (identifiant, ip) {
+		if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return null
+		const adresse = typeof ip === 'string' && ip !== '' ? ip : 'inconnu'
+		return 'rl-connexion-id:' + identifiant + ':' + adresse
+	}
+
+	async function enregistrerTentativeConnexion (identifiant, ip) {
+		const cle = obtenirCleEchecConnexion(identifiant, ip)
+		if (cle === null) return 0
+		try {
+			const [tentatives] = await db.multi()
+				.INCR(cle)
+				.EXPIRE(cle, fenetreEchecsConnexionParIdentifiant, 'NX')
+				.exec()
+			return parseInt(tentatives)
+		} catch (err) {
+			console.error(err.stack)
+			return 0
+		}
+	}
+
+	async function reinitialiserEchecsConnexion (identifiant, ip) {
+		const cle = obtenirCleEchecConnexion(identifiant, ip)
+		if (cle === null) return
+		try {
+			await db.UNLINK(cle)
+		} catch (err) {
+			console.error(err.stack)
+		}
+	}
 
 	async function creerPad (id, token, titre, date, identifiant, destination, donneesUtilisateur) {
 		await db.multi()

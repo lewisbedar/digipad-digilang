@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Došlo je do pogreške tijekom transkodiranja datoteke.",
 	"capsuleSupprimeeUtilisateur": "Kapsula koju ste uređivali upravo je izbrisana.",
 	"erreurTentativesNombreuses": "Unijeli ste pogrešne podatke previše puta. Molimo pričekajte neko vrijeme prije nego što ponovno pokušate.",
+	"erreurTentativesIdentifiant": "Previše neuspjelih pokušaja prijave za ovaj korisnički račun. Iz sigurnosnih razloga prijava s ovog uređaja privremeno je blokirana. Pokušajte ponovno za petnaestak minuta.",
 	"parametresColonne": "Postavke stupca",
 	"ajouterColonneGauche": "Dodaj stupac lijevo",
 	"ajouterColonneDroite": "Dodaj stupac desno",

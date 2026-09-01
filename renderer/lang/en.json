@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Error while transcoding the file.",
 	"capsuleSupprimeeUtilisateur": "The capsule you were editing has just been deleted.",
 	"erreurTentativesNombreuses": "Too many incorrect attempts. Please wait before trying again.",
+	"erreurTentativesIdentifiant": "Too many failed sign-in attempts for this username. For security reasons, signing in from this device is temporarily blocked. Please try again in about 15 minutes.",
 	"parametresColonne": "Column settings",
 	"ajouterColonneGauche": "Add a column on the left",
 	"ajouterColonneDroite": "Add a column on the right",

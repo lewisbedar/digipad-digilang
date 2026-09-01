@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Erreur lors du transcodage du fichier.",
 	"capsuleSupprimeeUtilisateur": "La capsule que vous étiez en train de modifier vient d'être supprimée.",
 	"erreurTentativesNombreuses": "Le nombre de tentatives incorrectes est trop élevé. Veuillez patienter avant de réessayer.",
+	"erreurTentativesIdentifiant": "Le nombre de tentatives de connexion échouées pour cet identifiant est trop élevé. Par sécurité, la connexion depuis cet appareil est temporairement bloquée. Réessayez dans une quinzaine de minutes.",
 	"parametresColonne": "Paramètres de la colonne",
 	"ajouterColonneGauche": "Ajouter une colonne à gauche",
 	"ajouterColonneDroite": "Ajouter une colonne à droite",

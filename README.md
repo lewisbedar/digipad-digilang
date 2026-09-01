@@ -68,6 +68,11 @@ UPLOAD_HOST (lien vers un serveur externe pour le traitement des téléversement
 ENCRYPTION_KEY (clé pour decrypter les données Digidrive / uniquement nécessaire si Digidrive est utilisé)
 VITE_LEGAL_TERMS_LINK (lien vers les mentions légales)
 ACCOUNT_VALIDATION (validation de l'inscription par email / 0 ou 1 / 0 par défaut)
+RATE_LIMIT_AUTH (nombre max de requêtes en échec par IP sur 15 min pour mot de passe / identifiant oubliés / 10 par défaut)
+RATE_LIMIT_SIGNUP (nombre max de requêtes en échec par IP sur 15 min, appliqué séparément à l'inscription et à la création de pad sans compte / 50 par défaut)
+RATE_LIMIT_LOGIN (nombre max d'échecs d'authentification par IP sur 15 min pour la connexion / 30 par défaut)
+RATE_LIMIT_LOGIN_USERNAME (nombre max d'échecs de connexion sur 15 min pour un couple identifiant + IP, fenêtre fixe non prolongée / 10 par défaut)
+TRUST_PROXY (configuration Express « trust proxy » : true, false, un entier = nombre de proxies de confiance ou une liste d'IP / sous-réseaux / 1 par défaut)
 ```
 
 ## Compilation et minification des fichiers pour la production

@@ -319,7 +319,9 @@ export default {
 					window.location.href = '/u/' + reponse.data.identifiant
 				}).catch((err) => {
 					this.chargement = false
-					if (err.response?.status === 429) {
+					if (err.response?.data === 'erreur_tentatives_identifiant') {
+						this.message = this.$t('erreurTentativesIdentifiant')
+					} else if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
 					} else if (err.response?.data === 'erreur_connexion') {
 						this.message = this.$t('informationsConnexionIncorrectes')

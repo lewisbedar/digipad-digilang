@@ -418,6 +418,7 @@
 	"erreurTranscodage": "Fehler beim Transkodieren der Datei.",
 	"capsuleSupprimeeUtilisateur": "Die Kapsel, die Sie gerade bearbeitet haben, wurde soeben gelöscht.",
 	"erreurTentativesNombreuses": "Die Anzahl der falschen Eingaben ist zu hoch. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.",
+	"erreurTentativesIdentifiant": "Zu viele fehlgeschlagene Anmeldeversuche für diese Kennung. Aus Sicherheitsgründen ist die Anmeldung von diesem Gerät vorübergehend gesperrt. Bitte versuchen Sie es in etwa 15 Minuten erneut.",
 	"parametresColonne": "Spalteneinstellungen",
 	"ajouterColonneGauche": "Spalte links hinzufügen",
 	"ajouterColonneDroite": "Spalte rechts hinzufügen",
