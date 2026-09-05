@@ -174,13 +174,17 @@ async function demarrerServeur () {
 	}
 
 	const transporter = nodemailer.createTransport({
-		host: process.env.EMAIL_HOST,
-		port: parseInt(process.env.EMAIL_PORT),
-		secure: parseInt(process.env.EMAIL_SECURE) === 1,
+		host: process.env.SMTP_HOST,
+		port: parseInt(process.env.SMTP_PORT),
+		secure: parseInt(process.env.SMTP_SECURE) === 1,
 		auth: {
-			user: process.env.EMAIL_ADDRESS,
-			pass: process.env.EMAIL_PASSWORD
+			user: process.env.SMTP_USER,
+			pass: process.env.SMTP_PASSWORD
 		}
+	})
+	transporter.verify((err) => {
+		if (err) console.error('Erreur SMTP : ', err)
+		else console.log('SMTP prêt')
 	})
 
 	const dateCron = process.env.CRON_TASK_DATE || '59 23 * * Saturday' // tous les samedis à 23h59
@@ -744,7 +748,10 @@ async function demarrerServeur () {
 					html: '<p>Vous avez créé un compte Digipad ayant pour identifiant : <strong>' + v.escapeHtml(identifiant) + '</strong></p><p>Cliquez sur ce lien pour activer votre compte : <a href="' + hote + '/activation/' + codeActivation + '" target="_blank">' + hote + '/activation/' + codeActivation + '</a>.</p><p>Veuillez ignorer ce message si vous n\'êtes pas à l\'origine de cette création de compte.</p><p>La Digitale</p>'
 				}
 				transporter.sendMail(message, async (err) => {
-					if (err) return res.status(500).send('erreur_email')
+					if (err) {
+						console.error(err.stack || err)
+						return res.status(500).send('erreur_email')
+					}
 					res.status(200).send('activation_demandee')
 				})
 			} else if (emailExiste === 0 && validationInscription === 0) {
@@ -772,7 +779,10 @@ async function demarrerServeur () {
 					html: '<p>Vous avez créé un compte Digipad ayant pour identifiant : <strong>' + v.escapeHtml(identifiant) + '</strong></p><p>Conservez bien cet identifiant, il est nécessaire pour vous connecter à votre compte.</p><p>La Digitale</p>'
 				}
 				transporter.sendMail(message, async (err) => {
-					if (err) return res.status(500).send('erreur_email')
+					if (err) {
+						console.error(err.stack || err)
+						return res.status(500).send('erreur_email')
+					}
 					res.status(200).send('compte_cree')
 				})
 			} else {
@@ -908,7 +918,14 @@ async function demarrerServeur () {
 					}
 					try {
 						await new Promise((resolve, reject) => {
-							transporter.sendMail(message, (err) => { if (err) reject(err); else resolve() })
+							transporter.sendMail(message, (err) => {
+								if (err) {
+									console.error(err.stack || err)
+									reject(err)
+								} else {
+									resolve()
+								}
+							})
 						})
 						const hash = await bcrypt.hash(motdepasse, 10)
 						await db.HSET('utilisateurs:' + identifiant, 'motdepassetemp', hash)
@@ -942,7 +959,14 @@ async function demarrerServeur () {
 					}
 					try {
 						await new Promise((resolve, reject) => {
-							transporter.sendMail(message, (err) => { if (err) reject(err); else resolve() })
+							transporter.sendMail(message, (err) => {
+								if (err) {
+									console.error(err.stack || err)
+									reject(err)
+								} else {
+									resolve()
+								}
+							})
 						})
 					} catch (err) {
 						console.error(err.stack)
