@@ -956,7 +956,7 @@ export default {
 						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
 						{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
-						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte" type="color" style="display: none;">', result: () => {
+						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<i class="material-icons couleur-texte" aria-hidden="true">format_color_text</i>', result: () => {
 							let i = 0
 							let couleurActuelle = ''
 							let element = window.getSelection()?.focusNode?.parentNode ?? null
@@ -968,11 +968,12 @@ export default {
 								}
 								i++
 							}
-							if (couleurActuelle !== '') {
-								document.querySelector('#couleur-texte').value = couleurActuelle
-							} else {
-								document.querySelector('#couleur-texte').value = '#001d1d'
+							const champ = document.querySelector('#couleur-texte')
+							if (champ === null) {
+								return
 							}
+							champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
+							this.ouvrirSelecteurCouleur(champ)
 						} },
 						{ name: 'liste-ordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
 						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
@@ -1023,8 +1024,7 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}
-				document.querySelector('#couleur-texte').addEventListener('input', this.modifierCouleurTexte)
-				document.querySelector('#couleur-texte').addEventListener('change', this.modifierCouleurTexte)
+				this.initialiserChampCouleur(editeur, 'couleur-texte')
 			})
 		},
 		echapperHTML (texte) {
@@ -1048,6 +1048,43 @@ export default {
 		},
 		modifierCouleurTexte (event) {
 			pell.exec('foreColor', event.target.value)
+		},
+		initialiserChampCouleur (editeur, id) {
+			const icone = editeur?.querySelector('.couleur-texte') ?? null
+			if (icone === null) {
+				return
+			}
+			const bouton = icone.closest('button')
+			if (bouton === null) {
+				return
+			}
+			let champ = document.querySelector('#' + id)
+			if (champ === null) {
+				champ = document.createElement('input')
+				champ.type = 'color'
+				champ.id = id
+				champ.tabIndex = -1
+				champ.setAttribute('aria-hidden', 'true')
+				champ.style.cssText = 'position: absolute; left: 0; top: 0; width: 100%; height: 100%; padding: 0; margin: 0; border: 0; opacity: 0; pointer-events: none;'
+				champ.addEventListener('input', this.modifierCouleurTexte)
+				champ.addEventListener('change', this.modifierCouleurTexte)
+			}
+			bouton.style.position = 'relative'
+			bouton.appendChild(champ)
+		},
+		ouvrirSelecteurCouleur (champ) {
+			if (!champ) {
+				return
+			}
+			try {
+				if (typeof champ.showPicker === 'function') {
+					champ.showPicker()
+				} else {
+					champ.click()
+				}
+			} catch {
+				champ.click()
+			}
 		},
 		ajouterFichier (champ) {
 			const fichiersAutorises = this.fichiersAutorises.split(',').map((e) => { return e.trim().substring(1) })
@@ -2495,8 +2532,7 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}
-				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('input', this.modifierCouleurTexte)
-				document.querySelector('#couleur-texte-commentaire-modifie').addEventListener('change', this.modifierCouleurTexte)
+				this.initialiserChampCouleur(editeur, 'couleur-texte-commentaire-modifie')
 				document.querySelector('#commentaire-' + this.commentaireId + ' .action button')?.focus()
 			})
 		},
@@ -2566,8 +2602,7 @@ export default {
 						pell.exec('insertText', event.clipboardData.getData('text/plain'))
 					}
 				}
-				document.querySelector('#couleur-texte-commentaire').addEventListener('input', this.modifierCouleurTexte)
-				document.querySelector('#couleur-texte-commentaire').addEventListener('change', this.modifierCouleurTexte)
+				this.initialiserChampCouleur(this.editeurCommentaire, 'couleur-texte-commentaire')
 			}
 		},
 		definirActionsEditeur (type) {
@@ -2577,7 +2612,7 @@ export default {
 				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
 				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
 				{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
-				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<label for="couleur-texte-' + type + '"><i class="material-icons" aria-hidden="true">format_color_text</i></label><input id="couleur-texte-' + type + '" type="color" style="display: none;">', result: () => {
+				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<i class="material-icons couleur-texte" aria-hidden="true">format_color_text</i>', result: () => {
 					let i = 0
 					let couleurActuelle = ''
 					let element = window.getSelection()?.focusNode?.parentNode ?? null
@@ -2589,11 +2624,12 @@ export default {
 						}
 						i++
 					}
-					if (couleurActuelle !== '') {
-						document.querySelector('#couleur-texte-' + type).value = couleurActuelle
-					} else {
-						document.querySelector('#couleur-texte-' + type).value = '#001d1d'
+					const champ = document.querySelector('#couleur-texte-' + type)
+					if (champ === null) {
+						return
 					}
+					champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
+					this.ouvrirSelecteurCouleur(champ)
 				} },
 				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 					let i = 0

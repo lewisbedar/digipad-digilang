@@ -829,9 +829,8 @@ label.bouton-bleu {
 	margin-right: 0;
 }
 
-.boutons-editeur-commentaire button label[for="couleur-texte-commentaire-modifie"],
-.boutons-editeur-commentaire button label[for="couleur-texte-commentaire"],
-.boutons-editeur button label[for="couleur-texte"] {
+.boutons-editeur-commentaire button .couleur-texte,
+.boutons-editeur button .couleur-texte {
 	font-size: 20px!important;
 	font-weight: 400!important;
 	width: 24px!important;
