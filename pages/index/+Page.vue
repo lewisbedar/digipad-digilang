@@ -310,11 +310,13 @@ export default {
 			})
 		},
 		seConnecter () {
-			if (this.identifiant !== '' && this.motDePasse !== '') {
+			const identifiant = this.identifiant.trim()
+			const motdepasse = this.motDePasse.trim()
+			if (identifiant !== '' && motdepasse !== '') {
 				this.chargement = true
 				axios.post(this.hote + '/api/connexion', {
-					identifiant: this.identifiant,
-					motdepasse: this.motDePasse
+					identifiant: identifiant,
+					motdepasse: motdepasse
 				}).then((reponse) => {
 					window.location.href = '/u/' + reponse.data.identifiant
 				}).catch((err) => {
@@ -371,6 +373,8 @@ export default {
 						this.message = this.$t('emailExisteDeja', { email: email })
 					} else if (err.response?.data === 'identifiant_invalide') {
 						this.message = this.$t('identifiantNonConforme')
+					} else if (err.response?.data === 'email_invalide') {
+						this.message = this.$t('erreurEmail')
 					} else if (err.response?.data === 'erreur_email') {
 						this.message = this.$t('erreurEnvoiEmail')
 					} else {

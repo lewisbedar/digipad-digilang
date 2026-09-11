@@ -28,6 +28,7 @@ import localizedFormat from 'dayjs/plugin/localizedFormat.js'
 import bcrypt from 'bcrypt'
 import cron from 'node-cron'
 import nodemailer from 'nodemailer'
+import { promises as dnsPromises } from 'dns'
 import { URL, fileURLToPath } from 'url'
 import * as cheerio from 'cheerio'
 import libre from 'libreoffice-convert'
@@ -35,7 +36,7 @@ import util from 'util'
 libre.convertAsync = util.promisify(libre.convert)
 import { RedisStore } from 'connect-redis'
 import session from 'express-session'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis'
 import { EventEmitter } from 'events'
 import { randomBytes, timingSafeEqual } from 'crypto'
@@ -209,6 +210,7 @@ async function demarrerServeur () {
 
 	const limiteRequetesAuth = parseInt(process.env.RATE_LIMIT_AUTH) || 10
 	const limiteRequetesInscription = parseInt(process.env.RATE_LIMIT_SIGNUP) || 50
+	const limiteRequetesInscriptionEmail = parseInt(process.env.RATE_LIMIT_SIGNUP_EMAIL) || 4
 	const limiteRequetesConnexion = parseInt(process.env.RATE_LIMIT_LOGIN) || 30
 	const limiteEchecsConnexionParIdentifiant = parseInt(process.env.RATE_LIMIT_LOGIN_USERNAME) || 10
 	const fenetreEchecsConnexionParIdentifiant = 15 * 60
@@ -270,6 +272,24 @@ async function demarrerServeur () {
 			prefix: 'rl-inscription:'
 		}),
 		skipSuccessfulRequests: true,
+		validate: { trustProxy: false }
+	})
+
+	const limiteInscriptionEmail = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesInscriptionEmail,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-inscription-email:'
+		}),
+		skipSuccessfulRequests: true,
+		requestWasSuccessful: (req, res) => res.statusCode === 403 || res.statusCode === 409 || res.statusCode === 500,
+		keyGenerator: (req) => {
+			const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+			return email || ipKeyGenerator(req.ip)
+		},
 		validate: { trustProxy: false }
 	})
 
@@ -714,15 +734,17 @@ async function demarrerServeur () {
 		res.status(statusCode).send(body)
   	})
 
-	app.post('/api/inscription', limiteInscription, async (req, res) => {
+	app.post('/api/inscription', limiteInscription, limiteInscriptionEmail, async (req, res) => {
 		if (creationCompte !== 1) return res.status(403).send('non_autorise')
 		try {
 			const identifiant = req.body.identifiant
 			if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return res.status(400).send('identifiant_invalide')
-			const motdepasse = req.body.motdepasse
+			const motdepasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse.trim() : ''
 			const emailBrut = req.body.email
-			if (typeof emailBrut !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailBrut)) return res.status(400).send('erreur')
-			const email = emailBrut.toLowerCase()
+			if (typeof emailBrut !== 'string' || !verifierFormatEmail(emailBrut)) return res.status(400).send('erreur')
+			const email = emailBrut.trim().toLowerCase()
+			const domaineEmail = email.slice(email.lastIndexOf('@') + 1)
+			if (!(await verifierDomaineEmail(domaineEmail))) return res.status(400).send('email_invalide')
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
 			if (utilisateurExiste === 1) return res.status(409).send('utilisateur_existe_deja')
 			if (utilisateurExiste !== 0) return res.status(500).send('erreur')
@@ -747,13 +769,13 @@ async function demarrerServeur () {
 					subject: 'Activation de votre compte Digipad',
 					html: '<p>Vous avez créé un compte Digipad ayant pour identifiant : <strong>' + v.escapeHtml(identifiant) + '</strong></p><p>Cliquez sur ce lien pour activer votre compte : <a href="' + hote + '/activation/' + codeActivation + '" target="_blank">' + hote + '/activation/' + codeActivation + '</a>.</p><p>Veuillez ignorer ce message si vous n\'êtes pas à l\'origine de cette création de compte.</p><p>La Digitale</p>'
 				}
-				transporter.sendMail(message, async (err) => {
-					if (err) {
-						console.error(err.stack || err)
-						return res.status(500).send('erreur_email')
-					}
+				try {
+					await envoyerEmail(message, { adresseValidee: true })
 					res.status(200).send('activation_demandee')
-				})
+				} catch (err) {
+					console.error(err.stack || err)
+					return res.status(500).send('erreur_email')
+				}
 			} else if (emailExiste === 0 && validationInscription === 0) {
 				const hash = await bcrypt.hash(motdepasse, 10)
 				const date = dayjs().format()
@@ -778,13 +800,12 @@ async function demarrerServeur () {
 					subject: 'Nouveau compte Digipad',
 					html: '<p>Vous avez créé un compte Digipad ayant pour identifiant : <strong>' + v.escapeHtml(identifiant) + '</strong></p><p>Conservez bien cet identifiant, il est nécessaire pour vous connecter à votre compte.</p><p>La Digitale</p>'
 				}
-				transporter.sendMail(message, async (err) => {
-					if (err) {
-						console.error(err.stack || err)
-						return res.status(500).send('erreur_email')
-					}
-					res.status(200).send('compte_cree')
-				})
+				try {
+					await envoyerEmail(message, { adresseValidee: true })
+				} catch (err) {
+					console.error(err.stack || err)
+				}
+				res.status(200).send('compte_cree')
 			} else {
 				res.status(500).send('erreur')
 			}
@@ -847,8 +868,8 @@ async function demarrerServeur () {
 
 	app.post('/api/connexion', limiteConnexion, async (req, res) => {
 		try {
-			const identifiant = req.body.identifiant
-			const motdepasse = req.body.motdepasse
+			const identifiant = typeof req.body.identifiant === 'string' ? req.body.identifiant.trim() : ''
+			const motdepasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse.trim() : ''
 			const ipConnexion = req.ip
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
 			if (utilisateurExiste !== 1) return res.status(401).send('erreur_connexion')
@@ -899,7 +920,7 @@ async function demarrerServeur () {
 	app.post('/api/mot-de-passe-oublie', limiteAuth, async (req, res) => {
 		try {
 			if (typeof req.body.identifiant !== 'string' || typeof req.body.email !== 'string') return res.status(400).send('erreur')
-			const identifiant = req.body.identifiant
+			const identifiant = req.body.identifiant.trim()
 			let email = req.body.email.toLowerCase().trim()
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
 			if (utilisateurExiste === 1) {
@@ -917,20 +938,16 @@ async function demarrerServeur () {
 						html: '<p>Votre nouveau mot de passe :<br>' + motdepasse + '</p><p>Identifiant :<br>' + identifiant + '</p>'
 					}
 					try {
-						await new Promise((resolve, reject) => {
-							transporter.sendMail(message, (err) => {
-								if (err) {
-									console.error(err.stack || err)
-									reject(err)
-								} else {
-									resolve()
-								}
-							})
-						})
 						const hash = await bcrypt.hash(motdepasse, 10)
 						await db.HSET('utilisateurs:' + identifiant, 'motdepassetemp', hash)
+						try {
+							await envoyerEmail(message)
+						} catch (err) {
+							await db.HDEL('utilisateurs:' + identifiant, 'motdepassetemp')
+							throw err
+						}
 					} catch (err) {
-						console.error(err.stack)
+						console.error(err.stack || err)
 					}
 				}
 			}
@@ -958,18 +975,9 @@ async function demarrerServeur () {
 						html: '<p>Voici l\'identifiant associé à votre compte Digipad : <strong>' + v.escapeHtml(donneesEmail.identifiant) + '</strong></p>'
 					}
 					try {
-						await new Promise((resolve, reject) => {
-							transporter.sendMail(message, (err) => {
-								if (err) {
-									console.error(err.stack || err)
-									reject(err)
-								} else {
-									resolve()
-								}
-							})
-						})
+						await envoyerEmail(message)
 					} catch (err) {
-						console.error(err.stack)
+						console.error(err.stack || err)
 					}
 				}
 			}
@@ -1601,15 +1609,21 @@ async function demarrerServeur () {
 					await fs.remove(dossier)
 				} else if (stockage === 's3') {
 					try {
-						const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
-						if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-							const promessesFichiersS3 = []
-							for (const objet of liste.Contents) {
-								promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+						let jetonPagination
+						do {
+							const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
+							if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
+								const promessesFichiersS3 = []
+								for (const objet of liste.Contents) {
+									promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+								}
+								await Promise.all(promessesFichiersS3)
 							}
-							await Promise.all(promessesFichiersS3)
-						}
-					} catch {}
+							jetonPagination = liste && liste.IsTruncated ? liste.NextContinuationToken : undefined
+						} while (jetonPagination)
+					} catch (err) {
+						console.error(err.stack)
+					}
 				}
 				res.status(200).json({ colonnes, affichageColonnes })
 			} catch (err) {
@@ -1774,8 +1788,8 @@ async function demarrerServeur () {
 			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
 			const motdepasse = req.body.motdepasse
 			const nouveaumotdepasse = req.body.nouveaumotdepasse
-			if (motdepasse.trim() !== '' && nouveaumotdepasse.trim() !== '' && donneesUtilisateur.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesUtilisateur.motdepasse)) {
-				const hash = await bcrypt.hash(nouveaumotdepasse, 10)
+			if (motdepasse.trim() !== '' && nouveaumotdepasse.trim() !== '' && donneesUtilisateur.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse.trim(), donneesUtilisateur.motdepasse)) {
+				const hash = await bcrypt.hash(nouveaumotdepasse.trim(), 10)
 				await db.HSET('utilisateurs:' + identifiant, 'motdepasse', hash)
 				req.session.motdepasse = hash
 				res.status(200).send('motdepasse_modifie')
@@ -1802,7 +1816,7 @@ async function demarrerServeur () {
 		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
 		const identifiant = req.body.identifiant
 		const email = req.body.email ? req.body.email.toLowerCase() : ''
-		const nouveauMotDePasse = req.body.motdepasse
+		const nouveauMotDePasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse.trim() : ''
 		try {
 			if (identifiant !== '') {
 				const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
@@ -2010,7 +2024,7 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/supprimer-compte', async (req, res) => {
+	app.post('/api/supprimer-compte', limiteAuthAdmin, async (req, res) => {
 		if (maintenance === true) return res.redirect(302, '/maintenance')
 		const identifiant = req.body.identifiant
 		const motdepasseAdmin = req.body.admin
@@ -2075,11 +2089,17 @@ async function demarrerServeur () {
 					await fs.remove(path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad))
 				} else if (stockage === 's3') {
 					try {
-						const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
-						if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
-							await Promise.all(listeObjets.Contents.map(objet => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key)))))
-						}
-					} catch {}
+						let jetonPagination
+						do {
+							const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
+							if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
+								await Promise.all(listeObjets.Contents.map(objet => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key)))))
+							}
+							jetonPagination = listeObjets && listeObjets.IsTruncated ? listeObjets.NextContinuationToken : undefined
+						} while (jetonPagination)
+					} catch (err) {
+						console.error(err.stack)
+					}
 				}
 			})
 			await Promise.all(padsSupprimes)
@@ -2181,7 +2201,9 @@ async function demarrerServeur () {
 						})
 						await Promise.all(promessesSessions)
 					}
-				} catch {}
+				} catch (err) {
+					console.error(err.stack)
+				}
 				res.status(200).send('compte_supprime')
 			}
 		} catch (err) {
@@ -5774,15 +5796,21 @@ async function demarrerServeur () {
 			await fs.remove(dossier)
 		} else if (suppressionFichiers === true && stockage === 's3') {
 			try {
-				const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/' }))
-				if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-					const promessesFichiersS3 = []
-					for (const objet of liste.Contents) {
-						promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+				let jetonPagination
+				do {
+					const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
+					if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
+						const promessesFichiersS3 = []
+						for (const objet of liste.Contents) {
+							promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
+						}
+						await Promise.all(promessesFichiersS3)
 					}
-					await Promise.all(promessesFichiersS3)
-				}
-			} catch {}
+					jetonPagination = liste && liste.IsTruncated ? liste.NextContinuationToken : undefined
+				} while (jetonPagination)
+			} catch (err) {
+				console.error(err.stack)
+			}
 		}
 		return true
 	}
@@ -5931,6 +5959,130 @@ async function demarrerServeur () {
 	function verifierEmail (email) {
 		const regexExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/gi
 		return regexExp.test(email)
+	}
+
+	function verifierFormatEmail (email) {
+		if (typeof email !== 'string') return false
+		const adresse = email.trim()
+		if (adresse.length < 6 || adresse.length > 254) return false
+		if (adresse.indexOf(' ') !== -1) return false
+		const positionArobase = adresse.lastIndexOf('@')
+		if (positionArobase < 1) return false
+		const partieLocale = adresse.slice(0, positionArobase)
+		const domaine = adresse.slice(positionArobase + 1)
+		if (partieLocale.length > 64) return false
+		if (domaine.length > 253 || domaine.indexOf('.') === -1) return false
+		if (domaine.startsWith('.') || domaine.endsWith('.') || domaine.indexOf('..') !== -1) return false
+		const tld = domaine.slice(domaine.lastIndexOf('.') + 1)
+		// TLD alphabétique classique ou TLD internationalisé en punycode (xn--...)
+		if (!/^[a-zA-Z]{2,}$/.test(tld) && !/^xn--[a-z0-9-]{2,}$/i.test(tld)) return false
+		return verifierEmail(adresse)
+	}
+
+	const cacheMxDomaines = new Map()
+	const dureeCacheMx = 3600000 // 1 heure pour un résultat positif
+	const dureeCacheMxNegatif = 300000 // 5 minutes pour un résultat négatif
+	const tailleMaxCacheMx = 5000
+	const timeoutDnsMx = 3000
+
+	function nettoyerCacheMx (maintenant) {
+		for (const [cle, valeur] of cacheMxDomaines) {
+			if (valeur.expiration <= maintenant) cacheMxDomaines.delete(cle)
+		}
+		while (cacheMxDomaines.size > tailleMaxCacheMx) {
+			cacheMxDomaines.delete(cacheMxDomaines.keys().next().value)
+		}
+	}
+
+	async function verifierDomaineEmail (domaine) {
+		const creerResolveur = () => new dnsPromises.Resolver({ timeout: timeoutDnsMx, tries: 1 })
+		const absenceEnregistrement = (err) => err && (err.code === 'ENOTFOUND' || err.code === 'ENODATA')
+		// Repli sur un enregistrement A/AAAA quand le domaine n'a pas de MX (RFC 5321)
+		const verifierEnregistrementA = async () => {
+			const resolveur = creerResolveur()
+			try {
+				await resolveur.resolve4(domaine)
+				return true
+			} catch (e4) {
+				if (!absenceEnregistrement(e4)) return null
+			}
+			try {
+				await resolveur.resolve6(domaine)
+				return true
+			} catch (e6) {
+				return absenceEnregistrement(e6) ? false : null
+			}
+		}
+		const hoteMxExploitable = (e) => {
+			if (!e || typeof e.exchange !== 'string') return false
+			return e.exchange.trim().replace(/\.$/, '') !== ''
+		}
+		const maintenant = Date.now()
+		const enCache = cacheMxDomaines.get(domaine)
+		if (enCache && enCache.expiration > maintenant) return enCache.domaineValide
+		let domaineValide
+		let resultatCertain = true
+		try {
+			const enregistrements = await creerResolveur().resolveMx(domaine)
+			const aMxExploitable = Array.isArray(enregistrements) && enregistrements.some(hoteMxExploitable)
+			const nullMxExplicite = Array.isArray(enregistrements) && enregistrements.length > 0 && !aMxExploitable
+			if (aMxExploitable) {
+				domaineValide = true
+			} else if (nullMxExplicite) {
+				// Domaine refusant explicitement le courrier -> rejet certain, pas de repli A/AAAA
+				domaineValide = false
+			} else {
+				const repliA = await verifierEnregistrementA()
+				domaineValide = repliA === null ? true : repliA
+				resultatCertain = repliA !== null
+			}
+		} catch (err) {
+			if (err && err.code === 'ENOTFOUND') {
+				// Domaine inexistant (NXDOMAIN)
+				domaineValide = false
+			} else if (err && err.code === 'ENODATA') {
+				// Aucun MX -> on tente le repli A/AAAA avant de rejeter
+				const repliA = await verifierEnregistrementA()
+				domaineValide = repliA === null ? true : repliA
+				resultatCertain = repliA !== null
+			} else {
+				// Incertitude réseau/DNS (timeout, SERVFAIL…) -> envoi pas bloqué
+				domaineValide = true
+				resultatCertain = false
+			}
+		}
+		if (resultatCertain) {
+			nettoyerCacheMx(maintenant)
+			const duree = domaineValide ? dureeCacheMx : dureeCacheMxNegatif
+			cacheMxDomaines.set(domaine, { domaineValide: domaineValide, expiration: maintenant + duree })
+		}
+		return domaineValide
+	}
+
+	// Point d'entrée unique pour tous les e-mails transactionnels : valide l'adresse avant l'envoi SMTP
+	async function envoyerEmail (message, options = {}) {
+		const destinataire = typeof message.to === 'string' ? message.to.trim().toLowerCase() : ''
+		if (!options.adresseValidee) {
+			if (!verifierFormatEmail(destinataire)) {
+				console.error('E-mail non envoyé, adresse mal formée : ' + JSON.stringify(message.to))
+				const err = new Error('email_invalide')
+				err.code = 'EMAIL_FORMAT_INVALIDE'
+				throw err
+			}
+			const domaine = destinataire.slice(destinataire.lastIndexOf('@') + 1)
+			if (!(await verifierDomaineEmail(domaine))) {
+				console.error('E-mail non envoyé, domaine inexistant ou sans serveur de messagerie : ' + destinataire)
+				const err = new Error('domaine_email_invalide')
+				err.code = 'EMAIL_DOMAINE_INVALIDE'
+				throw err
+			}
+		}
+		return new Promise((resolve, reject) => {
+			transporter.sendMail({ ...message, to: destinataire }, (err, info) => {
+				if (err) reject(err)
+				else resolve(info)
+			})
+		})
 	}
 
 	function definirNomFichier (fichier) {
