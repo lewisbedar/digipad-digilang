@@ -245,6 +245,74 @@
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
 
+#discussion .commentaires li .moderation .bouton,
+#diapositive .conteneur-commentaires .commentaires li .moderation .bouton {
+	display: inline-block;
+	margin-top: 0.5rem;
+	padding: 0.5rem 0.9rem;
+	text-align: center;
+	font-size: 12px;
+	color: #e32f6c;
+	border: 1px solid #e32f6c;
+	line-height: 1;
+	font-weight: 700;
+	letter-spacing: 1px;
+	text-indent: 1px;
+	border-radius: 4px;
+	text-transform: uppercase;
+	transition: all 0.1s ease-in;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	cursor: default;
+}
+
+#discussion .commentaires li .moderation button.bouton,
+#diapositive .conteneur-commentaires .commentaires li .moderation button.bouton {
+	cursor: pointer;
+}
+
+#discussion .commentaires li .moderation button.bouton:hover,
+#diapositive .conteneur-commentaires .commentaires li .moderation button.bouton:hover {
+	background: #e32f6c;
+	color: #fff;
+	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+#liste-evaluations .evaluations {
+	max-height: 50vh;
+	padding: 2rem;
+	list-style: none;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+#liste-evaluations .evaluations li {
+	margin-bottom: 1.2rem;
+}
+
+#liste-evaluations .evaluations li:last-child {
+	margin-bottom: 0;
+}
+
+#liste-evaluations .evaluations li .etoiles {
+	display: block;
+	margin-bottom: 0.3rem;
+	line-height: 1;
+}
+
+#liste-evaluations .evaluations li .etoiles i {
+	color: #fdcc33;
+	font-size: 3rem;
+}
+
+#liste-evaluations .evaluations li .meta {
+	font-size: 1.2rem;
+	width: 100%;
+	color: #aaa;
+	display: block;
+}
+
 #bloc {
 	max-height: 90%;
 	max-width: 75rem;
@@ -683,6 +751,13 @@
 	cursor: pointer;
 }
 
+#diapositive .conteneur .evaluation .actions-evaluation {
+	display: flex;
+	align-items: center;
+	gap: 1.4rem;
+	font-size: 24px;
+}
+
 #suivant,
 #precedent {
 	position: absolute;
@@ -791,7 +866,7 @@
 	position: absolute;
 	bottom: 0;
 	left: 0;
-	width: 30rem;
+	width: 32rem;
 	background: #ddd;
 	padding: 0.5rem;
 	height: 4.4rem;
@@ -799,7 +874,7 @@
 
 #ecrire-message input {
 	font-size: 16px;
-	width: 24.5rem;
+	width: 26.5rem;
 	padding: 0.5rem 1rem;
 	margin-right: 0.5rem;
 	background: #fff;
@@ -1387,6 +1462,16 @@
 	}
 	100% {
 		opacity: 1;
+	}
+}
+
+@media screen and (max-width: 339px) {
+	#ecrire-message {
+		width: 30rem;
+	}
+
+	#ecrire-message input {
+		width: 24.5rem;
 	}
 }
 

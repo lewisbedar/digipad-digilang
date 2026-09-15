@@ -157,7 +157,7 @@ iframe {
 
 .ascenseur {
 	scrollbar-color: rgba(0, 0, 0, 0.5) transparent;
-	scrollbar-width: thin;
+	scrollbar-width: auto;
 	outline: 0;
 }
 
@@ -313,7 +313,7 @@ header.pleine-largeur #titre {
 /* Menus
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 .menu {
-    width: 30rem;
+    width: 32rem;
     position: fixed;
     top: 4rem;
     bottom: 0;
@@ -325,12 +325,12 @@ header.pleine-largeur #titre {
 }
 
 .menu.gauche {
-	left: -34rem;
+	left: -36rem;
 	border-right: 1px solid #ddd;
 }
 
 .menu.droite {
-	right: -30rem;
+	right: -32rem;
 	border-left: 1px solid #ddd;
 }
 
@@ -1234,6 +1234,20 @@ label.bouton-bleu {
 @media screen and (orientation: landscape) and (max-height: 359px) {
 	#nav button {
 		margin-top: 2rem;
+	}
+}
+
+@media screen and (max-width: 339px) {
+	.menu {
+		width: 30rem;
+	}
+
+	.menu.gauche {
+		left: -34rem;
+	}
+
+	.menu.droite {
+		right: -30rem;
 	}
 }
 

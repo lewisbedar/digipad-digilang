@@ -98,7 +98,7 @@ async function traiterPad (id, d) {
 	// Surveillance des clés des blocs et de l'activité, découvertes une fois la liste des blocs connue
 	const clesASurveiller = ['activite:' + id]
 	for (const bloc of blocs) {
-		clesASurveiller.push('pad-' + id + ':' + bloc, 'commentaires:' + bloc, 'evaluations:' + bloc)
+		clesASurveiller.push('pad-' + id + ':' + bloc, 'commentaires:' + bloc, 'commentaires-masques:' + bloc, 'evaluations:' + bloc)
 	}
 	await db.WATCH(clesASurveiller)
 	for (const bloc of blocs) {
@@ -160,6 +160,7 @@ async function traiterPad (id, d) {
 	const transaction = db.multi()
 	for (const bloc of blocs) {
 		transaction.UNLINK('commentaires:' + bloc)
+		transaction.UNLINK('commentaires-masques:' + bloc)
 		transaction.UNLINK('evaluations:' + bloc)
 		transaction.UNLINK('pad-' + id + ':' + bloc)
 	}

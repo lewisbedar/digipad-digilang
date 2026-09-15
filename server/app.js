@@ -59,7 +59,10 @@ if (production) {
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const root = `${__dirname}/..`
 
-demarrerServeur()
+demarrerServeur().catch((err) => {
+	console.error('Démarrage du serveur impossible :', err && err.stack ? err.stack : err)
+	process.exit(1)
+})
 
 async function demarrerServeur () {
 	const app = express()
@@ -1298,7 +1301,7 @@ async function demarrerServeur () {
 			})
 			await Promise.all(promessesBlocs)
 			// Création des métadonnées du pad
-			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', donneesPadSource.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0]
+			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', donneesPadSource.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
 			// Ajout du code d'accès seulement s'il existait dans l'original
 			if (donneesPadSource.hasOwnProperty('code')) {
 				champsPad.push('code', code)
@@ -1337,7 +1340,7 @@ async function demarrerServeur () {
 					}
 				}
 			}
-			return res.status(200).json({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0 })
+			return res.status(200).json({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) })
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_duplication')
@@ -1427,6 +1430,9 @@ async function demarrerServeur () {
 							bloc.listeCommentaires.forEach(commentaire => {
 								if (commentaire.hasOwnProperty('id') && commentaire.hasOwnProperty('identifiant') && commentaire.hasOwnProperty('date') && commentaire.hasOwnProperty('texte')) {
 									pipelineBloc.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify(commentaire) }])
+									if (commentaire.visibilite === 'masquee') {
+										pipelineBloc.ZADD('commentaires-masques:' + blocId, [{ score: commentaire.id, value: commentaire.id + ':' + commentaire.identifiant }])
+									}
 								}
 							})
 						}
@@ -1473,7 +1479,7 @@ async function demarrerServeur () {
 					await Promise.all([
 						promesseFond,
 						db.multi()
-							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0])
+							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donnees.pad)])
 							.SADD('pads-crees:' + identifiant, id.toString())
 							.SADD('utilisateurs-pads:' + id, identifiant)
 							.exec()
@@ -1482,7 +1488,7 @@ async function demarrerServeur () {
 					if (parametres.activite === true && Array.isArray(donnees.activite)) {
 						let activiteFiltree = donnees.activite
 						if (parametres.commentaires === false) {
-							activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-commente')
+							activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-commente' && el.type !== 'commentaire-valide')
 						}
 						if (parametres.evaluations === false) {
 							activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-evalue')
@@ -1498,7 +1504,7 @@ async function demarrerServeur () {
 						await pipelineActivite.exec()
 					}
 					await supprimerArchives(source, dossierTemporaire)
-					res.status(200).json({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0 })
+					res.status(200).json({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) })
 				} catch (err) {
 					console.error(err.stack)
 					// Nettoyage en cas d'erreur pendant le traitement
@@ -1582,6 +1588,7 @@ async function demarrerServeur () {
 					for (const blocId of blocs) {
 						pipelineBlocs
 							.UNLINK('commentaires:' + blocId)
+							.UNLINK('commentaires-masques:' + blocId)
 							.UNLINK('evaluations:' + blocId)
 							.UNLINK('pad-' + pad + ':' + blocId)
 					}
@@ -2052,6 +2059,7 @@ async function demarrerServeur () {
 						for (const blocId of blocs) {
 							pipelineBlocs
 								.UNLINK('commentaires:' + blocId)
+								.UNLINK('commentaires-masques:' + blocId)
 								.UNLINK('evaluations:' + blocId)
 								.UNLINK('pad-' + pad + ':' + blocId)
 						}
@@ -2125,6 +2133,7 @@ async function demarrerServeur () {
 								.UNLINK('pad-' + pad + ':' + blocId)
 								.ZREM('blocs:' + pad, blocId)
 								.UNLINK('commentaires:' + blocId)
+								.UNLINK('commentaires-masques:' + blocId)
 								.UNLINK('evaluations:' + blocId)
 								.exec()
 						}
@@ -2147,6 +2156,9 @@ async function demarrerServeur () {
 								if (!commentaire) continue
 								if (commentaire.identifiant === identifiant) {
 									await db.ZREMRANGEBYSCORE('commentaires:' + blocId, commentaire.id, commentaire.id)
+									if (commentaire.visibilite === 'masquee') {
+										await db.ZREMRANGEBYSCORE('commentaires-masques:' + blocId, commentaire.id, commentaire.id)
+									}
 								}
 							}
 						}
@@ -3095,7 +3107,7 @@ async function demarrerServeur () {
 				if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 	                donneesPad.fond = path.basename(donneesPad.fond)
 				}
-				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', donneesPad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1]
+				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', donneesPad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
 				if (donneesPad.hasOwnProperty('code')) {
 					champsPad.push('code', code)
 				}
@@ -3287,6 +3299,9 @@ async function demarrerServeur () {
 						for (const commentaire of bloc.listeCommentaires) {
 							if (commentaire.hasOwnProperty('id') && commentaire.hasOwnProperty('identifiant') && commentaire.hasOwnProperty('date') && commentaire.hasOwnProperty('texte')) {
 								await db.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify(commentaire) }])
+								if (commentaire.visibilite === 'masquee') {
+									await db.ZADD('commentaires-masques:' + blocId, [{ score: commentaire.id, value: commentaire.id + ':' + commentaire.identifiant }])
+								}
 							}
 						}
 					}
@@ -3317,7 +3332,7 @@ async function demarrerServeur () {
 					await televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fond), id)
 				}
 				await db.multi()
-					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'vues', 0, 'digidrive', 1])
+					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])
 					.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
 					.SADD('pads-crees:' + identifiant, id.toString())
 					.exec()
@@ -3326,7 +3341,7 @@ async function demarrerServeur () {
 				if (parametres.activite && Array.isArray(donnees.activite)) {
 					let activiteFiltree = donnees.activite
 					if (!parametres.commentaires) {
-						activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-commente')
+						activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-commente' && el.type !== 'commentaire-valide')
 					}
 					if (!parametres.evaluations) {
 						activiteFiltree = activiteFiltree.filter(el => el.type !== 'bloc-evalue')
@@ -3375,7 +3390,6 @@ async function demarrerServeur () {
 	})
 
 	const port = process.env.PORT || 3000
-	httpServer.listen(port)
 
 	const io = new Server(httpServer, {
 		wsEngine: eiows.Server,
@@ -3389,7 +3403,15 @@ async function demarrerServeur () {
 		perMessageDeflate: false
 	})
 	if (cluster === true) {
-		io.adapter(createAdapter())
+		if (typeof process.send !== 'function') {
+			console.error('NODE_CLUSTER=1 mais le processus n\'a pas de canal IPC : adaptateur cluster ignoré.')
+		} else {
+			try {
+				io.adapter(createAdapter())
+			} catch (err) {
+				console.error('Adaptateur cluster non installé : ' + err.message)
+			}
+		}
 	}
 	const wrap = middleware => (socket, next) => middleware(socket.request, {}, next)
 	io.use(wrap(sessionMiddleware))
@@ -3447,11 +3469,18 @@ async function demarrerServeur () {
 				const pad = donnees.pad
 				const identifiant = donnees.identifiant
 				const nom = donnees.nom
-				const room = 'pad-' + pad
-				socket.join(room)
+				const salon = 'pad-' + pad
+				socket.join(salon)
+				if (req.session.identifiant) {
+					socket.join(definirSalonUtilisateur(pad, req.session.identifiant))
+				}
 				socket.data.identifiant = identifiant
 				socket.data.nom = nom
-				const clients = await fetchSockets(room)
+				let [donneesPad, clients] = await Promise.all([db.HGETALL('pads:' + pad), fetchSockets(salon)])
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (await verifierAdmin(pad, donneesPad, req.session)) {
+					socket.join(definirSalonAdmin(pad))
+				}
 				const utilisateurs = []
 				if (clients.length > 0) {
 					for (let i = 0; i < clients.length; i++) {
@@ -3459,7 +3488,7 @@ async function demarrerServeur () {
 					}
 				}
 				const utilisateursConnectes = utilisateurs.filter((v, i, a) => a.findIndex(t => (t.identifiant === v.identifiant)) === i)
-				io.to(room).emit('connexion', utilisateursConnectes)
+				io.to(salon).emit('connexion', utilisateursConnectes)
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -3468,13 +3497,17 @@ async function demarrerServeur () {
 
 		socket.on('sortie', (pad, identifiant) => {
 			socket.leave('pad-' + pad)
+			socket.leave(definirSalonAdmin(pad))
+			if (req.session.identifiant) {
+				socket.leave(definirSalonUtilisateur(pad, req.session.identifiant))
+			}
 			socket.to('pad-' + pad).emit('deconnexion', identifiant)
 		})
 
 		socket.on('disconnecting', () => {
 			if (req.session.identifiant !== '') {
-				socket.rooms.forEach((room) => {
-					io.to(room).emit('deconnexion', req.session.identifiant)
+				socket.rooms.forEach((salon) => {
+					io.to(salon).emit('deconnexion', req.session.identifiant)
 				})
 			}
 		})
@@ -3490,10 +3523,16 @@ async function demarrerServeur () {
 				await sauvegarderSession(req)
 			}
 			if (identifiant !== '') {
-				socket.rooms.forEach((room) => {
-					io.to(room).emit('deconnexion', req.session.identifiant)
+				socket.rooms.forEach((salon) => {
+					io.to(salon).emit('deconnexion', req.session.identifiant)
 				})
 			}
+			const salonsActuels = [...socket.rooms]
+			salonsActuels.forEach((salon) => {
+				if (salon !== socket.id) {
+					socket.leave(salon)
+				}
+			})
 		})
 
 		socket.on('verifieracces', async (pad, identifiant, code) => {
@@ -3572,9 +3611,31 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				io.to('pad-' + pad).emit('ajouterbloc', { bloc, titre, texte, media, iframe, type, source, vignette, identifiant, nom, date, couleur, commentaires: 0, evaluations: [], colonne, visibilite, activiteId })
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('recupererbloc', async (pad, bloc, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let [donneesPad, donneesBloc] = await Promise.all([db.HGETALL('pads:' + pad), db.HGETALL('pad-' + pad + ':' + bloc)])
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+				if (!donneesBloc.hasOwnProperty('titre')) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesBloc.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
+				let vignette = donneesBloc.vignette
+				if (vignette && definirVignettePersonnalisee(vignette) === true) {
+					vignette = path.basename(vignette)
+				}
+				socket.emit('recupererbloc', { bloc, titre: donneesBloc.titre, texte: donneesBloc.texte, media: donneesBloc.media, iframe: donneesBloc.iframe, vignette })
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -3584,9 +3645,9 @@ async function demarrerServeur () {
 		socket.on('modifierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
-			if (typeof titre === 'string' && titre.length > limitesTailleInput.titre) return socket.emit('erreur')
-			if (typeof texte === 'string' && texte.length > limitesTailleInput.texte) return socket.emit('erreur')
-			if (typeof iframe === 'string' && iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
+			if (typeof titre !== 'string' || titre.length > limitesTailleInput.titre) return socket.emit('erreur')
+			if (typeof texte !== 'string' || texte.length > limitesTailleInput.texte) return socket.emit('erreur')
+			if (typeof iframe !== 'string' || iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
@@ -3598,7 +3659,8 @@ async function demarrerServeur () {
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
 				if (Object.keys(donneesBloc).length === 0) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
-				const autorisation = (donneesBloc.identifiant === identifiant || admin || donneesPad.contributions === 'modifiables')
+				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
+				const autorisation = (donneesBloc.identifiant === identifiant || admin || (donneesPad.contributions === 'modifiables' && !blocMasque))
 				if (!autorisation) return socket.emit('nonautorise')
 				let visibilite = donneesBloc.visibilite || 'visible'
 				if (admin && privee === true) {
@@ -3643,7 +3705,8 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				io.to('pad-' + pad).emit('modifierbloc', { bloc, titre, texte, media, iframe, type, source, vignette, identifiant, nom, modifie: date, couleur, colonne, visibilite, activiteId })
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, activiteId }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -3696,7 +3759,8 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignette !== '') {
 					await copierFichier(padOrigine, pad, vignette, 'vignette')
 				}
-				io.to('pad-' + pad).emit('ajouterbloc', { bloc, titre, texte, media, iframe, type, source, vignette, identifiant, nom, date, couleur, commentaires: 0, evaluations: [], colonne, visibilite, activiteId })
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId, type, source }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				socket.emit('copierbloc')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -3743,7 +3807,22 @@ async function demarrerServeur () {
 						.exec()
 					nomUtilisateur = nom
 				}
-				io.to('pad-' + pad).emit('autoriserbloc', { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, commentaires: 0, evaluations: [], colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne })
+				const [commentairesMasques, evaluationsBrutes] = await Promise.all([
+					recupererCommentairesMasques(item.bloc),
+					db.ZRANGE('evaluations:' + item.bloc, 0, -1)
+				])
+				if (commentairesMasques === null) return socket.emit('erreur')
+				const commentairesAdmin = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, true, null)
+				const commentairesVisibles = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, donneesPad.visibiliteCommentaires !== 'admin')
+				const listeEvaluations = (evaluationsBrutes || []).map(ev => parseJSON(ev, null)).filter(e => e !== null)
+				const evaluationsVisibles = (donneesPad.visibiliteEvaluations === 'admin') ? [] : listeEvaluations
+				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
+				if (moderation === 'moderee' && item.activiteId) {
+					donneesBlocAutoriseBase.publication = { activiteId: item.activiteId, date: item.date, identifiant: item.identifiant, nom: item.nom }
+				}
+				const donneesBlocAutoriseAdmin = { ...donneesBlocAutoriseBase, ...commentairesAdmin, evaluations: listeEvaluations }
+				const donneesBlocAutorise = { ...donneesBlocAutoriseBase, ...commentairesVisibles, evaluations: evaluationsVisibles }
+				diffuserAdmin(pad, 'autoriserbloc', donneesBlocAutoriseAdmin, donneesBlocAutorise)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -3785,7 +3864,19 @@ async function demarrerServeur () {
 					if (ordre === 'decroissant') {
 						listeItems.reverse()
 					}
-					io.to('pad-' + pad).emit('deplacerbloc', { blocs: listeItems, identifiant })
+					let blocs = []
+					if (listeItems.length > 0) {
+						const pipelineVisibilites = db.multi()
+						listeItems.forEach((item) => {
+							pipelineVisibilites.HMGET('pad-' + pad + ':' + item.bloc, ['visibilite', 'identifiant'])
+						})
+						const visibilites = await pipelineVisibilites.exec()
+						blocs = listeItems.map((item, index) => {
+							const champs = visibilites[index] || []
+							return { bloc: item.bloc, visibilite: champs[0] || 'visible', identifiant: champs[1] || '' }
+						})
+					}
+					diffuserBlocsDeplaces(pad, listeItems, blocs, donneesPad.contributions, identifiant)
 				} else {
 					socket.emit('erreur')
 				}
@@ -3835,6 +3926,7 @@ async function demarrerServeur () {
 					.UNLINK('pad-' + pad + ':' + bloc)
 					.ZREM('blocs:' + pad, bloc)
 					.UNLINK('commentaires:' + bloc)
+					.UNLINK('commentaires-masques:' + bloc)
 					.UNLINK('evaluations:' + bloc)
 					.HSET('dates-pads:' + pad, 'date', date)
 					.HINCRBY('pads:' + pad, 'activite', 1)
@@ -3857,9 +3949,13 @@ async function demarrerServeur () {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if ((donneesPad.accesCommentaires === 'admin' || donneesPad.visibiliteCommentaires === 'admin') && !admin) return socket.emit('nonautorise')
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
 				if (!donneesBloc.hasOwnProperty('commentaires')) return socket.emit('erreur')
+				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
+				if (blocMasque && donneesBloc.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const commentaires = await db.ZRANGE('commentaires:' + bloc, 0, -1)
 				if (commentaires === null) return socket.emit('erreur')
 				const date = dayjs().format()
@@ -3879,15 +3975,74 @@ async function demarrerServeur () {
 					commentaireId = maxCommentaireId.id + 1
 				}
 				texte = assainirHTML(texte)
-				const commentaire = { id: commentaireId, identifiant, date, texte }
-				await db.multi()
+				const visibilite = (!admin && donneesPad.commentairesModeration === 'activee') ? 'masquee' : 'visible'
+				const commentaire = { id: commentaireId, identifiant, date, texte, visibilite, activiteId }
+				const pipelineCommentaire = db.multi()
 					.HSET('pad-' + pad + ':' + bloc, 'commentaires', commentaireId)
 					.HSET('dates-pads:' + pad, 'date', date)
 					.ZADD('commentaires:' + bloc, [{ score: commentaireId, value: JSON.stringify(commentaire) }])
 					.HINCRBY('pads:' + pad, 'activite', 1)
-					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc, identifiant, titre, date, type: 'bloc-commente' }) }])
+					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc, identifiant, titre, date, type: 'bloc-commente', commentaire: commentaireId }) }])
+				if (visibilite === 'masquee') {
+					pipelineCommentaire.ZADD('commentaires-masques:' + bloc, [{ score: commentaireId, value: commentaireId + ':' + identifiant }])
+				}
+				await pipelineCommentaire.exec()
+				const commentairesMasques = await recupererCommentairesMasques(bloc)
+				if (commentairesMasques === null) return socket.emit('erreur')
+				const contenuAMasquer = (visibilite === 'masquee' || donneesPad.visibiliteCommentaires === 'admin')
+				const commentaireAuteur = { id: commentaireId, bloc, identifiant, nom, titre, date, activiteId, visibilite }
+				const commentaireAdmin = { ...commentaireAuteur, texte }
+				const commentaireDiffuse = contenuAMasquer ? { id: commentaireId, bloc } : { ...commentaireAuteur, texte }
+				diffuserCommentaires(pad, 'commenterbloc', commentaireDiffuse, commentairesMasques, identifiant, contenuAMasquer ? commentaireAdmin : null, donneesPad.visibiliteCommentaires !== 'admin', contenuAMasquer ? commentaireAuteur : null)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('autorisercommentaire', async (pad, bloc, id, identifiant, nom) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
+				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+				if (!donneesBloc.hasOwnProperty('titre')) return socket.emit('erreur')
+				const entrees = await db.ZRANGEBYSCORE('commentaires:' + bloc, id, id)
+				const commentaireJSON = parseJSON(entrees[0], false)
+				if (commentaireJSON === false || commentaireJSON.visibilite !== 'masquee') return socket.emit('erreur')
+				const date = dayjs().format()
+				const activiteId = parseInt(donneesPad.activite, 10) + 1
+				const commentaire = { ...commentaireJSON, visibilite: 'visible' }
+				const nomAuteur = await recupererNomUtilisateur(commentaireJSON.identifiant)
+				await db.multi()
+					.ZREMRANGEBYSCORE('commentaires:' + bloc, id, id)
+					.ZADD('commentaires:' + bloc, [{ score: id, value: JSON.stringify(commentaire) }])
+					.HSET('dates-pads:' + pad, 'date', date)
+					.HINCRBY('pads:' + pad, 'activite', 1)
+					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc, identifiant, titre: donneesBloc.titre, date, type: 'commentaire-valide' }) }])
+					.ZREMRANGEBYSCORE('commentaires-masques:' + bloc, id, id)
 					.exec()
-				io.to('pad-' + pad).emit('commenterbloc', { id: commentaireId, bloc, identifiant, nom, texte, titre, date, commentaires: commentaires.length + 1, activiteId })
+				const commentairesMasques = await recupererCommentairesMasques(bloc)
+				if (commentairesMasques === null) return socket.emit('erreur')
+				const contenuAMasquer = (donneesPad.visibiliteCommentaires === 'admin')
+				const commentaireDiffuse = { id: commentaire.id, identifiant: commentaire.identifiant, date: commentaire.date, dateValidation: date, visibilite: commentaire.visibilite, bloc, titre: donneesBloc.titre, nom: nomAuteur, activiteId, admin: identifiant, nomAdmin: nom }
+				const commentaireAdmin = { ...commentaireDiffuse, texte: commentaire.texte }
+				if (!contenuAMasquer) {
+					commentaireDiffuse.texte = commentaire.texte
+				}
+				if (commentaireJSON.activiteId) {
+					const publication = { activiteId: commentaireJSON.activiteId, date: commentaireJSON.date, identifiant: commentaireJSON.identifiant, nom: nomAuteur }
+					commentaireDiffuse.publication = publication
+					commentaireAdmin.publication = publication
+				}
+				diffuserCommentaires(pad, 'autorisercommentaire', commentaireDiffuse, commentairesMasques, commentaire.identifiant, contenuAMasquer ? commentaireAdmin : null, donneesPad.visibiliteCommentaires !== 'admin')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -3901,23 +4056,29 @@ async function demarrerServeur () {
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			if (typeof texte !== 'string' || texte.length > limitesTailleInput.texte) return socket.emit('erreur')
 			try {
-				const commentaires = await db.ZRANGEBYSCORE('commentaires:' + bloc, id, id)
+				let [commentaires, donneesPad, blocExiste] = await Promise.all([db.ZRANGEBYSCORE('commentaires:' + bloc, id, id), db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc)])
 				if (commentaires === null) return socket.emit('erreur')
 				const dateModification = dayjs().format()
 				const commentairesJSON = parseJSON(commentaires[0], false)
 				if (commentairesJSON === false) return socket.emit('erreur')
-				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentairesJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				texte = assainirHTML(texte)
-				const commentaire = { id, identifiant: commentairesJSON.identifiant, date: commentairesJSON.date, modifie: dateModification, texte }
+				const commentaire = { id, identifiant: commentairesJSON.identifiant, date: commentairesJSON.date, modifie: dateModification, texte, visibilite: commentairesJSON.visibilite || 'visible', activiteId: commentairesJSON.activiteId }
 				await db.multi()
 					.ZREMRANGEBYSCORE('commentaires:' + bloc, id, id)
 					.ZADD('commentaires:' + bloc, [{ score: id, value: JSON.stringify(commentaire) }])
 					.HSET('dates-pads:' + pad, 'date', dateModification)
 					.exec()
-				io.to('pad-' + pad).emit('modifiercommentaire', id, texte)
+				const contenuAMasquer = (commentaire.visibilite === 'masquee' || donneesPad.visibiliteCommentaires === 'admin')
+				if (contenuAMasquer) {
+					diffuserAdmin(pad, 'modifiercommentaire', { id, bloc, texte }, { id, bloc })
+				} else {
+					io.to('pad-' + pad).emit('modifiercommentaire', { id, bloc, texte })
+				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -3930,21 +4091,25 @@ async function demarrerServeur () {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
-				const entrees = await db.ZRANGEBYSCORE('commentaires:' + bloc, id, id)
+				let [entrees, donneesPad, blocExiste] = await Promise.all([db.ZRANGEBYSCORE('commentaires:' + bloc, id, id), db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc)])
 				const commentaireJSON = parseJSON(entrees[0], false)
 				if (commentaireJSON === false) return socket.emit('erreur')
-				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentaireJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
-				await db.multi()
+				const pipelineSuppression = db.multi()
 					.ZREMRANGEBYSCORE('commentaires:' + bloc, id, id)
 					.HSET('dates-pads:' + pad, 'date', date)
-					.exec()
-				const commentaires = await db.ZCARD('commentaires:' + bloc)
-				if (commentaires === null) return socket.emit('erreur')
-				io.to('pad-' + pad).emit('supprimercommentaire', id, bloc, commentaires)
+				if (commentaireJSON.visibilite === 'masquee') {
+					pipelineSuppression.ZREMRANGEBYSCORE('commentaires-masques:' + bloc, id, id)
+				}
+				await pipelineSuppression.exec()
+				const commentairesMasques = await recupererCommentairesMasques(bloc)
+				if (commentairesMasques === null) return socket.emit('erreur')
+				diffuserCommentaires(pad, 'supprimercommentaire', { id, bloc }, commentairesMasques, commentaireJSON.identifiant, null, donneesPad.visibiliteCommentaires !== 'admin')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -3953,21 +4118,27 @@ async function demarrerServeur () {
 			}
 		})
 
-		socket.on('commentaires', async (bloc, type, identifiant) => {
+		socket.on('commentaires', async (bloc, pad, type, identifiant) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
-				const commentaires = await db.ZRANGE('commentaires:' + bloc, 0, -1)
+				let [donneesPad, blocExiste, commentaires] = await Promise.all([db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc), db.ZRANGE('commentaires:' + bloc, 0, -1)])
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentaires === null) return socket.emit('erreur')
+				const nomsUtilisateurs = new Map()
 				const promessesCommentaires = commentaires.map(async (comm) => {
 					const commentaireJSON = parseJSON(comm, false)
 					if (commentaireJSON === false) return null
+					if (commentaireJSON.visibilite === 'masquee' && !admin && commentaireJSON.identifiant !== identifiant) return null
 					const commentaire = commentaireJSON
-					commentaire.nom = await recupererNomUtilisateur(commentaire.identifiant)
+					commentaire.nom = await recupererNomUtilisateur(commentaire.identifiant, nomsUtilisateurs)
 					return commentaire
 				})
 				const listeCommentaires = (await Promise.all(promessesCommentaires)).filter(c => c !== null)
-				socket.emit('commentaires', listeCommentaires, type)
+				socket.emit('commentaires', listeCommentaires, type, bloc)
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -3981,9 +4152,13 @@ async function demarrerServeur () {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if ((donneesPad.accesEvaluations === 'admin' || donneesPad.visibiliteEvaluations === 'admin') && !admin) return socket.emit('nonautorise')
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
 				if (!donneesBloc.hasOwnProperty('evaluations')) return socket.emit('erreur')
+				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
+				if (blocMasque && donneesBloc.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				const evaluationId = parseInt(donneesBloc.evaluations, 10) + 1
@@ -3995,7 +4170,12 @@ async function demarrerServeur () {
 					.HINCRBY('pads:' + pad, 'activite', 1)
 					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc, identifiant, titre, date, type: 'bloc-evalue' }) }])
 					.exec()
-				io.to('pad-' + pad).emit('evaluerbloc', { id: evaluationId, bloc, identifiant, nom, titre, date, evaluation, activiteId })
+				const evaluationDiffusee = { id: evaluationId, bloc, identifiant, nom, titre, date, evaluation, activiteId }
+				if (donneesPad.visibiliteEvaluations === 'admin') {
+					diffuserAdmin(pad, 'evaluerbloc', evaluationDiffusee, { bloc })
+				} else {
+					io.to('pad-' + pad).emit('evaluerbloc', evaluationDiffusee)
+				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -4008,12 +4188,13 @@ async function demarrerServeur () {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
-				const entrees = await db.ZRANGEBYSCORE('evaluations:' + bloc, id, id)
+				let [entrees, donneesPad, blocExiste] = await Promise.all([db.ZRANGEBYSCORE('evaluations:' + bloc, id, id), db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc)])
 				const evaluationJSON = parseJSON(entrees[0], false)
 				if (evaluationJSON === false) return socket.emit('erreur')
-				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesPad.visibiliteEvaluations === 'admin' && !admin) return socket.emit('nonautorise')
 				if (evaluationJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
 				const evaluation = { id, identifiant: evaluationJSON.identifiant, date, etoiles }
@@ -4022,7 +4203,14 @@ async function demarrerServeur () {
 					.ZADD('evaluations:' + bloc, [{ score: id, value: JSON.stringify(evaluation) }])
 					.HSET('dates-pads:' + pad, 'date', date)
 					.exec()
-				io.to('pad-' + pad).emit('modifierevaluation', id, bloc, date, etoiles)
+				if (donneesPad.visibiliteEvaluations === 'admin') {
+					const salonAdmin = definirSalonAdmin(pad)
+					const salonAuteur = definirSalonUtilisateur(pad, evaluationJSON.identifiant)
+					io.to(salonAdmin).emit('modifierevaluation', id, bloc, date, etoiles)
+					io.to(salonAuteur).except(salonAdmin).emit('modifierevaluation', id, bloc, date, etoiles)
+				} else {
+					io.to('pad-' + pad).emit('modifierevaluation', id, bloc, date, etoiles)
+				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -4035,19 +4223,27 @@ async function demarrerServeur () {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
-				const entrees = await db.ZRANGEBYSCORE('evaluations:' + bloc, id, id)
+				let [entrees, donneesPad, blocExiste] = await Promise.all([db.ZRANGEBYSCORE('evaluations:' + bloc, id, id), db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc)])
 				const evaluationJSON = parseJSON(entrees[0], false)
 				if (evaluationJSON === false) return socket.emit('erreur')
-				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (donneesPad.visibiliteEvaluations === 'admin' && !admin) return socket.emit('nonautorise')
 				if (evaluationJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
 				await db.multi()
 					.HSET('dates-pads:' + pad, 'date', date)
 					.ZREMRANGEBYSCORE('evaluations:' + bloc, id, id)
 					.exec()
-				io.to('pad-' + pad).emit('supprimerevaluation', id, bloc)
+				if (donneesPad.visibiliteEvaluations === 'admin') {
+					const salonAdmin = definirSalonAdmin(pad)
+					const salonAuteur = definirSalonUtilisateur(pad, evaluationJSON.identifiant)
+					io.to(salonAdmin).emit('supprimerevaluation', id, bloc)
+					io.to(salonAuteur).except(salonAdmin).emit('supprimerevaluation', id, bloc)
+				} else {
+					io.to('pad-' + pad).emit('supprimerevaluation', id, bloc)
+				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -4056,6 +4252,30 @@ async function demarrerServeur () {
 			}
 		})
 
+		socket.on('evaluations', async (bloc, pad, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let [donneesPad, blocExiste, evaluations] = await Promise.all([db.HGETALL('pads:' + pad), db.EXISTS('pad-' + pad + ':' + bloc), db.ZRANGE('evaluations:' + bloc, 0, -1)])
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (blocExiste !== 1) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (evaluations === null) return socket.emit('erreur')
+				const nomsUtilisateurs = new Map()
+				const promessesEvaluations = evaluations.map(async (ev) => {
+					const evaluationJSON = parseJSON(ev, false)
+					if (evaluationJSON === false) return null
+					evaluationJSON.nom = await recupererNomUtilisateur(evaluationJSON.identifiant, nomsUtilisateurs)
+					return evaluationJSON
+				})
+				const listeEvaluations = (await Promise.all(promessesEvaluations)).filter(e => e !== null)
+				socket.emit('evaluations', listeEvaluations, bloc)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
 
 		socket.on('modifiernom', async (pad, nom, statut, identifiant) => {
 			if (maintenance === true) return socket.emit('maintenance')
@@ -4159,6 +4379,15 @@ async function demarrerServeur () {
 						await db.SREM('pads-admins:' + admin, pad.toString())
 					}
 				}))
+				const salonAdmin = definirSalonAdmin(pad)
+				const adminsAjoutes = admins.filter((admin) => !listeAdmins.includes(admin))
+				const adminsRetires = listeAdmins.filter((admin) => !admins.includes(admin) && admin !== donneesPad.identifiant)
+				adminsAjoutes.forEach((adminAjoute) => {
+					io.in(definirSalonUtilisateur(pad, adminAjoute)).socketsJoin(salonAdmin)
+				})
+				adminsRetires.forEach((adminRetire) => {
+					io.in(definirSalonUtilisateur(pad, adminRetire)).socketsLeave(salonAdmin)
+				})
 				io.to('pad-' + pad).emit('modifieradmins', admins, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -4508,6 +4737,111 @@ async function demarrerServeur () {
 				if (!admin) return socket.emit('nonautorise')
 				await db.HSET('pads:' + pad, 'evaluations', statut)
 				io.to('pad-' + pad).emit('modifierevaluations', statut, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifiervisibilitecommentaires', async (pad, visibilite, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!['tous', 'admin'].includes(visibilite)) return socket.emit('erreur')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (visibilite === 'admin') {
+					await db.HSET('pads:' + pad, ['visibiliteCommentaires', visibilite, 'accesCommentaires', 'admin'])
+				} else {
+					await db.HSET('pads:' + pad, 'visibiliteCommentaires', visibilite)
+				}
+				io.to('pad-' + pad).emit('modifiervisibilitecommentaires', visibilite, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifieraccescommentaires', async (pad, acces, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!['tous', 'admin'].includes(acces)) return socket.emit('erreur')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (acces === 'tous' && donneesPad.visibiliteCommentaires === 'admin') return socket.emit('erreur')
+				await db.HSET('pads:' + pad, 'accesCommentaires', acces)
+				io.to('pad-' + pad).emit('modifieraccescommentaires', acces, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifiermoderationcommentaires', async (pad, statut, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!['activee', 'desactivee'].includes(statut)) return socket.emit('erreur')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				await db.HSET('pads:' + pad, 'commentairesModeration', statut)
+				io.to('pad-' + pad).emit('modifiermoderationcommentaires', statut, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifiervisibiliteevaluations', async (pad, visibilite, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!['tous', 'admin'].includes(visibilite)) return socket.emit('erreur')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (visibilite === 'admin') {
+					await db.HSET('pads:' + pad, ['visibiliteEvaluations', visibilite, 'accesEvaluations', 'admin'])
+				} else {
+					await db.HSET('pads:' + pad, 'visibiliteEvaluations', visibilite)
+				}
+				io.to('pad-' + pad).emit('modifiervisibiliteevaluations', visibilite, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifieraccesevaluations', async (pad, acces, identifiant) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!['tous', 'admin'].includes(acces)) return socket.emit('erreur')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (acces === 'tous' && donneesPad.visibiliteEvaluations === 'admin') return socket.emit('erreur')
+				await db.HSET('pads:' + pad, 'accesEvaluations', acces)
+				io.to('pad-' + pad).emit('modifieraccesevaluations', acces, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -5008,6 +5342,8 @@ async function demarrerServeur () {
 		})
 	})
 
+	httpServer.listen(port)
+
 	function obtenirCleEchecConnexion (identifiant, ip) {
 		if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return null
 		const adresse = typeof ip === 'string' && ip !== '' ? ip : 'inconnu'
@@ -5041,7 +5377,7 @@ async function demarrerServeur () {
 
 	async function creerPad (id, token, titre, date, identifiant, destination, donneesUtilisateur) {
 		await db.multi()
-			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0])
+			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0, ...definirParametresModeration()])
 			.SADD('pads-crees:' + identifiant, id.toString())
 			.SADD('utilisateurs-pads:' + id, identifiant)
 			.HSET('dates-pads:' + id, 'date', date)
@@ -5061,7 +5397,7 @@ async function demarrerServeur () {
 				await db.HSET('utilisateurs:' + identifiant, 'dossiers', JSON.stringify(dossiers))
 			} catch {}
 		}
-		return { id, token, titre, identifiant, fond: '/img/fond1.png', acces: 'public', contributions: 'ouvertes', affichage: 'mur', registreActivite: 'active', conversation: 'desactivee', listeUtilisateurs: 'activee', editionNom: 'desactivee', fichiers: 'actives', enregistrements: 'desactives', liens: 'actives', documents: 'desactives', commentaires: 'desactives', evaluations: 'desactivees', copieBloc: 'desactivee', ordre: 'croissant', largeur: 'normale', date, colonnes: [], affichageColonnes: [], bloc: 0, activite: 0, admins: [], vues: 0 }
+		return { id, token, titre, identifiant, fond: '/img/fond1.png', acces: 'public', contributions: 'ouvertes', affichage: 'mur', registreActivite: 'active', conversation: 'desactivee', listeUtilisateurs: 'activee', editionNom: 'desactivee', fichiers: 'actives', enregistrements: 'desactives', liens: 'actives', documents: 'desactives', commentaires: 'desactives', evaluations: 'desactivees', copieBloc: 'desactivee', ordre: 'croissant', largeur: 'normale', date, colonnes: [], affichageColonnes: [], bloc: 0, activite: 0, admins: [], vues: 0, ...definirModeration() }
 	}
 
 	async function creerPadSansCompte (id, token, titre, hash, date, identifiant, nom, langue, type) {
@@ -5070,7 +5406,7 @@ async function demarrerServeur () {
 			digidrive = 1
 		}
 		await db.multi()
-			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'vues', 0, 'digidrive', digidrive])
+			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'vues', 0, 'digidrive', digidrive, ...definirParametresModeration()])
 			.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
 			.exec()
 		if (type === 'api') {
@@ -5102,6 +5438,9 @@ async function demarrerServeur () {
 				for (const commentaire of bloc.listeCommentaires) {
 					if (commentaire.hasOwnProperty('id') && commentaire.hasOwnProperty('identifiant') && commentaire.hasOwnProperty('date') && commentaire.hasOwnProperty('texte')) {
 						pipeline.ZADD('commentaires:' + bloc.bloc, [{ score: commentaire.id, value: JSON.stringify(commentaire) }])
+						if (commentaire.visibilite === 'masquee') {
+							pipeline.ZADD('commentaires-masques:' + bloc.bloc, [{ score: commentaire.id, value: commentaire.id + ':' + commentaire.identifiant }])
+						}
 					}
 				}
 			}
@@ -5144,7 +5483,7 @@ async function demarrerServeur () {
 		} else {
 			affichageColonnes = JSON.stringify([])
 		}
-		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'vues', vues, 'digidrive', digidrive]
+		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'vues', vues, 'digidrive', digidrive, ...definirParametresModeration(donnees.pad)]
 		if (donnees.pad.hasOwnProperty('motdepasse')) {
 			champsPad.push('motdepasse', donnees.pad.motdepasse)
 		}
@@ -5242,6 +5581,8 @@ async function demarrerServeur () {
 	}
 
 	async function recupererDonneesPad (id, token, identifiant, statut, pads) {
+		const nomsUtilisateurs = new Map()
+		const commentairesMasquesParBloc = new Map()
 		let pad = await db.HGETALL('pads:' + id)
 		pad = pad ? { ...pad } : {}
 		if (!pad.id || pad.id !== id || !pad.token || pad.token !== token) return 'erreur'
@@ -5334,14 +5675,20 @@ async function demarrerServeur () {
 					html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 					html = html.replace(/style=".*?"/mg, '').replace(/class=".*?"/mg, '')
 					bloc.texte = html
-					const [nombreCommentaires, evaluations, nomAuteur] = await Promise.all([
-						db.ZCARD('commentaires:' + blocId),
+					let [commentairesMasques, evaluations, nomAuteur] = await Promise.all([
+						recupererCommentairesMasques(blocId),
 						db.ZRANGE('evaluations:' + blocId, 0, -1),
-						recupererNomUtilisateur(bloc.identifiant)
+						recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 					])
-					bloc.commentaires = nombreCommentaires || 0
+					if (commentairesMasques === null) {
+						commentairesMasques = { totalCommentaires: 0, identifiantsMasques: [] }
+					}
+					commentairesMasquesParBloc.set(blocId, commentairesMasques.identifiantsMasques)
+					const nombreCommentaires = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, admin, identifiant, pad.visibiliteCommentaires !== 'admin')
+					bloc.commentaires = nombreCommentaires.commentaires
+					bloc.commentairesEnAttente = nombreCommentaires.commentairesEnAttente
 					bloc.evaluations = []
-					if (evaluations) {
+					if (evaluations && (admin || pad.visibiliteEvaluations !== 'admin')) {
 						bloc.evaluations = evaluations.map(ev => {
 							return parseJSON(ev, null)
 						}).filter(e => e !== null)
@@ -5365,11 +5712,12 @@ async function demarrerServeur () {
 				const promessesActivite = activite.map(async (entreeStr) => {
 					const entree = parseJSON(entreeStr, null)
 					if (!entree) return null
-					entree.nom = await recupererNomUtilisateur(entree.identifiant)
+					entree.nom = await recupererNomUtilisateur(entree.identifiant, nomsUtilisateurs)
+					if (!verifierActiviteVisible(entree, pad, admin, identifiant, commentairesMasquesParBloc)) return null
 					return entree
 				})
 				const resultatsActivite = await Promise.all(promessesActivite)
-				// Filtrage : on ne garde que les événements liés aux blocs ou aux colonnes visibles
+				// Filtrage : seuls les événements liés aux blocs ou aux colonnes visibles sont gardés
 				donneesEntrees = resultatsActivite.filter(e => {
 					if (!e) return
 					const colonne = e.hasOwnProperty('type') && e.type.includes('colonne')
@@ -5398,6 +5746,8 @@ async function demarrerServeur () {
 	}
 
 	async function recupererDonneesPadProtege (pad, id, identifiant, admin) {
+		const nomsUtilisateurs = new Map()
+		const commentairesMasquesParBloc = new Map()
 		try {
 			pad.colonnes = JSON.parse(pad.colonnes)
 			if (pad.hasOwnProperty('notification')) {
@@ -5466,14 +5816,21 @@ async function demarrerServeur () {
 				html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 				html = html.replace(/style=".*?"/mg, '').replace(/class=".*?"/mg, '')
 				bloc.texte = html
-				const [nombreCommentaires, evaluations, nomAuteur] = await Promise.all([
-					db.ZCARD('commentaires:' + blocId),
+				let [commentairesMasques, evaluations, nomAuteur] = await Promise.all([
+					recupererCommentairesMasques(blocId),
 					db.ZRANGE('evaluations:' + blocId, 0, -1),
-					recupererNomUtilisateur(bloc.identifiant)
+					recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 				])
-				bloc.commentaires = nombreCommentaires || 0
+				if (commentairesMasques === null) {
+					console.error('recupererCommentairesMasques a échoué pour le bloc ' + blocId)
+					commentairesMasques = { totalCommentaires: 0, identifiantsMasques: [] }
+				}
+				commentairesMasquesParBloc.set(blocId, commentairesMasques.identifiantsMasques)
+				const nombreCommentaires = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, admin, identifiant, pad.visibiliteCommentaires !== 'admin')
+				bloc.commentaires = nombreCommentaires.commentaires
+				bloc.commentairesEnAttente = nombreCommentaires.commentairesEnAttente
 				bloc.evaluations = []
-				if (evaluations) {
+				if (evaluations && (admin || pad.visibiliteEvaluations !== 'admin')) {
 					bloc.evaluations = evaluations.map(ev => {
 						return parseJSON(ev, null)
 					}).filter(e => e !== null)
@@ -5494,7 +5851,8 @@ async function demarrerServeur () {
 			const promessesActivite = activite.map(async (entreeStr) => {
 				const entree = parseJSON(entreeStr, null)
 				if (!entree) return null
-				entree.nom = await recupererNomUtilisateur(entree.identifiant)
+				entree.nom = await recupererNomUtilisateur(entree.identifiant, nomsUtilisateurs)
+				if (!verifierActiviteVisible(entree, pad, admin, identifiant, commentairesMasquesParBloc)) return null
 				return entree
 			})
 			const resultatsActivite = await Promise.all(promessesActivite)
@@ -5514,7 +5872,13 @@ async function demarrerServeur () {
 		return { pad, blocs: donneesBlocs, activite: donneesEntrees }
 	}
 
-	async function recupererNomUtilisateur (id) {
+	function recupererNomUtilisateur (id, cache) {
+		if (!cache) return chargerNomUtilisateur(id)
+		if (!cache.has(id)) cache.set(id, chargerNomUtilisateur(id))
+		return cache.get(id)
+	}
+
+	async function chargerNomUtilisateur (id) {
 		let donneesUtilisateur = await db.HGETALL('utilisateurs:' + id)
 		donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 		if (donneesUtilisateur.hasOwnProperty('nom') && donneesUtilisateur.nom !== '') {
@@ -5522,6 +5886,159 @@ async function demarrerServeur () {
 		}
 		const nom = await db.HGET('noms:' + id, 'nom')
 		return nom || ''
+	}
+
+	function diffuserAdmin (pad, evenement, donneesCompletes, donneesReduites) {
+		const salonAdmin = definirSalonAdmin(pad)
+		io.to(salonAdmin).emit(evenement, donneesCompletes)
+		if (donneesReduites !== null) {
+			io.to('pad-' + pad).except(salonAdmin).emit(evenement, donneesReduites)
+		}
+	}
+
+	function definirBlocDiffuse (champsBase, visibilite, contenu, contributions) {
+		const contenuAMasquer = (visibilite === 'privee' || (visibilite === 'masquee' && contributions === 'moderees'))
+		const blocComplet = { ...champsBase, visibilite, texte: contenu.texte, media: contenu.media, iframe: contenu.iframe, vignette: contenu.vignette }
+		if (!contenuAMasquer) {
+			return { complet: blocComplet, reduit: blocComplet }
+		}
+		const blocReduit = { ...champsBase, visibilite }
+		delete blocReduit.titre
+		delete blocReduit.type
+		delete blocReduit.source
+		delete blocReduit.identifiant
+		delete blocReduit.nom
+		return { complet: blocComplet, reduit: blocReduit }
+	}
+
+	function diffuserBloc (pad, evenement, blocDiffuse, identifiantAuteur) {
+		const salonAdmin = definirSalonAdmin(pad)
+		const salonPad = 'pad-' + pad
+		if (blocDiffuse.complet === blocDiffuse.reduit) {
+			return io.to(salonPad).emit(evenement, blocDiffuse.complet)
+		}
+		io.to(salonAdmin).emit(evenement, blocDiffuse.complet)
+		const exclusions = [salonAdmin]
+		if (identifiantAuteur) {
+			const salonAuteur = definirSalonUtilisateur(pad, identifiantAuteur)
+			io.to(salonAuteur).except(salonAdmin).emit(evenement, blocDiffuse.complet)
+			exclusions.push(salonAuteur)
+		}
+		io.to(salonPad).except(exclusions).emit(evenement, blocDiffuse.reduit)
+	}
+
+	function verifierBlocVisible (bloc, contributions) {
+		return !((contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
+	}
+
+	function definirDonneesPadExport (pad) {
+		const champs = ['titre', 'affichage', 'ordre', 'largeur', 'colonnes', 'fond', 'fondRepete', 'commentaires', 'evaluations']
+		const donneesPadExport = {}
+		champs.forEach((champ) => {
+			if (pad.hasOwnProperty(champ)) donneesPadExport[champ] = pad[champ]
+		})
+		if (pad.visibiliteCommentaires === 'admin') donneesPadExport.commentaires = 'desactives'
+		if (pad.visibiliteEvaluations === 'admin') donneesPadExport.evaluations = 'desactivees'
+		return donneesPadExport
+	}
+
+	function definirBlocsExport (blocs, pad) {
+		const commentairesVisibles = pad.visibiliteCommentaires !== 'admin'
+		const evaluationsVisibles = pad.visibiliteEvaluations !== 'admin'
+		const champs = ['bloc', 'titre', 'texte', 'media', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
+		return blocs.filter((bloc) => verifierBlocVisible(bloc, pad.contributions)).map((bloc) => {
+			const blocExport = {}
+			champs.forEach((champ) => {
+				if (bloc.hasOwnProperty(champ)) blocExport[champ] = bloc[champ]
+			})
+			const listeCommentaires = (commentairesVisibles && Array.isArray(bloc.listeCommentaires)) ? bloc.listeCommentaires.filter((commentaire) => commentaire.visibilite !== 'masquee') : []
+			blocExport.listeCommentaires = listeCommentaires
+			blocExport.commentaires = listeCommentaires.length
+			blocExport.listeEvaluations = (evaluationsVisibles && Array.isArray(bloc.listeEvaluations)) ? bloc.listeEvaluations : []
+			blocExport.evaluations = blocExport.listeEvaluations.length
+			return blocExport
+		})
+	}
+
+	function definirBlocsDeplaces (listeItems, blocs, contributions, identifiantLecteur) {
+		return listeItems.filter((item, index) => {
+			const bloc = blocs[index]
+			return verifierBlocVisible(bloc, contributions) || (identifiantLecteur && bloc.identifiant === identifiantLecteur)
+		})
+	}
+
+	function diffuserBlocsDeplaces (pad, listeItems, blocs, contributions, identifiantAdmin) {
+		const salonAdmin = definirSalonAdmin(pad)
+		const salonPad = 'pad-' + pad
+		io.to(salonAdmin).emit('deplacerbloc', { blocs: listeItems, identifiant: identifiantAdmin })
+		const blocsDeplaces = definirBlocsDeplaces(listeItems, blocs, contributions, null)
+		if (blocsDeplaces.length === listeItems.length) {
+			return io.to(salonPad).except(salonAdmin).emit('deplacerbloc', { blocs: blocsDeplaces, identifiant: identifiantAdmin })
+		}
+		const auteurs = new Set(blocs.filter((bloc) => !verifierBlocVisible(bloc, contributions) && bloc.identifiant).map((bloc) => bloc.identifiant))
+		const exclusions = [salonAdmin]
+		auteurs.forEach((auteur) => {
+			const salonAuteur = definirSalonUtilisateur(pad, auteur)
+			io.to(salonAuteur).except(salonAdmin).emit('deplacerbloc', { blocs: definirBlocsDeplaces(listeItems, blocs, contributions, auteur), identifiant: identifiantAdmin })
+			exclusions.push(salonAuteur)
+		})
+		io.to(salonPad).except(exclusions).emit('deplacerbloc', { blocs: blocsDeplaces, identifiant: identifiantAdmin })
+	}
+
+	async function recupererCommentairesMasques (bloc) {
+		const [totalCommentaires, identifiantsMasques] = await Promise.all([
+			db.ZCARD('commentaires:' + bloc),
+			db.ZRANGE('commentaires-masques:' + bloc, 0, -1)
+		])
+		if (totalCommentaires === null || identifiantsMasques === null) return null
+		return { totalCommentaires, identifiantsMasques }
+	}
+
+	function recupererNombreCommentaires (totalCommentaires, identifiantsMasques, admin, identifiant, commentairesVisibles = true) {
+		if (!admin && commentairesVisibles === false) return { commentaires: 0, commentairesEnAttente: 0 }
+		const commentairesMasques = identifiantsMasques.length
+		const commentairesMasquesAuteur = identifiantsMasques.filter(m => extraireIdentifiantMasque(m) === identifiant).length
+		return {
+			commentaires: admin ? totalCommentaires : (totalCommentaires - commentairesMasques + commentairesMasquesAuteur),
+			commentairesEnAttente: admin ? commentairesMasques : commentairesMasquesAuteur
+		}
+	}
+
+	function diffuserCommentaires (pad, evenement, donneesCommunes, commentairesMasques, identifiantAuteur, donneesAdmin, commentairesVisibles = true, donneesAuteur = null) {
+		const salonAdmin = definirSalonAdmin(pad)
+		const salonPad = 'pad-' + pad
+		const commentairesAdmin = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, true, null)
+		const commentaires = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, commentairesVisibles)
+		if (commentairesVisibles === true && !donneesAdmin && commentairesMasques.identifiantsMasques.length === 0) {
+			return io.to(salonPad).emit(evenement, { ...donneesCommunes, ...commentairesAdmin })
+		}
+		io.to(salonAdmin).emit(evenement, { ...(donneesAdmin || donneesCommunes), ...commentairesAdmin })
+		const donneesReduites = commentairesVisibles ? donneesCommunes : { id: donneesCommunes.id, bloc: donneesCommunes.bloc }
+		const identifiantsConcernes = new Set(commentairesMasques.identifiantsMasques.map(extraireIdentifiantMasque))
+		if (identifiantAuteur) {
+			identifiantsConcernes.add(identifiantAuteur)
+		}
+		const exclusions = [salonAdmin]
+		identifiantsConcernes.forEach((identifiantConcerne) => {
+			const salonUtilisateur = definirSalonUtilisateur(pad, identifiantConcerne)
+			const commentairesUtilisateur = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, identifiantConcerne, commentairesVisibles)
+			const donneesUtilisateur = (donneesAuteur && identifiantConcerne === identifiantAuteur) ? donneesAuteur : donneesReduites
+			io.to(salonUtilisateur).except(salonAdmin).emit(evenement, { ...donneesUtilisateur, ...commentairesUtilisateur })
+			exclusions.push(salonUtilisateur)
+		})
+		io.to(salonPad).except(exclusions).emit(evenement, { ...donneesReduites, ...commentaires })
+	}
+
+	function verifierActiviteVisible (entree, donneesPad, admin, identifiant, commentairesMasquesParBloc) {
+		if (entree.type === 'bloc-evalue') return (admin || donneesPad.visibiliteEvaluations !== 'admin')
+		if (entree.type !== 'bloc-commente' && entree.type !== 'commentaire-valide') return true
+		if (admin) return true
+		if (donneesPad.visibiliteCommentaires === 'admin') return false
+		if (entree.type === 'bloc-commente' && entree.hasOwnProperty('commentaire')) {
+			const identifiantsMasques = commentairesMasquesParBloc ? commentairesMasquesParBloc.get(entree.bloc) : null
+			if (identifiantsMasques && identifiantsMasques.some((masque) => extraireIdCommentaireMasque(masque) === String(entree.commentaire) && extraireIdentifiantMasque(masque) !== identifiant)) return false
+		}
+		return true
 	}
 
 	async function recupererDonneesBlocs (id, token, identifiant, statut, pads) {
@@ -5544,6 +6061,7 @@ async function demarrerServeur () {
 			try { affichageColonnes = JSON.parse(pad.affichageColonnes) } catch {}
 		}
 		let donneesBlocs = []
+		const nomsUtilisateurs = new Map()
 		if (admin || (!accesCode && !accesPrive)) {
 			const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 			if (listeBlocs && listeBlocs.length > 0) {
@@ -5558,7 +6076,7 @@ async function demarrerServeur () {
 						bloc.vignette = path.basename(bloc.vignette)
 					}
 					if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
-					bloc.nom = await recupererNomUtilisateur(bloc.identifiant)
+					bloc.nom = await recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 					return bloc
 				})
 				const resultatsBlocs = await Promise.all(promessesBlocs)
@@ -5629,6 +6147,7 @@ async function demarrerServeur () {
 			donneesPad = donneesPad ? { ...donneesPad } : {}
 			if (!donneesPad.hasOwnProperty('id')) return erreur
 			let donneesBlocs = []
+			const nomsUtilisateurs = new Map()
 			if (listeBlocs && listeBlocs.length > 0) {
 				const promessesBlocs = listeBlocs.map(async (blocId) => {
 					let bloc = await db.HGETALL('pad-' + id + ':' + blocId)
@@ -5654,7 +6173,7 @@ async function demarrerServeur () {
 					}
 					bloc.evaluations = listeEvaluations.length
 					bloc.listeEvaluations = listeEvaluations
-					const nomUtilisateur = await recupererNomUtilisateur(bloc.identifiant)
+					const nomUtilisateur = await recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 					bloc.nom = nomUtilisateur || genererPseudo()
 					bloc.info = formaterDate(bloc, langue)
 					return bloc
@@ -5664,17 +6183,10 @@ async function demarrerServeur () {
 			}
 			let donneesEntrees = []
 			if (activite) {
-				const promessesActivite = activite.map(async (entreeStr) => {
-					const entree = parseJSON(entreeStr, null)
-					if (!entree) return null
-					const utilisateurExiste = await db.EXISTS('utilisateurs:' + entree.identifiant)
-					return (utilisateurExiste === 1) ? entree : null
-				})
-				const resultatsActivite = await Promise.all(promessesActivite)
-				donneesEntrees = resultatsActivite.filter(e => e !== null)
+				donneesEntrees = activite.map(entreeStr => parseJSON(entreeStr, null)).filter(e => e !== null)
 			}
 			const parametres = { pad: donneesPad, blocs: donneesBlocs, activite: donneesEntrees }
-			const html = genererHTML(donneesPad, donneesBlocs, langue)
+			const html = genererHTML(definirDonneesPadExport(donneesPad), definirBlocsExport(donneesBlocs, donneesPad), langue)
 			const dossierPad = path.join(__dirname, '..', '/static/temp', id.toString())
 			const dossierFichiers = path.join(dossierPad, 'fichiers')
 			const dossierStatic = path.join(dossierPad, 'static')
@@ -5758,12 +6270,13 @@ async function demarrerServeur () {
 	}
 
 	async function supprimerPad (pad, identifiant, suppressionFichiers) {
-		const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+		const [blocs, utilisateurs] = await Promise.all([db.ZRANGE('blocs:' + pad, 0, -1), db.SMEMBERS('utilisateurs-pads:' + pad)])
 		if (blocs) {
 			const pipelineBlocs = db.multi()
 			for (const blocId of blocs) {
 				pipelineBlocs
 					.UNLINK('commentaires:' + blocId)
+					.UNLINK('commentaires-masques:' + blocId)
 					.UNLINK('evaluations:' + blocId)
 					.UNLINK('pad-' + pad + ':' + blocId)
 			}
@@ -5777,7 +6290,6 @@ async function demarrerServeur () {
 			.SREM('pads-crees:' + identifiant, pad.toString())
 			.SREM('pads-supprimes:' + identifiant, pad.toString())
 			.exec()
-		const utilisateurs = await db.SMEMBERS('utilisateurs-pads:' + pad)
 		if (utilisateurs && utilisateurs.length > 0) {
 			const pipelineUtilisateurs = db.multi()
 			for (const utilisateur of utilisateurs) {
@@ -5815,15 +6327,45 @@ async function demarrerServeur () {
 		return true
 	}
 
-	async function fetchSockets (room) {
-		for (let i = 0; i < 5; i++) {
+	async function fetchSockets (salon) {
+		for (let i = 0; i < 2; i++) {
 			try {
-				return await io.in(room).fetchSockets()
+				return await io.in(salon).timeout(2000).fetchSockets()
 			} catch (err) {
-				if (i === 4) console.error('Erreur fetchSockets :', err.message)
+				if (i === 1) console.error('Erreur fetchSockets :', err.message)
 			}
 		}
 		return []
+	}
+
+	function definirModeration (donnees) {
+		const source = donnees || {}
+		const visibiliteCommentaires = (source.visibiliteCommentaires === 'admin') ? 'admin' : 'tous'
+		const accesCommentaires = (visibiliteCommentaires === 'admin' || source.accesCommentaires === 'admin') ? 'admin' : 'tous'
+		const commentairesModeration = (source.commentairesModeration === 'activee') ? 'activee' : 'desactivee'
+		const visibiliteEvaluations = (source.visibiliteEvaluations === 'admin') ? 'admin' : 'tous'
+		const accesEvaluations = (visibiliteEvaluations === 'admin' || source.accesEvaluations === 'admin') ? 'admin' : 'tous'
+		return { visibiliteCommentaires, accesCommentaires, commentairesModeration, visibiliteEvaluations, accesEvaluations }
+	}
+
+	function definirParametresModeration (donnees) {
+		return Object.entries(definirModeration(donnees)).flat()
+	}
+
+	function definirSalonUtilisateur (pad, identifiant) {
+		return 'pad-' + pad + '-u-' + identifiant
+	}
+
+	function definirSalonAdmin (pad) {
+		return 'pad-admin-' + pad
+	}
+
+	function extraireIdentifiantMasque (masque) {
+		return masque.substring(masque.indexOf(':') + 1)
+	}
+
+	function extraireIdCommentaireMasque (masque) {
+		return masque.substring(0, masque.indexOf(':'))
 	}
 
 	function sauvegarderSession (req) {
@@ -5872,13 +6414,12 @@ async function demarrerServeur () {
 
 	async function verifierAdminUtilisateur (pad, identifiant, motdepasse) {
 		if (!pad || !identifiant || !motdepasse) return false
-		let donneesPad = await db.HGETALL('pads:' + pad)
+		let [donneesPad, donneesUtilisateur] = await Promise.all([db.HGETALL('pads:' + pad), db.HGETALL('utilisateurs:' + identifiant)])
 		donneesPad = donneesPad ? { ...donneesPad } : {}
 		let listeAdmins = []
 		if (donneesPad.hasOwnProperty('admins')) {
 			listeAdmins = JSON.parse(donneesPad.admins)
 		}
-		let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 		donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 		if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return false
 		if ((donneesPad.identifiant === identifiant || listeAdmins.includes(identifiant)) && comparerHash(motdepasse, donneesUtilisateur.motdepasse)) {
@@ -6021,7 +6562,7 @@ async function demarrerServeur () {
 		const enCache = cacheMxDomaines.get(domaine)
 		if (enCache && enCache.expiration > maintenant) return enCache.domaineValide
 		let domaineValide
-		let resultatCertain = true
+		let resultatFiable = true
 		try {
 			const enregistrements = await creerResolveur().resolveMx(domaine)
 			const aMxExploitable = Array.isArray(enregistrements) && enregistrements.some(hoteMxExploitable)
@@ -6034,7 +6575,7 @@ async function demarrerServeur () {
 			} else {
 				const repliA = await verifierEnregistrementA()
 				domaineValide = repliA === null ? true : repliA
-				resultatCertain = repliA !== null
+				resultatFiable = repliA !== null
 			}
 		} catch (err) {
 			if (err && err.code === 'ENOTFOUND') {
@@ -6044,14 +6585,14 @@ async function demarrerServeur () {
 				// Aucun MX -> on tente le repli A/AAAA avant de rejeter
 				const repliA = await verifierEnregistrementA()
 				domaineValide = repliA === null ? true : repliA
-				resultatCertain = repliA !== null
+				resultatFiable = repliA !== null
 			} else {
 				// Incertitude réseau/DNS (timeout, SERVFAIL…) -> envoi pas bloqué
 				domaineValide = true
-				resultatCertain = false
+				resultatFiable = false
 			}
 		}
-		if (resultatCertain) {
+		if (resultatFiable) {
 			nettoyerCacheMx(maintenant)
 			const duree = domaineValide ? dureeCacheMx : dureeCacheMxNegatif
 			cacheMxDomaines.set(domaine, { domaineValide: domaineValide, expiration: maintenant + duree })
@@ -6186,6 +6727,7 @@ async function demarrerServeur () {
 				.UNLINK('pad-' + pad + ':' + blocId)
 				.ZREM('blocs:' + pad, blocId)
 				.UNLINK('commentaires:' + blocId)
+				.UNLINK('commentaires-masques:' + blocId)
 				.UNLINK('evaluations:' + blocId)
 				.exec()
 		})

@@ -507,7 +507,7 @@ export default {
 						this.padIdS = ''
 						this.suppressionFichiers = true
 						if (err.response?.data === 'erreur_suppression') {
-							this.message = this.$t('erreurSuppressionMur')
+							this.message = this.$t('erreurSuppressionPad')
 						} else if (err.response?.data === 'non_autorise') {
 							this.message = this.$t('actionNonAutorisee')
 						} else {

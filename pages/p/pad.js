@@ -83,6 +83,7 @@ export default {
 			evaluations: [],
 			evaluation: 0,
 			evaluationId: '',
+			listeEvaluations: [],
 			messagesChat: [],
 			messageChat: '',
 			nouveauxMessagesChat: 0,
@@ -185,6 +186,22 @@ export default {
 		disabledConfirmation () {
 			return this.message === '' ? false : true
 		},
+		commentairesVisibles () {
+			return !this.pad.visibiliteCommentaires || this.pad.visibiliteCommentaires === 'tous' || this.admin
+		},
+		evaluationsVisibles () {
+			return !this.pad.visibiliteEvaluations || this.pad.visibiliteEvaluations === 'tous' || this.admin
+		},
+		commentairesAutorises () {
+			return !this.pad.accesCommentaires || this.pad.accesCommentaires === 'tous' || this.admin
+		},
+		evaluationsAutorisees () {
+			return !this.pad.accesEvaluations || this.pad.accesEvaluations === 'tous' || this.admin
+		},
+		donneesBlocsRecues () {
+			const bloc = this.blocs.find((item) => item.bloc === this.blocId)
+			return !bloc || bloc.hasOwnProperty('texte')
+		},
 		blocsRecherche () {
 			let resultats = []
 			let blocs = []
@@ -209,6 +226,11 @@ export default {
 					return element.visibilite === 'privee'
 				})
 				break
+			case '!modcom':
+				blocs = this.blocs.filter((element) => {
+					return element.commentairesEnAttente > 0
+				})
+				break
 			case '!comm+':
 				blocs = this.blocs.slice().sort((a, b) => {
 					return b.commentaires - a.commentaires
@@ -231,7 +253,7 @@ export default {
 						resultats.push([])
 					})
 					blocs.forEach((bloc) => {
-						if (bloc.colonne !== undefined && bloc.colonne < resultats.length) {
+						if (bloc.colonne !== undefined && bloc.colonne >= 0 && bloc.colonne < resultats.length) {
 							resultats[bloc.colonne].push(bloc)
 						} else {
 							resultats[0].push({ ...bloc, colonne: 0 })
@@ -322,6 +344,21 @@ export default {
 				})
 			} else {
 				this.requete = ''
+			}
+		},
+		'pad.accesCommentaires' (acces) {
+			if ((this.modale === 'commentaires' || this.modaleDiaporama) && (!acces || acces === 'tous' || this.admin)) {
+				this.$nextTick(() => {
+					if (this.editeurCommentaire !== '' && !document.body.contains(this.editeurCommentaire.content)) {
+						this.editeurCommentaire = ''
+					}
+					this.genererEditeur()
+				})
+			}
+		},
+		'pad.visibiliteCommentaires' (visibilite) {
+			if (visibilite === 'admin' && !this.admin && this.modale === 'commentaires') {
+				this.fermerModaleCommentaires()
 			}
 		}
 	},
@@ -552,7 +589,7 @@ export default {
 		},
 		definirNom (donnees) {
 			if (donnees.nom === '') {
-				return donnees.identifiant
+				return (donnees.identifiant || '').slice(0, 8).toUpperCase()
 			} else {
 				return donnees.nom
 			}
@@ -566,7 +603,7 @@ export default {
 					colonnes.push([])
 				})
 				blocsModifies = blocs.map((bloc) => {
-					if (bloc.colonne !== undefined && bloc.colonne < colonnes.length) {
+					if (bloc.colonne !== undefined && bloc.colonne >= 0 && bloc.colonne < colonnes.length) {
 						return bloc
 					}
 					return { ...bloc, colonne: 0 }
@@ -626,7 +663,8 @@ export default {
 				case 'lien':
 					vignette = '/img/lien.png'
 					break
-				case 'embed':
+				case 'embed': {
+					const media = item.media || ''
 					if (item.source === 'h5p') {
 						vignette = '/img/h5p.png'
 					} else if (item.source === 'digiview') {
@@ -647,38 +685,39 @@ export default {
 						vignette = '/img/twitter.png'
 					} else if (item.source === 'etherpad') {
 						vignette = '/img/etherpad.png'
-					} else if (item.media.includes('facebook.com')) {
+					} else if (media.includes('facebook.com')) {
 						vignette = '/img/facebook.png'
-					} else if (item.media.includes('vocaroo.com') || item.media.includes('voca.ro')) {
+					} else if (media.includes('vocaroo.com') || media.includes('voca.ro')) {
 						vignette = '/img/vocaroo.png'
-					} else if (item.media.includes('drive.google.com')) {
+					} else if (media.includes('drive.google.com')) {
 						vignette = '/img/google-drive.png'
-					} else if (item.media.includes('docs.google.com/document')) {
+					} else if (media.includes('docs.google.com/document')) {
 						vignette = '/img/google-docs.png'
-					} else if (item.media.includes('docs.google.com/presentation')) {
+					} else if (media.includes('docs.google.com/presentation')) {
 						vignette = '/img/google-slides.png'
-					} else if (item.media.includes('docs.google.com/spreadsheets')) {
+					} else if (media.includes('docs.google.com/spreadsheets')) {
 						vignette = '/img/google-sheets.png'
-					} else if (item.media.includes('docs.google.com/forms')) {
+					} else if (media.includes('docs.google.com/forms')) {
 						vignette = '/img/google-forms.png'
-					} else if (item.media.includes('docs.google.com/drawings')) {
+					} else if (media.includes('docs.google.com/drawings')) {
 						vignette = '/img/google-drawings.png'
-					} else if (item.media.includes('google.com/maps')) {
+					} else if (media.includes('google.com/maps')) {
 						vignette = '/img/google-maps.png'
-					} else if (item.media.includes('wikipedia.org')) {
+					} else if (media.includes('wikipedia.org')) {
 						vignette = '/img/wikipedia.png'
-					} else if (item.media.includes('quizlet.com')) {
+					} else if (media.includes('quizlet.com')) {
 						vignette = '/img/quizlet.png'
-					} else if (item.media.includes('genial.ly')) {
+					} else if (media.includes('genial.ly')) {
 						vignette = '/img/genially.png'
-					} else if (item.media.includes('ladigitale.dev')) {
+					} else if (media.includes('ladigitale.dev')) {
 						vignette = '/img/ladigitale.png'
-					} else if (item.media.includes('framapad.org')) {
+					} else if (media.includes('framapad.org')) {
 						vignette = '/img/framapad.png'
 					} else {
 						vignette = '/img/code.png'
 					}
 					break
+				}
 				default:
 					vignette = '/img/telechargement.png'
 					break
@@ -743,23 +782,25 @@ export default {
 			case 'lien':
 				icone = 'link'
 				break
-			case 'embed':
+			case 'embed': {
+				const media = item.media || ''
 				if (item.source === 'youtube' || item.source === 'vimeo' || item.source === 'dailymotion' || item.source === 'digiview') {
 					icone = 'movie'
-				} else if (item.source === 'slideshare' || item.media.includes('wikipedia.org') || item.media.includes('drive.google.com') || item.media.includes('docs.google.com')) {
+				} else if (item.source === 'slideshare' || media.includes('wikipedia.org') || media.includes('drive.google.com') || media.includes('docs.google.com')) {
 					icone = 'description'
 				} else if (item.source === 'flickr') {
 					icone = 'image'
-				} else if (item.source === 'soundcloud' || item.media.includes('vocaroo.com') || item.media.includes('voca.ro')) {
+				} else if (item.source === 'soundcloud' || media.includes('vocaroo.com') || media.includes('voca.ro')) {
 					icone = 'volume_up'
-				} else if (item.media.includes('google.com/maps')) {
+				} else if (media.includes('google.com/maps')) {
 					icone = 'place'
-				} else if (item.source === 'etherpad' || item.media.includes('framapad.org')) {
+				} else if (item.source === 'etherpad' || media.includes('framapad.org')) {
 					icone = 'group_work'
 				} else {
 					icone = 'web'
 				}
 				break
+			}
 			default:
 				icone = 'save_alt'
 				break
@@ -774,6 +815,7 @@ export default {
 			}
 		},
 		definirNomLienFichier (fichier) {
+			if (!fichier) return ''
 			return fichier.split('\\').pop().split('/').pop()
 		},
 		gererMenuColonne (indexCol) {
@@ -911,6 +953,9 @@ export default {
 				this.iframe = item.iframe
 				this.type = item.type
 				this.source = item.source
+				if (!item.hasOwnProperty('texte')) {
+					this.recupererBloc(item.bloc)
+				}
 				if (item.hasOwnProperty('couleur')) {
 					this.couleur = item.couleur
 				}
@@ -1031,7 +1076,7 @@ export default {
 			return escapeHtml(texte)
 		},
 		formaterHTML (html) {
-			html = linkifyHtml(html, {
+			html = linkifyHtml(html || '', {
 				defaultProtocol: 'https',
 				truncate: 50,
 				rel: 'noreferrer',
@@ -1208,6 +1253,10 @@ export default {
 			this.resultats = {}
 		},
 		async ajouterAudio () {
+			if (this.mode === 'edition' && this.texte === undefined) {
+				this.recupererBloc(this.bloc)
+				return
+			}
 			this.transcodage = true
 			let blob
 			try {
@@ -1588,6 +1637,10 @@ export default {
 			}
 		},
 		modifierBloc () {
+			if (this.texte === undefined) {
+				this.recupererBloc(this.bloc)
+				return
+			}
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
@@ -1616,6 +1669,37 @@ export default {
 				})
 			}
 			this.$socket.emit('autoriserbloc', this.pad.id, this.pad.token, donneesBloc, indexBloc, indexBlocColonne, moderation, this.identifiant, this.nom)
+		},
+		recupererBloc (bloc) {
+			this.$socket.emit('recupererbloc', this.pad.id, bloc, this.identifiant)
+		},
+		rafraichirCommentaires (bloc) {
+			this.$socket.emit('commentaires', bloc, this.pad.id, 'rafraichir', this.identifiant)
+		},
+		verifierModaleCommentaires (bloc) {
+			return (this.modale === 'commentaires' && this.bloc === bloc) || (this.modaleDiaporama && this.donneesBloc.bloc === bloc)
+		},
+		mettreAJourBloc (bloc, callback) {
+			this.blocs.forEach((item) => { if (item.bloc === bloc) callback(item) })
+			if (this.pad.affichage === 'colonnes') {
+				this.colonnes.forEach((colonne) => {
+					colonne.forEach((item) => { if (item.bloc === bloc) callback(item) })
+				})
+			}
+		},
+		synchroniserCommentaires (bloc, commentaires, commentairesEnAttente) {
+			this.mettreAJourBloc(bloc, (item) => {
+				item.commentaires = commentaires
+				item.commentairesEnAttente = commentairesEnAttente
+			})
+		},
+		autoriserCommentaire (id) {
+			this.chargement = true
+			let bloc = this.bloc
+			if (Object.keys(this.donneesBloc).length > 0) {
+				bloc = this.donneesBloc.bloc
+			}
+			this.$socket.emit('autorisercommentaire', this.pad.id, bloc, id, this.identifiant, this.nom)
 		},
 		fermerModaleBloc () {
 			this.modale = ''
@@ -1778,6 +1862,10 @@ export default {
 				})
 				if (colonneDestination === '') {
 					colonneDestination = 0
+				}
+				if (Object.keys(donneesBloc).length > 0 && !donneesBloc.hasOwnProperty('texte')) {
+					this.recupererBloc(donneesBloc.bloc)
+					return
 				}
 				if (Object.keys(donneesBloc).length > 0 && token !== '') {
 					this.chargement = true
@@ -2184,6 +2272,9 @@ export default {
 					this.definirBlocActif(donneesBloc.bloc)
 				}
 				this.donneesBloc = donneesBloc
+				if (!this.donneesBloc.hasOwnProperty('texte')) {
+					this.recupererBloc(this.donneesBloc.bloc)
+				}
 				this.menu = ''
 				this.elementPrecedent = (document.activeElement || document.body)
 				this.modaleDiaporama = true
@@ -2192,8 +2283,8 @@ export default {
 					document.querySelector('#diapositive').addEventListener('click', this.gererFocusCommentaires)
 					document.querySelector('#diapositive .fermer')?.focus()
 				})
-				if (this.pad.commentaires === 'actives') {
-					this.$socket.emit('commentaires', donneesBloc.bloc, 'diapositive', this.identifiant)
+				if (this.pad.commentaires === 'actives' && this.commentairesVisibles) {
+					this.$socket.emit('commentaires', donneesBloc.bloc, this.pad.id, 'diapositive', this.identifiant)
 				} else {
 					this.$nextTick(() => {
 						this.chargerDiapositive()
@@ -2202,6 +2293,7 @@ export default {
 			}
 		},
 		activerClavierDiaporama (event) {
+			if (this.modaleConfirmation || this.modale === 'evaluations' || this.modale === 'liste-evaluations') return
 			if (event.ctrlKey && event.key === 'ArrowLeft') {
 				this.afficherBlocPrecedent()
 			} else if (event.ctrlKey && event.key === 'ArrowRight') {
@@ -2252,14 +2344,17 @@ export default {
 				this.donneesBloc = this.colonnes[indexColonne][indexBloc]
 			}
 			this.definirBlocActif(this.donneesBloc.bloc)
-			if (this.pad.commentaires === 'actives') {
+			if (!this.donneesBloc.hasOwnProperty('texte')) {
+				this.recupererBloc(this.donneesBloc.bloc)
+			}
+			if (this.pad.commentaires === 'actives' && this.commentairesVisibles) {
 				if (this.editeurCommentaire !== '') {
 					this.editeurCommentaire.content.innerHTML = ''
 				}
 				if (this.editionCommentaire) {
 					this.annulerModifierCommentaire()
 				}
-				this.$socket.emit('commentaires', this.donneesBloc.bloc, 'diapositive', this.identifiant)
+				this.$socket.emit('commentaires', this.donneesBloc.bloc, this.pad.id, 'diapositive', this.identifiant)
 			} else {
 				this.chargerDiapositive()
 			}
@@ -2308,14 +2403,17 @@ export default {
 				this.donneesBloc = this.colonnes[indexColonne][indexBloc]
 			}
 			this.definirBlocActif(this.donneesBloc.bloc)
-			if (this.pad.commentaires === 'actives') {
+			if (!this.donneesBloc.hasOwnProperty('texte')) {
+				this.recupererBloc(this.donneesBloc.bloc)
+			}
+			if (this.pad.commentaires === 'actives' && this.commentairesVisibles) {
 				if (this.editeurCommentaire !== '') {
 					this.editeurCommentaire.content.innerHTML = ''
 				}
 				if (this.editionCommentaire) {
 					this.annulerModifierCommentaire()
 				}
-				this.$socket.emit('commentaires', this.donneesBloc.bloc, 'diapositive', this.identifiant)
+				this.$socket.emit('commentaires', this.donneesBloc.bloc, this.pad.id, 'diapositive', this.identifiant)
 			} else {
 				this.chargerDiapositive()
 			}
@@ -2343,9 +2441,10 @@ export default {
 			document.querySelector('#' + bloc)?.focus()
 		},
 		definirTypeMedia () {
+			const media = this.donneesBloc.media || ''
 			if (this.donneesBloc.source === 'youtube' || this.donneesBloc.source === 'vimeo' || this.donneesBloc.source === 'dailymotion' || this.donneesBloc.source === 'digiview') {
 				return 'video'
-			} else if (this.donneesBloc.source === 'slideshare' || this.donneesBloc.source === 'soundcloud' || this.donneesBloc.media.includes('clyp.it') || this.donneesBloc.media.includes('vocaroo.com') || this.donneesBloc.media.includes('voca.ro')) {
+			} else if (this.donneesBloc.source === 'slideshare' || this.donneesBloc.source === 'soundcloud' || media.includes('clyp.it') || media.includes('vocaroo.com') || media.includes('voca.ro')) {
 				return 'embed'
 			} else {
 				return 'document'
@@ -2482,7 +2581,7 @@ export default {
 			this.chargement = true
 			this.bloc = bloc
 			this.titre = titre
-			this.$socket.emit('commentaires', bloc, 'discussion', this.identifiant)
+			this.$socket.emit('commentaires', bloc, this.pad.id, 'discussion', this.identifiant)
 		},
 		envoyerCommentaire (event) {
 			event.preventDefault()
@@ -2578,7 +2677,7 @@ export default {
 			this.fermerModaleConfirmation()
 		},
 		genererEditeur () {
-			if (this.editeurCommentaire === '') {
+			if (this.editeurCommentaire === '' && document.querySelector('#commentaire')) {
 				const actions = this.definirActionsEditeur('commentaire')
 				this.editeurCommentaire = pell.init({
 					element: document.querySelector('#commentaire'),
@@ -2768,8 +2867,21 @@ export default {
 			this.evaluations = []
 			this.evaluation = 0
 			this.evaluationId = ''
+			this.listeEvaluations = []
 			this.bloc = ''
 			this.titre = ''
+			this.gererFocus()
+		},
+		ouvrirModaleListeEvaluations (bloc) {
+			this.chargement = true
+			this.bloc = bloc
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.$socket.emit('evaluations', bloc, this.pad.id, this.identifiant)
+		},
+		fermerModaleListeEvaluations () {
+			this.modale = ''
+			this.listeEvaluations = []
+			this.bloc = ''
 			this.gererFocus()
 		},
 		demarrerDeplacerBloc () {
@@ -3294,6 +3406,38 @@ export default {
 			}
 			this.chargement = true
 		},
+		modifierVisibiliteCommentaires (visibilite) {
+			if (this.pad.visibiliteCommentaires !== visibilite) {
+				this.$socket.emit('modifiervisibilitecommentaires', this.pad.id, visibilite, this.identifiant)
+				this.chargement = true
+			}
+		},
+		modifierAccesCommentaires (acces) {
+			if (this.pad.accesCommentaires !== acces) {
+				this.$socket.emit('modifieraccescommentaires', this.pad.id, acces, this.identifiant)
+				this.chargement = true
+			}
+		},
+		modifierModerationCommentaires (event) {
+			if (event.target.checked) {
+				this.$socket.emit('modifiermoderationcommentaires', this.pad.id, 'activee', this.identifiant)
+			} else {
+				this.$socket.emit('modifiermoderationcommentaires', this.pad.id, 'desactivee', this.identifiant)
+			}
+			this.chargement = true
+		},
+		modifierVisibiliteEvaluations (visibilite) {
+			if (this.pad.visibiliteEvaluations !== visibilite) {
+				this.$socket.emit('modifiervisibiliteevaluations', this.pad.id, visibilite, this.identifiant)
+				this.chargement = true
+			}
+		},
+		modifierAccesEvaluations (acces) {
+			if (this.pad.accesEvaluations !== acces) {
+				this.$socket.emit('modifieraccesevaluations', this.pad.id, acces, this.identifiant)
+				this.chargement = true
+			}
+		},
 		modifierCopieBloc (event) {
 			if (event.target.checked) {
 				this.$socket.emit('modifiercopiebloc', this.pad.id, 'activee', this.identifiant)
@@ -3580,6 +3724,7 @@ export default {
 				}
 				this.commentaires = []
 				this.evaluations = []
+				this.listeEvaluations = []
 				this.messagesChat = []
 				this.messageChat = ''
 				this.nouveauxMessagesChat = 0
@@ -3859,20 +4004,23 @@ export default {
 			}
 		},
 		gererClavier (event) {
-			if (this.modaleDiaporama && this.modale !== 'evaluations' && this.blocs.length > 1) {
-				let input = false
-				if (document.querySelector('#commentaire')?.contains(event.target)) {
-					input = true
-				} else if (document.querySelector('#commentaire-modifie')?.contains(event.target)) {
-					input = true
+			if (this.modaleDiaporama && !this.modaleConfirmation && this.modale !== 'evaluations' && this.modale !== 'liste-evaluations') {
+				if (this.blocs.length > 1) {
+					let input = false
+					if (document.querySelector('#commentaire')?.contains(event.target)) {
+						input = true
+					} else if (document.querySelector('#commentaire-modifie')?.contains(event.target)) {
+						input = true
+					}
+					if (input === false && event.key === 'ArrowLeft') {
+						event.preventDefault()
+						this.afficherBlocPrecedent()
+					} else if (input === false && event.key === 'ArrowRight') {
+						event.preventDefault()
+						this.afficherBlocSuivant()
+					}
 				}
-				if (input === false && event.key === 'ArrowLeft') {
-					event.preventDefault()
-					this.afficherBlocPrecedent()
-				} else if (input === false && event.key === 'ArrowRight') {
-					event.preventDefault()
-					this.afficherBlocSuivant()
-				} else if (event.key === 'Escape') {
+				if (event.key === 'Escape') {
 					this.fermerModaleDiaporama()
 				} else if (event.key === 'Tab') {
 					const modale = document.querySelector('#diapositive')
@@ -3892,6 +4040,8 @@ export default {
 				this.fermerModaleCommentaires()
 			} else if (event.key === 'Escape' && this.modale === 'evaluations') {
 				this.fermerModaleEvaluations()
+			} else if (event.key === 'Escape' && this.modale === 'liste-evaluations') {
+				this.fermerModaleListeEvaluations()
 			} else if (event.key === 'Escape' && this.modale === 'modifier-nom') {
 				this.fermerModaleModifierNom()
 			} else if (event.key === 'Escape' && this.modale === 'mot-de-passe') {
@@ -4016,6 +4166,12 @@ export default {
 			}
 		},
 		ecouterSocket () {
+			this.$socket.io.on('reconnect', () => {
+				if (this.accesAutorise && this.pad.hasOwnProperty('id')) {
+					this.$socket.emit('connexion', { pad: this.pad.id, identifiant: this.identifiant, nom: this.nom })
+				}
+			})
+
 			this.$socket.on('connexion', (donnees) => {
 				this.definirUtilisateurs(donnees)
 			})
@@ -4078,6 +4234,9 @@ export default {
 						this.blocs.push(donnees)
 					}
 					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
+					if (!donnees.hasOwnProperty('texte')) {
+						this.recupererBloc(donnees.bloc)
+					}
 					if (this.admin || this.pad.affichage !== 'colonnes' || (this.pad.affichage === 'colonnes' && this.affichageColonnes[donnees.colonne])) {
 						this.$nextTick(() => {
 							const bloc = document.querySelector('#' + donnees.bloc)
@@ -4100,14 +4259,19 @@ export default {
 			this.$socket.on('modifierbloc', (donnees) => {
 				if (this.blocs.map((e) => { return e.bloc }).includes(donnees.bloc)) {
 					this.action = 'modifier'
+					const donneesCompletes = donnees.hasOwnProperty('texte')
 					if (this.pad.affichage === 'colonnes') {
-						const indexBlocColonne = this.colonnes[donnees.colonne].findIndex(item => item.bloc === donnees.bloc)
+						let indexColonne = donnees.colonne
+						if (indexColonne === undefined || !this.colonnes[indexColonne]) {
+							indexColonne = this.colonnes.findIndex((colonne) => colonne.some((item) => item.bloc === donnees.bloc))
+						}
+						const indexBlocColonne = (indexColonne !== -1 && this.colonnes[indexColonne]) ? this.colonnes[indexColonne].findIndex(item => item.bloc === donnees.bloc) : -1
 						if (indexBlocColonne !== -1) {
-							const item = this.colonnes[donnees.colonne][indexBlocColonne]
+							const item = this.colonnes[indexColonne][indexBlocColonne]
 							if (donnees.visibilite === 'privee' && !this.admin) {
-								this.colonnes[donnees.colonne].splice(indexBlocColonne, 1)
+								this.colonnes[indexColonne].splice(indexBlocColonne, 1)
 							} else {
-								this.colonnes[donnees.colonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donnees.titre, texte: donnees.texte, media: donnees.media, iframe: donnees.iframe, type: donnees.type, source: donnees.source, vignette: donnees.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite }
+								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
 							}
 						}
 					}
@@ -4118,10 +4282,15 @@ export default {
 						if (donnees.visibilite === 'privee' && !this.admin) {
 							this.blocs.splice(indexBloc, 1)
 						} else {
-							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donnees.titre, texte: donnees.texte, media: donnees.media, iframe: donnees.iframe, type: donnees.type, source: donnees.source, vignette: donnees.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite })
+							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
 						}
 					}
-					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.modifie, type: 'bloc-modifie' })
+					if (donneesCompletes) {
+						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.modifie, type: 'bloc-modifie' })
+					}
+					if (!donneesCompletes && !(donnees.visibilite === 'privee' && !this.admin)) {
+						this.recupererBloc(donnees.bloc)
+					}
 					this.envoyerNotificationAdmins()
 				}
 			})
@@ -4129,6 +4298,43 @@ export default {
 			this.$socket.on('copierbloc', () => {
 				this.chargement = false
 				this.notification = this.$t('capsuleCopiee')
+			})
+
+			this.$socket.on('recupererbloc', (donnees) => {
+				const verifierBloc = (item) => {
+					item.titre = donnees.titre
+					item.texte = donnees.texte
+					item.media = donnees.media
+					item.iframe = donnees.iframe
+					item.vignette = donnees.vignette
+				}
+				this.mettreAJourBloc(donnees.bloc, verifierBloc)
+				if (this.modaleDiaporama && this.donneesBloc.bloc === donnees.bloc) {
+					verifierBloc(this.donneesBloc)
+				}
+				if (this.modale === 'bloc' && this.mode === 'edition' && this.bloc === donnees.bloc) {
+					if (!this.texte) {
+						this.texte = donnees.texte
+						const contenuEditeur = document.querySelector('#texte .contenu-editeur')
+						if (contenuEditeur) {
+							contenuEditeur.innerHTML = this.formaterHTML(this.texte)
+						}
+					}
+					if (!this.titre) {
+						this.titre = donnees.titre
+					}
+					if (!this.media && !this.iframe) {
+						this.media = donnees.media
+						this.iframe = donnees.iframe
+						if (donnees.iframe !== '') {
+							this.lien = donnees.media
+						}
+						if (donnees.vignette && typeof donnees.vignette === 'string') {
+							this.vignette = donnees.vignette
+							this.vignetteDefaut = this.vignette
+						}
+					}
+				}
 			})
 
 			this.$socket.on('autoriserbloc', (donnees) => {
@@ -4167,6 +4373,9 @@ export default {
 					}
 				}
 				if (donnees.moderation === 'moderee') {
+					if (donnees.publication && !this.activite.some((entree) => { return entree.id === donnees.publication.activiteId && entree.type === 'bloc-ajoute' })) {
+						this.activite.unshift({ id: donnees.publication.activiteId, bloc: donnees.bloc, identifiant: donnees.publication.identifiant, nom: donnees.publication.nom, titre: donnees.titre, date: donnees.publication.date, type: 'bloc-ajoute' })
+					}
 					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.admin, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-valide' })
 				} else {
 					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
@@ -4255,49 +4464,59 @@ export default {
 
 			this.$socket.on('commenterbloc', (donnees) => {
 				if (this.blocs.map((e) => { return e.bloc }).includes(donnees.bloc)) {
-					const blocs = this.blocs
-					blocs.forEach((item) => {
-						if (item.bloc === donnees.bloc) {
-							item.commentaires = donnees.commentaires
-						}
-					})
-					this.blocs = blocs
-					if ((this.modale === 'commentaires' && this.bloc === donnees.bloc) || (this.modaleDiaporama && this.donneesBloc.bloc === donnees.bloc)) {
-						this.commentaires.push({ id: donnees.id, identifiant: donnees.identifiant, nom: donnees.nom, texte: donnees.texte, date: donnees.date })
+					this.synchroniserCommentaires(donnees.bloc, donnees.commentaires, donnees.commentairesEnAttente)
+					if (this.admin || (this.commentairesVisibles && (donnees.visibilite === 'visible' || donnees.identifiant === this.identifiant))) {
+						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-commente' })
 					}
-					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-commente' })
+					const modaleOuverte = this.verifierModaleCommentaires(donnees.bloc)
+					if (donnees.hasOwnProperty('texte')) {
+						if (modaleOuverte) {
+							this.commentaires.push({ id: donnees.id, identifiant: donnees.identifiant, nom: donnees.nom, texte: donnees.texte, date: donnees.date, visibilite: donnees.visibilite })
+						}
+					} else if (modaleOuverte && this.commentairesVisibles) {
+						this.rafraichirCommentaires(donnees.bloc)
+					}
 					this.envoyerNotificationAdmins()
 				}
 			})
 
-			this.$socket.on('modifiercommentaire', (id, texte) => {
-				const commentaires = this.commentaires
-				commentaires.forEach((commentaire) => {
-					if (commentaire.id === id) {
-						commentaire.texte = texte
+			this.$socket.on('modifiercommentaire', (donnees) => {
+				if (!donnees.hasOwnProperty('texte')) {
+					if (this.verifierModaleCommentaires(donnees.bloc) && this.commentairesVisibles) {
+						this.rafraichirCommentaires(donnees.bloc)
 					}
-				})
-				this.commentaires = commentaires
+					return
+				}
+				if (this.verifierModaleCommentaires(donnees.bloc)) {
+					const commentaires = this.commentaires
+					commentaires.forEach((commentaire) => {
+						if (commentaire.id === donnees.id) {
+							commentaire.texte = donnees.texte
+						}
+					})
+					this.commentaires = commentaires
+				}
 			})
 
-			this.$socket.on('supprimercommentaire', (id, bloc, nbCommentaires) => {
-				const blocs = this.blocs
-				blocs.forEach((item) => {
-					if (item.bloc === bloc) {
-						item.commentaires = nbCommentaires
-					}
-				})
-				this.blocs = blocs
+			this.$socket.on('supprimercommentaire', (donnees) => {
+				this.synchroniserCommentaires(donnees.bloc, donnees.commentaires, donnees.commentairesEnAttente)
+				if (!this.verifierModaleCommentaires(donnees.bloc)) return
 				const commentaires = this.commentaires
-				const indexCommentaire = commentaires.findIndex(commentaire => commentaire.id === id)
+				const indexCommentaire = commentaires.findIndex(commentaire => commentaire.id === donnees.id)
 				if (indexCommentaire !== -1) {
 					commentaires.splice(indexCommentaire, 1)
 				}
 				this.commentaires = commentaires
 			})
 
-			this.$socket.on('commentaires', (commentaires, type) => {
+			this.$socket.on('commentaires', (commentaires, type, bloc) => {
+				if (type === 'discussion' && this.bloc !== bloc) return
+				if (type === 'diapositive' && (!this.donneesBloc || this.donneesBloc.bloc !== bloc)) return
+				if (type === 'rafraichir' && !this.verifierModaleCommentaires(bloc)) return
 				this.commentaires = commentaires
+				if (type === 'rafraichir') {
+					return
+				}
 				if (type === 'discussion') {
 					this.chargement = false
 					this.elementPrecedent = (document.activeElement || document.body)
@@ -4317,14 +4536,16 @@ export default {
 			this.$socket.on('evaluerbloc', (donnees) => {
 				this.chargement = false
 				if (this.blocs.map((e) => { return e.bloc }).includes(donnees.bloc)) {
-					const blocs = this.blocs
-					blocs.forEach((item) => {
-						if (item.bloc === donnees.bloc) {
-							item.evaluations.push(donnees.evaluation)
-						}
-					})
-					this.blocs = blocs
-					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-evalue' })
+					if (this.evaluationsVisibles && donnees.hasOwnProperty('evaluation')) {
+						const blocs = this.blocs
+						blocs.forEach((item) => {
+							if (item.bloc === donnees.bloc) {
+								item.evaluations.push(donnees.evaluation)
+							}
+						})
+						this.blocs = blocs
+						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-evalue' })
+					}
 					this.envoyerNotificationAdmins()
 				}
 			})
@@ -4596,6 +4817,89 @@ export default {
 				}
 			})
 
+			this.$socket.on('modifiervisibilitecommentaires', (visibilite, identifiant) => {
+				this.pad.visibiliteCommentaires = visibilite
+				if (visibilite === 'admin') {
+					this.pad.accesCommentaires = 'admin'
+				}
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreCommentairesModifie')
+				}
+			})
+
+			this.$socket.on('modifieraccescommentaires', (acces, identifiant) => {
+				this.pad.accesCommentaires = acces
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreCommentairesModifie')
+				}
+			})
+
+			this.$socket.on('modifiermoderationcommentaires', (statut, identifiant) => {
+				this.pad.commentairesModeration = statut
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreCommentairesModifie')
+				}
+			})
+
+			this.$socket.on('modifiervisibiliteevaluations', (visibilite, identifiant) => {
+				this.pad.visibiliteEvaluations = visibilite
+				if (visibilite === 'admin') {
+					this.pad.accesEvaluations = 'admin'
+				}
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreEvaluationModifie')
+				}
+			})
+
+			this.$socket.on('modifieraccesevaluations', (acces, identifiant) => {
+				this.pad.accesEvaluations = acces
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreEvaluationModifie')
+				}
+			})
+
+			this.$socket.on('autorisercommentaire', (donnees) => {
+				this.chargement = false
+				const modaleOuverte = this.verifierModaleCommentaires(donnees.bloc)
+				if (modaleOuverte && donnees.hasOwnProperty('texte')) {
+					const commentaires = this.commentaires
+					const indexCommentaire = commentaires.findIndex((commentaire) => { return commentaire.id === donnees.id })
+					if (indexCommentaire !== -1) {
+						commentaires[indexCommentaire].visibilite = 'visible'
+					} else {
+						commentaires.push({ id: donnees.id, identifiant: donnees.identifiant, nom: donnees.nom, texte: donnees.texte, date: donnees.date, visibilite: 'visible' })
+					}
+					this.commentaires = commentaires
+				} else if (modaleOuverte && this.commentairesVisibles) {
+					this.rafraichirCommentaires(donnees.bloc)
+				}
+				this.synchroniserCommentaires(donnees.bloc, donnees.commentaires, donnees.commentairesEnAttente)
+				if (this.admin || this.pad.visibiliteCommentaires !== 'admin') {
+					if (donnees.publication && !this.activite.some((entree) => { return entree.id === donnees.publication.activiteId && entree.type === 'bloc-commente' })) {
+						this.activite.unshift({ id: donnees.publication.activiteId, bloc: donnees.bloc, identifiant: donnees.publication.identifiant, nom: donnees.publication.nom, titre: donnees.titre, date: donnees.publication.date, type: 'bloc-commente' })
+					}
+					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.admin, nom: donnees.nomAdmin, titre: donnees.titre, date: donnees.dateValidation, type: 'commentaire-valide' })
+				}
+				if (!this.admin && donnees.identifiant === this.identifiant) {
+					this.notification = this.$t('commentairePublie', { titre: donnees.titre })
+				}
+			})
+
+			this.$socket.on('evaluations', (evaluations, bloc) => {
+				this.chargement = false
+				if (bloc !== undefined && this.bloc !== bloc) return
+				this.listeEvaluations = evaluations
+				this.modale = 'liste-evaluations'
+				this.$nextTick(() => {
+					document.querySelector('.modale .fermer')?.focus()
+				})
+			})
+
 			this.$socket.on('modifiercopiebloc', (statut, identifiant) => {
 				this.pad.copieBloc = statut
 				this.chargement = false
@@ -4799,6 +5103,7 @@ export default {
 				}
 				this.commentaires = []
 				this.evaluations = []
+				this.listeEvaluations = []
 				this.messagesChat = []
 				this.messageChat = ''
 				this.nouveauxMessagesChat = 0

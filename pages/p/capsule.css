@@ -403,6 +403,12 @@
 	cursor: pointer;
 }
 
+#blocs .bloc .evaluation .actions-evaluation {
+	display: flex;
+	align-items: center;
+	gap: 1.4rem;
+}
+
 #blocs .bloc .action {
 	display: flex;
     justify-content: space-evenly;

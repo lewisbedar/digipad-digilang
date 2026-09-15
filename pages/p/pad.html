@@ -75,6 +75,12 @@
 							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
+					<li v-else-if="entree.type === 'commentaire-valide'" :data-bloc="entree.bloc" :key="'commentaire-valide_' + indexEntree">
+						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aValideCommentaire', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aValideUnCommentaire')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
+						<div class="menu-entree" v-if="admin">
+							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+						</div>
+					</li>
 					<li v-else-if="entree.type === 'bloc-evalue'" :data-bloc="entree.bloc" :key="'bloc-evalue_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aEvalueCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aEvalueUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
@@ -372,12 +378,47 @@
 						<span class="barre" />
 					</label>
 				</div>
+				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives'">
+					<label for="parametre-commentaires-visibilite">{{ $t('visibiliteCommentaires') }}</label>
+					<select id="parametre-commentaires-visibilite" role="menuitem" tabindex="-1" :value="pad.visibiliteCommentaires || 'tous'" @change="modifierVisibiliteCommentaires($event.target.value)">
+						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
+						<option value="admin">{{ $t('adminsUniquement') }}</option>
+					</select>
+				</div>
+				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives' && pad.visibiliteCommentaires !== 'admin'">
+					<label for="parametre-commentaires-acces">{{ $t('autorisationCommentaire') }}</label>
+					<select id="parametre-commentaires-acces" role="menuitem" tabindex="-1" :value="pad.accesCommentaires || 'tous'" @change="modifierAccesCommentaires($event.target.value)">
+						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
+						<option value="admin">{{ $t('adminsUniquement') }}</option>
+					</select>
+				</div>
+				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives' && pad.accesCommentaires !== 'admin'">
+					<span>{{ $t('moderationCommentaires') }}</span>
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-commentaires-moderation')">
+						<input id="parametre-commentaires-moderation" type="checkbox" :checked="pad.commentairesModeration === 'activee'" @change="modifierModerationCommentaires">
+						<span class="barre" />
+					</label>
+				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('evaluations') }}</span>
 					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
 						<input id="parametre-evaluations" type="checkbox" :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
 						<span class="barre" />
 					</label>
+				</div>
+				<div class="conteneur-interrupteur" v-if="pad.evaluations === 'activees'">
+					<label for="parametre-evaluations-visibilite">{{ $t('visibiliteEvaluations') }}</label>
+					<select id="parametre-evaluations-visibilite" role="menuitem" tabindex="-1" :value="pad.visibiliteEvaluations || 'tous'" @change="modifierVisibiliteEvaluations($event.target.value)">
+						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
+						<option value="admin">{{ $t('adminsUniquement') }}</option>
+					</select>
+				</div>
+				<div class="conteneur-interrupteur" v-if="pad.evaluations === 'activees' && pad.visibiliteEvaluations !== 'admin'">
+					<label for="parametre-evaluations-acces">{{ $t('autorisationEvaluation') }}</label>
+					<select id="parametre-evaluations-acces" role="menuitem" tabindex="-1" :value="pad.accesEvaluations || 'tous'" @change="modifierAccesEvaluations($event.target.value)">
+						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
+						<option value="admin">{{ $t('adminsUniquement') }}</option>
+					</select>
 				</div>
 				<div class="conteneur-interrupteur" v-if="statut === 'utilisateur' || viaDigidrive">
 					<span>{{ $t('copieCapsule') }}</span>
@@ -713,7 +754,7 @@
 					</div>
 
 					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</button>
-					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
+					<button type="button" class="valider" :disabled="disabledModale || texte === undefined" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement || texte === undefined}" :title="texte === undefined ? $t('recuperationContenuEnCours') : ''" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
 				</div>
 			</div>
 		</div>
@@ -767,12 +808,16 @@
 						<button type="button" :disabled="disabledModale" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
 						<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModale" @emoji="insererEmoji" />
 					</div>
+					<div class="moderation" v-if="entreeCommentaire.visibilite === 'masquee'">
+						<button type="button" class="bouton" :disabled="disabledModale" @click="autoriserCommentaire(entreeCommentaire.id)" v-if="admin">{{ $t('validerCommentaire') }}</button>
+						<span class="bouton" v-else-if="entreeCommentaire.identifiant === identifiant">{{ $t('enAttenteModeration') }}</span>
+					</div>
 				</li>
 				<li class="vide" v-if="commentaires.length === 0">
 					{{ $t('aucunCommentaire') }}
 				</li>
 			</ul>
-			<div class="ecrire-commentaire">
+			<div class="ecrire-commentaire" v-if="commentairesAutorises">
 				<div id="commentaire" :class="{'mobile': mobile === true }" />
 				<button type="button" :disabled="disabledModale" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
 				<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModale" @emoji="insererEmoji" />
@@ -883,7 +928,7 @@
 						<option v-for="(item, indexItem) in definirNombreColonnesDestination()" :value="indexItem" :key="'colonne_' + item">{{ item }}</option>
 					</select>
 					<div class="actions">
-						<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerBloc">{{ $t('valider') }}</button>
+						<button type="button" class="bouton" :disabled="disabledModale || !donneesBlocsRecues" :title="!donneesBlocsRecues ? $t('recuperationContenuEnCours') : ''" @click="envoyerBloc">{{ $t('valider') }}</button>
 					</div>
 				</div>
 			</div>
@@ -910,11 +955,11 @@
 				<span class="titre"><span>{{ donneesBloc.titre }}</span> <span>{{ $t('par') }} {{ definirNom(donneesBloc) }}</span></span>
 				<button type="button" class="fermer" :disabled="disabledModaleDiaporama" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDiaporama"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
-			<div class="contenu ascenseur" :class="{'vide': donneesBloc.texte === '' && donneesBloc.media === '' && pad.evaluations === 'desactivees' && pad.commentaires === 'desactives' && ((pad.contributions !== 'moderees') || (pad.contributions === 'moderees' && donneesBloc.visibilite === 'visible'))}">
-				<div class="conteneur conteneur-texte" v-if="donneesBloc.texte !== ''">
+			<div class="contenu ascenseur" :class="{'vide': !donneesBloc.texte && !donneesBloc.media && (pad.evaluations === 'desactivees' || !evaluationsVisibles) && (pad.commentaires === 'desactives' || !commentairesVisibles) && ((pad.contributions !== 'moderees') || (pad.contributions === 'moderees' && donneesBloc.visibilite === 'visible'))}">
+				<div class="conteneur conteneur-texte" v-if="donneesBloc.texte">
 					<div class="texte" v-html="donneesBloc.texte" />
 				</div>
-				<div class="conteneur conteneur-media" v-if="donneesBloc.media !== ''">
+				<div class="conteneur conteneur-media" v-if="donneesBloc.media">
 					<div class="media" v-if="donneesBloc.iframe === ''">
 						<img :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirNomLienFichier(donneesBloc.media)" v-if="donneesBloc.type === 'image'">
 						<img :src="donneesBloc.media" :alt="definirNomLienFichier(donneesBloc.media)" v-else-if="donneesBloc.type === 'lien-image'">
@@ -949,7 +994,7 @@
 					<button type="button" class="bouton" :disabled="disabledModaleDiaporama" @click="autoriserBloc(donneesBloc, 'moderee')" v-if="admin">{{ $t('validerCapsule') }}</button>
 					<span class="bouton" v-else-if="donneesBloc.identifiant === identifiant">{{ $t('enAttenteModeration') }}</span>
 				</div>
-				<div class="conteneur conteneur-evaluations" v-if="pad.evaluations === 'activees'">
+				<div class="conteneur conteneur-evaluations" v-if="pad.evaluations === 'activees' && evaluationsVisibles">
 					<label>{{ $t('evaluations') }}</label>
 					<div class="evaluation">
 						<span class="etoiles" :title="definirEvaluationCapsule(donneesBloc.evaluations) > 1 ? definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoiles') : definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoile')">
@@ -957,11 +1002,14 @@
 							<i class="material-icons" aria-hidden="true" :class="{'evalue': verifierUtilisateurEvaluation(donneesBloc.evaluations) === true}" v-for="etoile in (5 - definirEvaluationCapsule(donneesBloc.evaluations))" :key="'etoilevide_' + etoile">star_outline</i>
 							<span>({{ donneesBloc.evaluations.length }})</span>
 						</span>
-						<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, '')" v-if="verifierUtilisateurEvaluation(donneesBloc.evaluations) === false"><i class="material-icons" aria-hidden="true">add_comment</i></button>
-						<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, donneesBloc.evaluations)" v-else><i class="material-icons" aria-hidden="true">rate_review</i></button>
+						<div class="actions-evaluation">
+							<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, '')" v-if="verifierUtilisateurEvaluation(donneesBloc.evaluations) === false && evaluationsAutorisees"><i class="material-icons" aria-hidden="true">add_comment</i></button>
+							<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="ouvrirModaleEvaluations(donneesBloc.bloc, donneesBloc.titre, donneesBloc.evaluations)" v-else-if="verifierUtilisateurEvaluation(donneesBloc.evaluations) === true"><i class="material-icons" aria-hidden="true">rate_review</i></button>
+							<button type="button" class="bouton" :disabled="disabledModaleDiaporama" :title="$t('listeEvaluations')" :aria-label="$t('listeEvaluations')" @click="ouvrirModaleListeEvaluations(donneesBloc.bloc)" v-if="admin"><i class="material-icons" aria-hidden="true">format_list_bulleted</i></button>
+						</div>
 					</div>
 				</div>
-				<div class="conteneur conteneur-commentaires" v-if="pad.commentaires === 'actives'">
+				<div class="conteneur conteneur-commentaires" v-if="pad.commentaires === 'actives' && commentairesVisibles">
 					<label>{{ $t('commentaires') }}</label>
 					<ul class="commentaires" v-if="commentaires.length > 0">
 						<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="tabIndexModaleDiaporama" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
@@ -977,12 +1025,16 @@
 								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('publier')" :aria-label="$t('publier')" @click="modifierCommentaire"><i class="material-icons" aria-hidden="true">edit</i></button>
 								<Emojis v-if="emojis === 'commentaire-modifie'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModaleDiaporama" @emoji="insererEmoji" />
 							</div>
+							<div class="moderation" v-if="entreeCommentaire.visibilite === 'masquee'">
+								<button type="button" class="bouton" :disabled="disabledModaleDiaporama" @click="autoriserCommentaire(entreeCommentaire.id)" v-if="admin">{{ $t('validerCommentaire') }}</button>
+								<span class="bouton" v-else-if="entreeCommentaire.identifiant === identifiant">{{ $t('enAttenteModeration') }}</span>
+							</div>
 						</li>
 					</ul>
 					<div class="vide" v-else>
 						{{ $t('aucunCommentaire') }}
 					</div>
-					<div class="ecrire-commentaire">
+					<div class="ecrire-commentaire" v-if="commentairesAutorises">
 						<div id="commentaire" :class="{'mobile': mobile === true }" />
 						<button type="button" :disabled="disabledModaleDiaporama" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerCommentaire"><i class="material-icons" aria-hidden="true">send</i></button>
 						<Emojis v-if="emojis === 'commentaire'" :type="emojis" :diaporama="modaleDiaporama" :disabled="disabledModaleDiaporama" @emoji="insererEmoji" />
@@ -1023,6 +1075,27 @@
 					</div>
 				</div>
 			</div>
+		</div>
+	</div>
+
+	<div class="conteneur-modale" v-if="modale === 'liste-evaluations'">
+		<div id="liste-evaluations" class="modale" role="dialog" aria-modal="true" :aria-label="$t('listeEvaluations')">
+			<div class="en-tete">
+				<span class="titre">{{ $t('listeEvaluations') }}</span>
+				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleListeEvaluations"><i class="material-icons" aria-hidden="true">close</i></button>
+			</div>
+			<ul class="evaluations ascenseur">
+				<li v-for="(entreeEvaluation, indexEntreeEvaluation) in listeEvaluations" :key="'liste_evaluation_' + indexEntreeEvaluation">
+					<span class="etoiles" :title="entreeEvaluation.etoiles > 1 ? entreeEvaluation.etoiles + ' ' + $t('etoiles') : entreeEvaluation.etoiles + ' ' + $t('etoile')">
+						<i class="material-icons" aria-hidden="true" v-for="etoile in entreeEvaluation.etoiles" :key="'etoilepleine_' + etoile">star</i>
+						<i class="material-icons" aria-hidden="true" v-for="etoile in (5 - entreeEvaluation.etoiles)" :key="'etoilevide_' + etoile">star_outline</i>
+					</span>
+					<span class="meta">{{ $t('par') }} {{ definirNom(entreeEvaluation) }}, {{ $formaterDateRelative(entreeEvaluation.date, langue) }}</span>
+				</li>
+				<li class="vide" v-if="listeEvaluations.length === 0">
+					{{ $t('aucuneEvaluation') }}
+				</li>
+			</ul>
 		</div>
 	</div>
 
