@@ -512,10 +512,28 @@
 }
 
 #media .information {
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	font-size: 1.5rem;
-	display: block;
 	margin-top: 1rem;
 	color: #777;
+}
+
+#info-alt {
+	display: flex;
+	align-items: center;
+	font-size: 1.5rem;
+	margin: -1rem 0 2rem;
+	text-align: left;
+	color: #777;
+}
+
+#media .information i,
+#info-alt i {
+	font-size: 18px;
+	margin-right: 5px;
+	line-height: 1;
 }
 
 #ajouter-lien {
@@ -1563,7 +1581,8 @@
 		width: 100%;
 	}
 
-	#media .information {
+	#media .information,
+	#info-alt {
 		font-size: 1.4rem;
 	}
 

@@ -45,8 +45,8 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
 										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
@@ -76,8 +76,8 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
 										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
@@ -114,8 +114,8 @@ function genererHTML (pad, blocs, langue) {
 											</div>
 											<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 											<div class="media" v-if="item.media !== ''">
-												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media"></button>
-												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media"></button>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
 												<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 												<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
@@ -326,6 +326,15 @@ function genererHTML (pad, blocs, langue) {
 							}
 							window.open(lien, '_blank')
 						},
+						echapperAttribut (texte) {
+							return String(texte).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+						},
+						definirTexteAlternatif (item) {
+							if (item && typeof item.alt === 'string') {
+								return item.alt
+							}
+							return ''
+						},
 						definirVignette (item) {
 							let vignette
 							if (item.vignette && item.vignette !== '' && this.verifierURL(item.vignette) === false && String(item.vignette).includes('/img/')) {
@@ -388,10 +397,10 @@ function genererHTML (pad, blocs, langue) {
 								let html = ''
 								switch (item.type) {
 									case 'image':
-										html = '<span id="' + imageId + '" class="image"><img src="./fichiers/' + item.media + '"></span>'
+										html = '<span id="' + imageId + '" class="image"><img src="./fichiers/' + item.media + '" alt="' + this.echapperAttribut(this.definirTexteAlternatif(item)) + '"></span>'
 										break
 									case 'lien-image':
-										html = '<span id="' + imageId + '" class="image"><img src="' + item.media + '"></span>'
+										html = '<span id="' + imageId + '" class="image"><img src="' + item.media + '" alt="' + this.echapperAttribut(this.definirTexteAlternatif(item)) + '"></span>'
 										break
 									case 'audio':
 										html = '<audio controls preload="metadata" src="./fichiers/' + item.media + '"></audio>'

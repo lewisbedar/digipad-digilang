@@ -704,8 +704,8 @@
 						<div class="conteneur-chargement" v-if="chargementMedia">
 							<div class="chargement" />
 						</div>
-						<img id="image" :src="definirLienFichier(pad.id, media)" :alt="definirNomLienFichier(media)" v-show="!chargementMedia" v-if="type === 'image'">
-						<img id="image" :src="media" :alt="definirNomLienFichier(media)" v-show="!chargementMedia" v-else-if="type === 'lien-image'">
+						<img id="image" :src="definirLienFichier(pad.id, media)" :alt="alt" v-show="!chargementMedia" v-if="type === 'image'">
+						<img id="image" :src="media" :alt="alt" v-show="!chargementMedia" v-else-if="type === 'lien-image'">
 						<audio id="audio" controls :src="media" v-show="!chargementMedia" v-else-if="type === 'enregistrement'" />
 						<audio id="audio" controls :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'audio'" />
 						<video id="video" controls playsinline crossOrigin="anonymous" :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'video'" />
@@ -736,6 +736,12 @@
 							<button type="button" :disabled="disabledModale" :class="{'invisible': page >= (resultats.total / 16)}" @click="modifierPage('suivante')">{{ $t('pageSuivante') }}</button>
 						</div>
 					</div>
+					<label for="champ-alt" v-if="(type === 'image' || type === 'lien-image') && media !== ''">{{ $t('texteAlternatif') }}</label>
+					<input id="champ-alt" type="text" maxlength="250" aria-describedby="info-alt" :placeholder="$t('ajouterTexteAlternatif')" :value="alt" :disabled="disabledModale" @input="alt = $event.target.value" v-if="(type === 'image' || type === 'lien-image') && media !== ''">
+					<span id="info-alt" v-if="(type === 'image' || type === 'lien-image') && media !== ''">
+						<i class="material-icons" aria-hidden="true">info</i>
+						<span>{{ $t('infoTexteAlternatif') }}</span>
+					</span>
 					<label v-if="type !== 'image' && type !== 'lien-image' && media !== ''">{{ $t('vignette') }}</label>
 					<div id="vignette" v-if="progressionVignette === 0 && type !== 'image' && type !== 'lien-image' && media !== ''">
 						<img :src="definirLienVignette(pad.id, vignette)" :alt="definirNomLienFichier(vignette)" v-if="!chargementVignette">
@@ -961,8 +967,8 @@
 				</div>
 				<div class="conteneur conteneur-media" v-if="donneesBloc.media">
 					<div class="media" v-if="donneesBloc.iframe === ''">
-						<img :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirNomLienFichier(donneesBloc.media)" v-if="donneesBloc.type === 'image'">
-						<img :src="donneesBloc.media" :alt="definirNomLienFichier(donneesBloc.media)" v-else-if="donneesBloc.type === 'lien-image'">
+						<img :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-if="donneesBloc.type === 'image'">
+						<img :src="donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-else-if="donneesBloc.type === 'lien-image'">
 						<audio controls :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" />
 						<video controls playsinline crossOrigin="anonymous" :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" />
 						<iframe class="document" :src="'/pdfjs/web/viewer.html?file=' + definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />

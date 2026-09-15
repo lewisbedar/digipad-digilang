@@ -55,6 +55,7 @@ export default {
 			titre: '',
 			texte: '',
 			media: '',
+			alt: '',
 			lien: '',
 			iframe: '',
 			vignette: '',
@@ -818,6 +819,12 @@ export default {
 			if (!fichier) return ''
 			return fichier.split('\\').pop().split('/').pop()
 		},
+		definirTexteAlternatif (item) {
+			if (item && typeof item.alt === 'string') {
+				return item.alt
+			}
+			return ''
+		},
 		gererMenuColonne (indexCol) {
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.menuColonne = this.menuColonne === indexCol ? null : indexCol
@@ -950,6 +957,7 @@ export default {
 				this.titre = item.titre
 				this.texte = item.texte
 				this.media = item.media
+				this.alt = item.hasOwnProperty('alt') && typeof item.alt === 'string' ? item.alt : ''
 				this.iframe = item.iframe
 				this.type = item.type
 				this.source = item.source
@@ -1246,6 +1254,7 @@ export default {
 				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId, pad: this.pad.id, token: this.pad.token })
 			}
 			this.media = ''
+			this.alt = ''
 			this.lien = ''
 			this.type = ''
 			this.vignette = ''
@@ -1279,9 +1288,9 @@ export default {
 				this.modale = ''
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
 				if (this.mode === 'creation') {
-					this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+					this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
 				} else {
-					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
 				}
 				this.progressionEnregistrement = false
 			}).catch((err) => {
@@ -1535,6 +1544,7 @@ export default {
 				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId, pad: this.pad.id, token: this.pad.token })
 			}
 			this.media = ''
+			this.alt = ''
 			this.lien = ''
 			this.iframe = ''
 			this.type = ''
@@ -1630,7 +1640,7 @@ export default {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
-				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1644,7 +1654,7 @@ export default {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
-				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom)
+				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1716,6 +1726,7 @@ export default {
 			this.type = ''
 			this.source = ''
 			this.media = ''
+			this.alt = ''
 			this.lien = ''
 			this.progressionFichier = 0
 			this.progressionVignette = 0
@@ -1871,7 +1882,7 @@ export default {
 					this.chargement = true
 					const randomHex = crypto.getRandomValues(new Uint8Array(8)).reduce((hex, byte) => hex + byte.toString(16).padStart(2, '0'), '')
 					const id = 'bloc-id-' + Date.now() + randomHex
-					this.$socket.emit('copierbloc', id, this.padDestination, token, donneesBloc.titre, donneesBloc.texte, donneesBloc.media, donneesBloc.iframe, donneesBloc.type, donneesBloc.source, donneesBloc.vignette, donneesBloc.couleur, colonneDestination, donneesBloc.visibilite, this.identifiant, this.nom, this.pad.id)
+					this.$socket.emit('copierbloc', id, this.padDestination, token, donneesBloc.titre, donneesBloc.texte, donneesBloc.media, donneesBloc.iframe, donneesBloc.type, donneesBloc.source, donneesBloc.vignette, donneesBloc.couleur, colonneDestination, donneesBloc.visibilite, this.identifiant, this.nom, this.pad.id, donneesBloc.alt)
 					this.fermerModaleCopieBloc()
 				}
 			}
@@ -1891,10 +1902,10 @@ export default {
 				let html = ''
 				switch (item.type) {
 				case 'image':
-					html = '<span id="' + imageId + '" class="image"><img src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" alt="' + escapeHtml(item.media) + '"></span>'
+					html = '<span id="' + imageId + '" class="image"><img src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
 					break
 				case 'lien-image':
-					html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(item.media) + '" alt="' + escapeHtml(item.media) + '"></span>'
+					html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
 					break
 				case 'audio':
 					html = '<audio controls preload="metadata" src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '"></audio>'
@@ -4271,7 +4282,7 @@ export default {
 							if (donnees.visibilite === 'privee' && !this.admin) {
 								this.colonnes[indexColonne].splice(indexBlocColonne, 1)
 							} else {
-								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
+								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
 							}
 						}
 					}
@@ -4282,7 +4293,7 @@ export default {
 						if (donnees.visibilite === 'privee' && !this.admin) {
 							this.blocs.splice(indexBloc, 1)
 						} else {
-							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
+							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
 						}
 					}
 					if (donneesCompletes) {
@@ -4305,6 +4316,7 @@ export default {
 					item.titre = donnees.titre
 					item.texte = donnees.texte
 					item.media = donnees.media
+					item.alt = donnees.alt
 					item.iframe = donnees.iframe
 					item.vignette = donnees.vignette
 				}
@@ -4325,6 +4337,7 @@ export default {
 					}
 					if (!this.media && !this.iframe) {
 						this.media = donnees.media
+						this.alt = typeof donnees.alt === 'string' ? donnees.alt : ''
 						this.iframe = donnees.iframe
 						if (donnees.iframe !== '') {
 							this.lien = donnees.media

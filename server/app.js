@@ -235,7 +235,7 @@ async function demarrerServeur () {
 	EventEmitter.defaultMaxListeners = 20
 	
 	// Pour validation des chaînes dans ajouterbloc et modifierbloc
-	const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000 }
+	const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250 }
 
 	const limiteTeleversement = (parseFloat(process.env.VITE_UPLOAD_LIMIT) || 20) * 1024 * 1000
 
@@ -1294,7 +1294,7 @@ async function demarrerServeur () {
 				}
 				const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 				await db.multi()
-					.HSET('pad-' + nId + ':' + blocId, ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d'])
+					.HSET('pad-' + nId + ':' + blocId, ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'alt', assainirTexteAlternatif(infosBloc.alt), 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d'])
 					.ZADD('blocs:' + nId, { score: index, value: blocId })
 					.exec()
 				return blocId
@@ -1424,7 +1424,7 @@ async function demarrerServeur () {
 						const visibilite = bloc.visibilite || 'visible'
 						const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 						const pipelineBloc = db.multi()
-						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						pipelineBloc.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						if (parametres.commentaires === true && Array.isArray(bloc.listeCommentaires)) {
 							bloc.listeCommentaires.forEach(commentaire => {
@@ -3146,7 +3146,7 @@ async function demarrerServeur () {
 							media = etherpad + '/p/' + destinationId
 						}
 					}
-					const champsBloc = ['id', blocSource.id, 'bloc', nouveauBlocId, 'titre', blocSource.titre, 'texte', blocSource.texte, 'media', media, 'iframe', iframe, 'type', blocSource.type, 'source', blocSource.source, 'vignette', vignette, 'date', date, 'identifiant', blocSource.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', blocSource.colonne, 'visibilite', blocSource.visibilite]
+					const champsBloc = ['id', blocSource.id, 'bloc', nouveauBlocId, 'titre', blocSource.titre, 'texte', blocSource.texte, 'media', media, 'alt', assainirTexteAlternatif(blocSource.alt), 'iframe', iframe, 'type', blocSource.type, 'source', blocSource.source, 'vignette', vignette, 'date', date, 'identifiant', blocSource.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', blocSource.colonne, 'visibilite', blocSource.visibilite]
 					return { index, nouveauBlocId, champsBloc }
 				}))
 				const pipelineBlocs = db.multi()
@@ -3291,7 +3291,7 @@ async function demarrerServeur () {
 					const visibilite = bloc.hasOwnProperty('visibilite') ? bloc.visibilite : 'visible'
 					const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 					await db.multi()
-						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						.exec()
 					// Gestion des commentaires
@@ -3561,12 +3561,13 @@ async function demarrerServeur () {
 			}
 		})
 
-		socket.on('ajouterbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom) => {
+		socket.on('ajouterbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom, alt) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			if (typeof titre === 'string' && titre.length > limitesTailleInput.titre) return socket.emit('erreur')
 			if (typeof texte === 'string' && texte.length > limitesTailleInput.texte) return socket.emit('erreur')
 			if (typeof iframe === 'string' && iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
+			if (typeof alt === 'string' && alt.length > limitesTailleInput.alt) return socket.emit('erreur')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
@@ -3593,8 +3594,9 @@ async function demarrerServeur () {
 				}
 				texte = assainirHTML(texte)
 				iframe = assainirIframe(iframe)
+				alt = assainirTexteAlternatif(alt)
 				await db.multi()
-					.HSET('pad-' + pad + ':' + bloc, ['id', blocId, 'bloc', bloc, 'titre', titre, 'texte', texte, 'media', media, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', colonne, 'visibilite', visibilite, 'couleur', couleur])
+					.HSET('pad-' + pad + ':' + bloc, ['id', blocId, 'bloc', bloc, 'titre', titre, 'texte', texte, 'media', media, 'alt', alt, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', colonne, 'visibilite', visibilite, 'couleur', couleur])
 					.ZADD('blocs:' + pad, [{ score: blocId, value: bloc }])
 					.HSET('pads:' + pad, 'bloc', blocId)
 					.HSET('dates-pads:' + pad, 'date', date)
@@ -3611,7 +3613,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -3635,19 +3637,20 @@ async function demarrerServeur () {
 				if (vignette && definirVignettePersonnalisee(vignette) === true) {
 					vignette = path.basename(vignette)
 				}
-				socket.emit('recupererbloc', { bloc, titre: donneesBloc.titre, texte: donneesBloc.texte, media: donneesBloc.media, iframe: donneesBloc.iframe, vignette })
+				socket.emit('recupererbloc', { bloc, titre: donneesBloc.titre, texte: donneesBloc.texte, media: donneesBloc.media, alt: donneesBloc.alt || '', iframe: donneesBloc.iframe, vignette })
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
 			}
 		})
 
-		socket.on('modifierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom) => {
+		socket.on('modifierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom, alt) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			if (typeof titre !== 'string' || titre.length > limitesTailleInput.titre) return socket.emit('erreur')
 			if (typeof texte !== 'string' || texte.length > limitesTailleInput.texte) return socket.emit('erreur')
 			if (typeof iframe !== 'string' || iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
+			if (typeof alt === 'string' && alt.length > limitesTailleInput.alt) return socket.emit('erreur')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
@@ -3675,6 +3678,8 @@ async function demarrerServeur () {
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				texte = assainirHTML(texte)
 				iframe = assainirIframe(iframe)
+				// Argument absent (client non à jour) : on conserve le texte alternatif existant
+				alt = (typeof alt === 'string') ? assainirTexteAlternatif(alt) : (donneesBloc.alt || '')
 				const statuts = ['visible', 'privee', 'masquee']
 				if (statuts.includes(visibilite)) {
 					// Ajout dans le registre d'activité uniquement si visible ou masquée
@@ -3685,7 +3690,7 @@ async function demarrerServeur () {
 							.exec()
 					}
 					await db.multi()
-						.HSET('pad-' + pad + ':' + bloc, ['titre', titre, 'texte', texte, 'media', media, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'visibilite', visibilite, 'couleur', couleur, 'modifie', date])
+						.HSET('pad-' + pad + ':' + bloc, ['titre', titre, 'texte', texte, 'media', media, 'alt', alt, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'visibilite', visibilite, 'couleur', couleur, 'modifie', date])
 						.HSET('dates-pads:' + pad, 'date', date)
 						.exec()
 				}
@@ -3705,7 +3710,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, activiteId }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, activiteId }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -3715,7 +3720,7 @@ async function demarrerServeur () {
 			}
 		})
 
-		socket.on('copierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, visibilite, identifiant, nom, padOrigine) => {
+		socket.on('copierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, visibilite, identifiant, nom, padOrigine, alt) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
@@ -3740,8 +3745,9 @@ async function demarrerServeur () {
 				}
 				texte = assainirHTML(texte)
 				iframe = assainirIframe(iframe)
+				alt = assainirTexteAlternatif(alt)
 				await db.multi()
-					.HSET('pad-' + pad + ':' + bloc, ['id', blocId, 'bloc', bloc, 'titre', titre, 'texte', texte, 'media', media, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', colonne, 'visibilite', visibilite, 'couleur', couleur])
+					.HSET('pad-' + pad + ':' + bloc, ['id', blocId, 'bloc', bloc, 'titre', titre, 'texte', texte, 'media', media, 'alt', alt, 'iframe', iframe, 'type', type, 'source', source, 'vignette', vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', colonne, 'visibilite', visibilite, 'couleur', couleur])
 					.ZADD('blocs:' + pad, [{ score: blocId, value: bloc }])
 					.HSET('pads:' + pad, 'bloc', blocId)
 					.HSET('dates-pads:' + pad, 'date', date)
@@ -3759,7 +3765,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignette !== '') {
 					await copierFichier(padOrigine, pad, vignette, 'vignette')
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId, type, source }, visibilite, { texte, media, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId, type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				socket.emit('copierbloc')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -3816,7 +3822,7 @@ async function demarrerServeur () {
 				const commentairesVisibles = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, donneesPad.visibiliteCommentaires !== 'admin')
 				const listeEvaluations = (evaluationsBrutes || []).map(ev => parseJSON(ev, null)).filter(e => e !== null)
 				const evaluationsVisibles = (donneesPad.visibiliteEvaluations === 'admin') ? [] : listeEvaluations
-				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
+				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, alt: item.alt || '', iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
 				if (moderation === 'moderee' && item.activiteId) {
 					donneesBlocAutoriseBase.publication = { activiteId: item.activiteId, date: item.date, identifiant: item.identifiant, nom: item.nom }
 				}
@@ -5431,7 +5437,7 @@ async function demarrerServeur () {
 			if (!clesRequisesBloc.every(cle => bloc.hasOwnProperty(cle))) continue
 			const visibilite = bloc.visibilite ?? 'visible'
 			const cleRedisBloc = 'pad-' + id + ':' + bloc.bloc
-			const donneesBloc = ['id', bloc.id, 'bloc', bloc.bloc, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', bloc.date, 'identifiant', bloc.identifiant, 'commentaires', bloc.commentaires, 'evaluations', bloc.evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite]
+			const donneesBloc = ['id', bloc.id, 'bloc', bloc.bloc, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', bloc.date, 'identifiant', bloc.identifiant, 'commentaires', bloc.commentaires, 'evaluations', bloc.evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite]
 			pipeline.HSET(cleRedisBloc, donneesBloc)
 			pipeline.ZADD('blocs:' + id, [{ score: indexBloc, value: bloc.bloc }])
 			if (Array.isArray(bloc.listeCommentaires)) {
@@ -5898,7 +5904,7 @@ async function demarrerServeur () {
 
 	function definirBlocDiffuse (champsBase, visibilite, contenu, contributions) {
 		const contenuAMasquer = (visibilite === 'privee' || (visibilite === 'masquee' && contributions === 'moderees'))
-		const blocComplet = { ...champsBase, visibilite, texte: contenu.texte, media: contenu.media, iframe: contenu.iframe, vignette: contenu.vignette }
+		const blocComplet = { ...champsBase, visibilite, texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette }
 		if (!contenuAMasquer) {
 			return { complet: blocComplet, reduit: blocComplet }
 		}
@@ -5945,7 +5951,7 @@ async function demarrerServeur () {
 	function definirBlocsExport (blocs, pad) {
 		const commentairesVisibles = pad.visibiliteCommentaires !== 'admin'
 		const evaluationsVisibles = pad.visibiliteEvaluations !== 'admin'
-		const champs = ['bloc', 'titre', 'texte', 'media', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
+		const champs = ['bloc', 'titre', 'texte', 'media', 'alt', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
 		return blocs.filter((bloc) => verifierBlocVisible(bloc, pad.contributions)).map((bloc) => {
 			const blocExport = {}
 			champs.forEach((champ) => {
@@ -6893,6 +6899,11 @@ async function demarrerServeur () {
 	function assainirIframe (html) {
 		if (!html || typeof html !== 'string') return ''
 		return html.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '').replace(/src\s*=\s*(?:"(javascript|vbscript|data):[^"]*"|'(javascript|vbscript|data):[^']*'|(javascript|vbscript|data):[^\s>]*)/gi, '')
+	}
+
+	function assainirTexteAlternatif (alt) {
+		if (!alt || typeof alt !== 'string') return ''
+		return alt.replace(/[<>]/g, '').trim().substring(0, limitesTailleInput.alt)
 	}
 
 	function parseJSON (str, fallback) {
