@@ -90,6 +90,7 @@
 				<div id="boutons">
 					<button type="button" id="bouton-creer" :disabled="disabled" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleCreerPad">{{ $t('creerPad') }}</button>
 					<button type="button" id="bouton-importer" :disabled="disabled" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleImporterPad">{{ $t('importerPad') }}</button>
+					<button type="button" id="bouton-ajouter" :disabled="disabled" :class="{'desactive': padsCrees.length >= limite}" @click="afficherModaleAjouterPad" v-if="creationPadSansCompte === 1">{{ $t('ajouterPad') }}</button>
 				</div>
 				<div id="afficher">
 					<div class="rechercher" role="search" :aria-label="$t('rechercher')">
@@ -390,6 +391,29 @@
 			</div>
 		</div>
 
+		<div class="conteneur-modale" v-else-if="modale === 'ajouter-pad'">
+			<div id="ajout-pad" class="modale" role="dialog" aria-modal="true" :aria-label="$t('ajouterPad')">
+				<div class="en-tete">
+					<span class="titre">{{ $t('ajouterPad') }}</span>
+					<button type="button" class="fermer" :disabled="disabledModale || chargementModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleAjouterPad"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<label for="champ-lien-ajouter-pad">{{ $t('lienPad') }}</label>
+						<input id="champ-lien-ajouter-pad" type="text" :value="lienAjouter" :disabled="disabledModale" @input="lienAjouter = $event.target.value">
+						<label for="champ-motdepasse-ajouter-pad">{{ $t('motDePassePad') }}</label>
+						<input id="champ-motdepasse-ajouter-pad" type="password" :value="motDePasseAjouter" :disabled="disabledModale" @input="motDePasseAjouter = $event.target.value" @keydown.enter="ajouterPad">
+						<div class="actions">
+							<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterPad" v-if="!chargementModale">{{ $t('valider') }}</button>
+							<div class="conteneur-chargement" v-else>
+								<div class="chargement" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
 		<div class="conteneur-modale" v-else-if="modale === 'ajouter-dossier'">
 			<div id="ajout-dossier" class="modale" role="dialog" aria-modal="true" :aria-label="$t('ajouterDossier')">
 				<div class="en-tete">
@@ -494,6 +518,8 @@ export default {
 			titre: '',
 			progressionImport: 0,
 			padId: '',
+			lienAjouter: '',
+			motDePasseAjouter: '',
 			motDePasse: '',
 			nouveauMotDePasse: '',
 			confirmationNouveauMotDePasse: '',
@@ -527,7 +553,8 @@ export default {
 			padsFavoris: this.$pageContext.pageProps.padsFavoris,
 			dossiers: this.$pageContext.pageProps.dossiers,
 			stockage: import.meta.env.VITE_STORAGE,
-			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK
+			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK,
+			creationPadSansCompte: 0
 		}
 	},
 	computed : {
@@ -609,6 +636,10 @@ export default {
 
 		if (import.meta.env.VITE_WALL_LIMIT && import.meta.env.VITE_WALL_LIMIT !== '') {
 			this.limite = parseInt(import.meta.env.VITE_WALL_LIMIT)
+		}
+
+		if (import.meta.env.VITE_PAD_WITHOUT_ACCOUNT && import.meta.env.VITE_PAD_WITHOUT_ACCOUNT !== '') {
+			this.creationPadSansCompte = parseInt(import.meta.env.VITE_PAD_WITHOUT_ACCOUNT)
 		}
 	},
 	mounted () {
@@ -781,6 +812,69 @@ export default {
 			this.parametresImport.evaluations = false
 			this.parametresImport.activite = false
 			this.progressionImport = 0
+			this.gererFocus()
+		},
+		afficherModaleAjouterPad () {
+			if (this.padsCrees.length < this.limite) {
+				this.elementPrecedent = (document.activeElement || document.body)
+				this.modale = 'ajouter-pad'
+				this.$nextTick(() => {
+					document.querySelector('#ajout-pad input')?.focus()
+				})
+			} else {
+				this.message = this.$t('limitePad', { limite: this.limite })
+			}
+		},
+		extraireInfosPad (lien) {
+			const resultat = lien.match(/\/p\/(\d+)\/([a-z0-9]+)/i)
+			if (resultat) {
+				return { padId: resultat[1], token: resultat[2] }
+			}
+			return null
+		},
+		ajouterPad () {
+			if (this.lienAjouter === '' || this.motDePasseAjouter === '') {
+				this.message = this.$t('remplirChamps')
+				return
+			}
+			const infosPad = this.extraireInfosPad(this.lienAjouter)
+			if (!infosPad) {
+				this.message = this.$t('padInexistant')
+				return
+			}
+			this.chargementModale = true
+			axios.post(this.hote + '/api/rattacher-pad-compte', {
+				identifiant: this.identifiant,
+				padId: infosPad.padId,
+				token: infosPad.token,
+				motdepasse: this.motDePasseAjouter
+			}).then((reponse) => {
+				const donnees = reponse.data
+				window.location.href = '/p/' + donnees.id + '/' + donnees.token
+			}).catch((err) => {
+				this.chargementModale = false
+				if (err.response?.data === 'non_connecte') {
+					window.location.replace('/')
+				} else if (err.response?.data === 'non_autorise') {
+					this.message = this.$t('actionNonAutorisee')
+				} else if (err.response?.data === 'pad_inexistant') {
+					this.message = this.$t('padInexistant')
+				} else if (err.response?.data === 'pad_cree_avec_compte') {
+					this.message = this.$t('padCreeAvecCompte')
+				} else if (err.response?.data === 'motdepasse_incorrect') {
+					this.message = this.$t('motDePassePasCorrect')
+				} else {
+					this.message = this.$t('erreurCommunicationServeur')
+				}
+			})
+		},
+		fermerModaleAjouterPad () {
+			if (this.chargementModale) {
+				return
+			}
+			this.modale = ''
+			this.lienAjouter = ''
+			this.motDePasseAjouter = ''
 			this.gererFocus()
 		},
 		afficherModaleConfirmation (event, id, type) {
@@ -1573,6 +1667,8 @@ export default {
 				this.fermerModaleDeplacerPad()
 			} else if (this.modale === 'importer-pad') {
 				this.fermerModaleImporterPad()
+			} else if (this.modale === 'ajouter-pad') {
+				this.fermerModaleAjouterPad()
 			} else if (this.modale === 'ajouter-dossier') {
 				this.fermerModaleAjouterDossier()
 			} else if (this.modale === 'modifier-dossier') {
@@ -1678,11 +1774,13 @@ export default {
 	display: flex;
 	justify-content: center;
 	flex-wrap: wrap;
+	column-gap: 1.5rem;
 	margin-bottom: 1.5rem;
 }
 
 #bouton-importer,
-#bouton-creer {
+#bouton-creer,
+#bouton-ajouter {
 	display: inline-flex;
 	justify-content: center;
 	align-items: center;
@@ -1702,18 +1800,16 @@ export default {
 }
 
 #bouton-importer.desactive,
-#bouton-creer.desactive {
+#bouton-creer.desactive,
+#bouton-ajouter.desactive {
 	border: 2px solid #777;
 	background: #aaa;
 	cursor: default;
 }
 
-#bouton-creer {
-	margin-right: 1.5rem;
-}
-
 #bouton-importer:not(.desactive):hover,
-#bouton-creer:not(.desactive):hover {
+#bouton-creer:not(.desactive):hover,
+#bouton-ajouter:not(.desactive):hover {
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
 	background: #fff;
 }
@@ -2273,12 +2369,6 @@ export default {
 @media screen and (orientation: landscape) and (max-height: 479px) {
 	#modale-motdepasse {
 		height: 90%;
-	}
-}
-
-@media screen and (max-width: 479px) {
-	#bouton-creer {
-		margin-right: 0;
 	}
 }
 

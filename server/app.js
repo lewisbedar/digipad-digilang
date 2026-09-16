@@ -1118,6 +1118,46 @@ async function demarrerServeur () {
 		}
 	})
 
+	app.post('/api/rattacher-pad-compte', async (req, res) => {
+		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (creationPadSansCompte !== 1) return res.status(401).send('non_autorise')
+		const identifiant = req.body.identifiant
+		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
+			supprimerSession(req)
+			return res.status(401).send('non_connecte')
+		}
+		try {
+			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
+			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
+			if (!motdepasseCorrect) return res.status(401).send('non_connecte')
+			const pad = req.body.padId
+			const token = req.body.token
+			const padExiste = await db.EXISTS('pads:' + pad)
+			if (padExiste !== 1) return res.status(404).send('pad_inexistant')
+			let donneesPad = await db.HGETALL('pads:' + pad)
+			donneesPad = donneesPad ? { ...donneesPad } : {}
+			if (typeof token !== 'string' || token === '' || !donneesPad.hasOwnProperty('token') || donneesPad.token !== token) return res.status(404).send('pad_inexistant')
+			if (!donneesPad.hasOwnProperty('motdepasse') || donneesPad.motdepasse.trim() === '') return res.status(409).send('pad_cree_avec_compte')
+			const motdepasse = req.body.motdepasse
+			const motdepassePadCorrect = (typeof motdepasse === 'string' && motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse))
+			if (!motdepassePadCorrect) return res.status(401).send('motdepasse_incorrect')
+			await db.multi()
+				.SADD('pads-crees:' + identifiant, pad.toString())
+				.SADD('utilisateurs-pads:' + pad, identifiant)
+				.HSET('pads:' + pad, 'identifiant', identifiant)
+				.HDEL('pads:' + pad, 'motdepasse')
+				.SREM('pads-rejoints:' + identifiant, pad.toString())
+				.SREM('pads-utilisateurs:' + identifiant, pad.toString())
+				.exec()
+			res.status(200).json({ id: parseInt(pad, 10), token: donneesPad.token })
+		} catch (err) {
+			console.error(err.stack)
+			res.status(500).send('erreur')
+		}
+	})
+
 	app.post('/api/deconnecter-pad', (req, res) => {
 		const identifiant = req.body.identifiant
 		if (req.session.identifiant && req.session.identifiant === identifiant) {
