@@ -203,6 +203,8 @@ async function demarrerServeur () {
 
 	const etherpad = process.env.VITE_ETHERPAD || null
 	const etherpadApi = process.env.ETHERPAD_API_KEY
+	// Ancien domaine Etherpad encore stocké dans les blocs créés avant le changement de domaine
+	const ancienDomaineEtherpad = 'https://env-7747481.jcloud-ver-jpe.ik-server.com'
 
 	const creationCompte = parseInt(process.env.VITE_CREATE_ACCOUNT) || 1
 	const creationPadSansCompte = parseInt(process.env.VITE_PAD_WITHOUT_ACCOUNT) || 1
@@ -236,6 +238,9 @@ async function demarrerServeur () {
 	
 	// Pour validation des chaînes dans ajouterbloc et modifierbloc
 	const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250 }
+
+	// Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
+	const tailleLotTransaction = 10
 
 	const limiteTeleversement = (parseFloat(process.env.VITE_UPLOAD_LIMIT) || 20) * 1024 * 1000
 
@@ -486,8 +491,8 @@ async function demarrerServeur () {
 					}
 				})
 			})
-			// Vérification parallèle de l'existence des pads dans les dossiers
-			const padsExistent = Array.from(listePadsDossiers).map(async (padId) => {
+			// Vérification par lots de l'existence des pads dans les dossiers
+			const padsSupprimesDossiers = (await executerTransactions(Array.from(listePadsDossiers), async (padId) => {
 				const padExiste = await db.EXISTS('pads:' + padId)
 				if (!padExiste || padExiste === 0) {
 					// Vérifier aussi le fichier JSON
@@ -497,8 +502,7 @@ async function demarrerServeur () {
 					return padId
 				}
 				return null
-			})
-			const padsSupprimesDossiers = (await Promise.all(padsExistent)).filter(id => id !== null)
+			}, tailleLotTransaction)).filter(id => id !== null)
 			// Nettoyage des dossiers : retirer les pads supprimés et doublons
 			dossiers.forEach(dossier => {
 				dossier.pads = dossier.pads.filter(id => !padsSupprimesDossiers.includes(id))
@@ -1263,16 +1267,16 @@ async function demarrerServeur () {
 			} else {
 				JSON.parse(donneesPadSource.colonnes).forEach(() => { affichageColonnes.push(true) })
 			}
-			// Duplication des blocs en parallèle
+			// Duplication des blocs par lots
 			const listeBlocs = await db.ZRANGE('blocs:' + padSource, 0, -1)
 			if (listeBlocs === null) return res.status(500).send('erreur_duplication')
-			const promessesBlocs = listeBlocs.map(async (blocSource, index) => {
+			await executerTransactions(listeBlocs, async (blocSource, index) => {
 				let infosBloc = await db.HGETALL('pad-' + padSource + ':' + blocSource)
 				infosBloc = infosBloc ? { ...infosBloc } : {}
 				if (!infosBloc || Object.keys(infosBloc).length === 0) return null
 				// Traitement spécifique Etherpad
-				if (infosBloc.iframe && infosBloc.iframe.includes(etherpad)) {
-					const etherpadIdSource = infosBloc.iframe.replace(etherpad + '/p/', '')
+				const etherpadIdSource = extraireIdentifiantEtherpad(infosBloc.iframe)
+				if (etherpadIdSource !== '') {
 					const etherpadIdDestination = 'pad-' + nId + '-' + randomBytes(8).toString('hex')
 					const urlCopie = etherpad + '/api/1.2.14/copyPad?apikey=' + etherpadApi + '&sourceID=' + etherpadIdSource + '&destinationID=' + etherpadIdDestination
 					const copieEtherpadReussie = await axios.get(urlCopie, { timeout: 5000 }).then(() => true).catch(() => false)
@@ -1290,8 +1294,7 @@ async function demarrerServeur () {
 					.ZADD('blocs:' + nId, { score: index, value: blocId })
 					.exec()
 				return blocId
-			})
-			await Promise.all(promessesBlocs)
+			}, tailleLotTransaction)
 			// Création des métadonnées du pad
 			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', donneesPadSource.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
 			// Ajout du code d'accès seulement s'il existait dans l'original
@@ -1313,11 +1316,10 @@ async function demarrerServeur () {
 			} else if (stockage === 's3') {
 				const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: padSource + '/' }))
 				if (listeObjets && listeObjets.Contents) {
-					const promessesCopiesS3 = listeObjets.Contents.map((objet) => {
+					await executerTransactions(listeObjets.Contents, (objet) => {
 						const nCle = objet.Key.replace(padSource + '/', nId + '/')
 						return s3Client.send(new CopyObjectCommand(definirParametresCopierS3(nCle, '/' + bucket + '/' + objet.Key)))
-					})
-					await Promise.all(promessesCopiesS3)
+					}, tailleLotTransaction)
 				}
 			}
 			if (dossierDestination !== '') {
@@ -1398,8 +1400,8 @@ async function demarrerServeur () {
 					if (stockage === 'fs') {
 						await fs.mkdirp(dossierDestination)
 					}
-					// Traitement parallèle des blocs
-					const promessesBlocs = donnees.blocs.map(async (bloc, indexBloc) => {
+					// Traitement des blocs par lots
+					const blocsCrees = await executerTransactions(donnees.blocs, async (bloc, indexBloc) => {
 						if (!clesRequisesBloc.every(cle => bloc.hasOwnProperty(cle))) {
 							return { bloc: 0, blocId: 0 }
 						}
@@ -1440,8 +1442,7 @@ async function demarrerServeur () {
 						}
 						await Promise.all([pipelineBloc.exec(), ...promessesFichiers])
 						return { bloc: bloc.bloc, blocId: blocId }
-					})
-					const blocsCrees = await Promise.all(promessesBlocs)
+					}, tailleLotTransaction)
 					// Métadonnées du pad
 					const token = Math.random().toString(16).slice(2)
 					const date = dayjs().format()
@@ -1572,6 +1573,7 @@ async function demarrerServeur () {
 				if (!adminPad) return res.status(403).send('non_autorise')
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs) {
+					await supprimerEtherpadBlocs(pad, blocs)
 					const pipelineBlocs = db.multi()
 					for (const blocId of blocs) {
 						pipelineBlocs
@@ -1608,11 +1610,7 @@ async function demarrerServeur () {
 						do {
 							const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
 							if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-								const promessesFichiersS3 = []
-								for (const objet of liste.Contents) {
-									promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
-								}
-								await Promise.all(promessesFichiersS3)
+								await executerTransactions(liste.Contents, (objet) => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))), tailleLotTransaction)
 							}
 							jetonPagination = liste && liste.IsTruncated ? liste.NextContinuationToken : undefined
 						} while (jetonPagination)
@@ -1827,16 +1825,15 @@ async function demarrerServeur () {
 				}
 				if (clesUtilisateurs.length === 0) return res.status(400).send('email_non_valide')
 				const utilisateurs = clesUtilisateurs.map(cle => cle.substring(13))
-				// Récupération parallèle des emails pour chaque utilisateur
-				const promessesEmails = utilisateurs.map(async (id) => {
+				// Récupération des emails pour chaque utilisateur
+				const listeEmails = await Promise.all(utilisateurs.map(async (id) => {
 					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + id)
 					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 					if (donneesUtilisateur.hasOwnProperty('email')) {
 						return { id: id, email: donneesUtilisateur.email.toLowerCase() }
 					}
 					return null
-				})
-				const listeEmails = await Promise.all(promessesEmails)
+				}))
 				// Recherche de l'utilisateur correspondant à l'email
 				const utilisateurEmail = listeEmails.find(user => user && user.email === email)
 				if (utilisateurEmail) {
@@ -1988,7 +1985,7 @@ async function demarrerServeur () {
 			if (nouvelUtilisateurExiste !== 1) return res.status(500).send('erreur')
 			const pads = await db.SMEMBERS('pads-crees:' + identifiant)
 			if (!pads) return res.status(500).send('erreur')
-			const promessesPads = pads.map(async (pad) => {
+			await Promise.all(pads.map(async (pad) => {
 				const padExiste = await db.EXISTS('pads:' + pad)
 				if (!padExiste) return { statut: 'inexistant', pad }
 				try {
@@ -2010,8 +2007,7 @@ async function demarrerServeur () {
 				} catch {
 					return { statut: 'erreur', pad }
 				}
-			})
-			await Promise.all(promessesPads)
+			}))
 			res.status(200).send('compte_transfere')
 		} catch (err) {
 			console.error(err.stack)
@@ -2037,132 +2033,140 @@ async function demarrerServeur () {
 			// Suppression des pads créés
 			const listePadsCrees = await db.SMEMBERS('pads-crees:' + identifiant)
 			if (listePadsCrees === null) return res.status(500).send('erreur')
-			// Traitement parallèle de la suppression de chaque pad créé
-			const padsSupprimes = listePadsCrees.map(async (pad) => {
-				const padExiste = await db.EXISTS('pads:' + pad)
-				if (padExiste === 1) {
-					const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
-					if (blocs && blocs.length > 0) {
-						const pipelineBlocs = db.multi()
-						for (const blocId of blocs) {
-							pipelineBlocs
-								.UNLINK('commentaires:' + blocId)
-								.UNLINK('commentaires-masques:' + blocId)
-								.UNLINK('evaluations:' + blocId)
-								.UNLINK('pad-' + pad + ':' + blocId)
-						}
-						await pipelineBlocs.exec()
-					}
-					await db.multi()
-						.UNLINK('blocs:' + pad)
-						.UNLINK('pads:' + pad)
-						.UNLINK('activite:' + pad)
-						.UNLINK('dates-pads:' + pad)
-						.exec()
-				} else if (padExiste === 0 && isNaN(parseInt(pad, 10)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
-					await Promise.all([
-						fs.remove(path.join(__dirname, '..', '/static/pads/' + pad + '.json')),
-						fs.remove(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
-					])
-				} else {
-					return
-				}
-				const utilisateursPad = await db.SMEMBERS('utilisateurs-pads:' + pad)
-				if (utilisateursPad && utilisateursPad.length > 0) {
-					const pipelineUtilisateurs = db.multi()
-					for (const utilisateurId of utilisateursPad) {
-						pipelineUtilisateurs
-							.SREM('pads-rejoints:' + utilisateurId, pad.toString())
-							.SREM('pads-utilisateurs:' + utilisateurId, pad.toString())
-							.SREM('pads-admins:' + utilisateurId, pad.toString())
-							.SREM('pads-favoris:' + utilisateurId, pad.toString())
-					}
-					await pipelineUtilisateurs.exec()
-				}
-				await db.UNLINK('utilisateurs-pads:' + pad)
-				// Suppression des fichiers
-				if (stockage === 'fs') {
-					await fs.remove(path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad))
-				} else if (stockage === 's3') {
-					try {
-						let jetonPagination
-						do {
-							const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
-							if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
-								await Promise.all(listeObjets.Contents.map(objet => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key)))))
+			// Traitement par lots de la suppression de chaque pad créé
+			await executerTransactions(listePadsCrees, async (pad) => {
+				try {
+					const padExiste = await db.EXISTS('pads:' + pad)
+					if (padExiste === 1) {
+						const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+						if (blocs && blocs.length > 0) {
+							await supprimerEtherpadBlocs(pad, blocs)
+							const pipelineBlocs = db.multi()
+							for (const blocId of blocs) {
+								pipelineBlocs
+									.UNLINK('commentaires:' + blocId)
+									.UNLINK('commentaires-masques:' + blocId)
+									.UNLINK('evaluations:' + blocId)
+									.UNLINK('pad-' + pad + ':' + blocId)
 							}
-							jetonPagination = listeObjets && listeObjets.IsTruncated ? listeObjets.NextContinuationToken : undefined
-						} while (jetonPagination)
-					} catch (err) {
-						console.error(err.stack)
+							await pipelineBlocs.exec()
+						}
+						await db.multi()
+							.UNLINK('blocs:' + pad)
+							.UNLINK('pads:' + pad)
+							.UNLINK('activite:' + pad)
+							.UNLINK('dates-pads:' + pad)
+							.exec()
+					} else if (padExiste === 0 && isNaN(parseInt(pad, 10)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+						await Promise.all([
+							fs.remove(path.join(__dirname, '..', '/static/pads/' + pad + '.json')),
+							fs.remove(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
+						])
+					} else {
+						return
 					}
+					const utilisateursPad = await db.SMEMBERS('utilisateurs-pads:' + pad)
+					if (utilisateursPad && utilisateursPad.length > 0) {
+						const pipelineUtilisateurs = db.multi()
+						for (const utilisateurId of utilisateursPad) {
+							pipelineUtilisateurs
+								.SREM('pads-rejoints:' + utilisateurId, pad.toString())
+								.SREM('pads-utilisateurs:' + utilisateurId, pad.toString())
+								.SREM('pads-admins:' + utilisateurId, pad.toString())
+								.SREM('pads-favoris:' + utilisateurId, pad.toString())
+						}
+						await pipelineUtilisateurs.exec()
+					}
+					await db.UNLINK('utilisateurs-pads:' + pad)
+					// Suppression des fichiers
+					if (stockage === 'fs') {
+						await fs.remove(path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad))
+					} else if (stockage === 's3') {
+						try {
+							let jetonPagination
+							do {
+								const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
+								if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
+									await executerTransactions(listeObjets.Contents, (objet) => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))), tailleLotTransaction)
+								}
+								jetonPagination = listeObjets && listeObjets.IsTruncated ? listeObjets.NextContinuationToken : undefined
+							} while (jetonPagination)
+						} catch (err) {
+							console.error(err.stack)
+						}
+					}
+				} catch (err) {
+					console.error(err.stack)
 				}
-			})
-			await Promise.all(padsSupprimes)
+			}, tailleLotTransaction)
 			// Nettoyage des contributions dans les pads rejoints
 			const listePadsRejoints = await db.SMEMBERS('pads-utilisateurs:' + identifiant)
 			if (listePadsRejoints && listePadsRejoints.length > 0) {
-				const padsRejoints = listePadsRejoints.map(async (pad) => {
-					const padExiste = await db.EXISTS('pads:' + pad)
-					if (padExiste !== 1) return
-					const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
-					if (blocs === null) return
-					for (const blocId of blocs) {
-						let bloc = await db.HGETALL('pad-' + pad + ':' + blocId)
-						bloc = bloc ? { ...bloc } : {}
-						if (bloc.hasOwnProperty('identifiant') && bloc.identifiant === identifiant) {
-							if (bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
-								await supprimerFichier(pad, bloc.media)
-							}
-							if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
-								await supprimerFichier(pad, path.basename(bloc.vignette))
-							}
-							await db.multi()
-								.UNLINK('pad-' + pad + ':' + blocId)
-								.ZREM('blocs:' + pad, blocId)
-								.UNLINK('commentaires:' + blocId)
-								.UNLINK('commentaires-masques:' + blocId)
-								.UNLINK('evaluations:' + blocId)
-								.exec()
-						}
-					}
-					const entreesActivite = await db.ZRANGE('activite:' + pad, 0, -1)
-					if (entreesActivite) {
-						for (const entreeStr of entreesActivite) {
-							const entree = parseJSON(entreeStr, null)
-							if (!entree) continue
-							if (entree.identifiant === identifiant) {
-								await db.ZREMRANGEBYSCORE('activite:' + pad, entree.id, entree.id)
+				await executerTransactions(listePadsRejoints, async (pad) => {
+					try {
+						const padExiste = await db.EXISTS('pads:' + pad)
+						if (padExiste !== 1) return
+						const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+						if (blocs === null) return
+						for (const blocId of blocs) {
+							let bloc = await db.HGETALL('pad-' + pad + ':' + blocId)
+							bloc = bloc ? { ...bloc } : {}
+							if (bloc.hasOwnProperty('identifiant') && bloc.identifiant === identifiant) {
+								if (bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
+									await supprimerFichier(pad, bloc.media)
+								}
+								if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
+									await supprimerFichier(pad, path.basename(bloc.vignette))
+								}
+								await supprimerEtherpad([bloc.iframe, bloc.media])
+								await db.multi()
+									.UNLINK('pad-' + pad + ':' + blocId)
+									.ZREM('blocs:' + pad, blocId)
+									.UNLINK('commentaires:' + blocId)
+									.UNLINK('commentaires-masques:' + blocId)
+									.UNLINK('evaluations:' + blocId)
+									.exec()
 							}
 						}
-					}
-					for (const blocId of blocs) {
-						const commentaires = await db.ZRANGE('commentaires:' + blocId, 0, -1)
-						if (commentaires) {
-							for (const commentaireStr of commentaires) {
-								const commentaire = parseJSON(commentaireStr, null)
-								if (!commentaire) continue
-								if (commentaire.identifiant === identifiant) {
-									await db.ZREMRANGEBYSCORE('commentaires:' + blocId, commentaire.id, commentaire.id)
-									if (commentaire.visibilite === 'masquee') {
-										await db.ZREMRANGEBYSCORE('commentaires-masques:' + blocId, commentaire.id, commentaire.id)
+						const entreesActivite = await db.ZRANGE('activite:' + pad, 0, -1)
+						if (entreesActivite) {
+							for (const entreeStr of entreesActivite) {
+								const entree = parseJSON(entreeStr, null)
+								if (!entree) continue
+								if (entree.identifiant === identifiant) {
+									await db.ZREMRANGEBYSCORE('activite:' + pad, entree.id, entree.id)
+								}
+							}
+						}
+						for (const blocId of blocs) {
+							const commentaires = await db.ZRANGE('commentaires:' + blocId, 0, -1)
+							if (commentaires) {
+								for (const commentaireStr of commentaires) {
+									const commentaire = parseJSON(commentaireStr, null)
+									if (!commentaire) continue
+									if (commentaire.identifiant === identifiant) {
+										await db.ZREMRANGEBYSCORE('commentaires:' + blocId, commentaire.id, commentaire.id)
+										if (commentaire.visibilite === 'masquee') {
+											await db.ZREMRANGEBYSCORE('commentaires-masques:' + blocId, commentaire.id, commentaire.id)
+										}
+									}
+								}
+							}
+							const evaluations = await db.ZRANGE('evaluations:' + blocId, 0, -1)
+							if (evaluations) {
+								for (const evaluationStr of evaluations) {
+									const evaluation = parseJSON(evaluationStr, null)
+									if (!evaluation) continue
+									if (evaluation.identifiant === identifiant) {
+										await db.ZREMRANGEBYSCORE('evaluations:' + blocId, evaluation.id, evaluation.id)
 									}
 								}
 							}
 						}
-						const evaluations = await db.ZRANGE('evaluations:' + blocId, 0, -1)
-						if (evaluations) {
-							for (const evaluationStr of evaluations) {
-								const evaluation = parseJSON(evaluationStr, null)
-								if (!evaluation) continue
-								if (evaluation.identifiant === identifiant) {
-									await db.ZREMRANGEBYSCORE('evaluations:' + blocId, evaluation.id, evaluation.id)
-								}
-							}
-						}
+					} catch (err) {
+						console.error(err.stack)
 					}
-				})
-				await Promise.all(padsRejoints)
+				}, tailleLotTransaction)
 			}
 			const pipelineFinal = db.multi()
 				.UNLINK('pads-crees:' + identifiant)
@@ -2189,7 +2193,7 @@ async function demarrerServeur () {
 						listeSessions.push(...cle)
 					}
 					if (listeSessions.length > 0) {
-						const promessesSessions = listeSessions.map(async (session) => {
+						await Promise.all(listeSessions.map(async (session) => {
 							const sessionId = session.substring(9)
 							const donneesSessionStr = await db.GET('sessions:' + sessionId)
 							if (donneesSessionStr) {
@@ -2198,8 +2202,7 @@ async function demarrerServeur () {
 									await db.UNLINK('sessions:' + sessionId)
 								}
 							}
-						})
-						await Promise.all(promessesSessions)
+						}))
 					}
 				} catch (err) {
 					console.error(err.stack)
@@ -3099,7 +3102,7 @@ async function demarrerServeur () {
 				// Duplication des blocs et fichiers
 				const blocsSource = await db.ZRANGE('blocs:' + padSource, 0, -1)
 				if (blocsSource === null) return res.status(500).send('erreur')
-				const blocsTraites = await Promise.all(blocsSource.map(async (blocId, index) => {
+				const blocsTraites = await executerTransactions(blocsSource, async (blocId, index) => {
 					let blocSource = await db.HGETALL('pad-' + padSource + ':' + blocId)
 					blocSource = blocSource ? { ...blocSource } : {}
 					if (Object.keys(blocSource).length === 0) return null
@@ -3111,8 +3114,8 @@ async function demarrerServeur () {
 					}
 					let iframe = blocSource.hasOwnProperty('iframe') ? blocSource.iframe : ''
 					let media = blocSource.hasOwnProperty('media') ? blocSource.media : ''
-					if (blocSource.hasOwnProperty('iframe') && blocSource.iframe.includes(etherpad)) {
-						const etherpadId = blocSource.iframe.replace(etherpad + '/p/', '')
+					const etherpadId = extraireIdentifiantEtherpad(blocSource.iframe)
+					if (etherpadId !== '') {
 						const destinationId = 'pad-' + padId + '-' + randomBytes(8).toString('hex')
 						const urlCopie = etherpad + '/api/1.2.14/copyPad?apikey=' + etherpadApi + '&sourceID=' + etherpadId + '&destinationID=' + destinationId
 						const copieEtherpadReussie = await axios.get(urlCopie, { timeout: 5000 }).then(() => true).catch(() => false)
@@ -3123,7 +3126,7 @@ async function demarrerServeur () {
 					}
 					const champsBloc = ['id', blocSource.id, 'bloc', nouveauBlocId, 'titre', blocSource.titre, 'texte', blocSource.texte, 'media', media, 'alt', assainirTexteAlternatif(blocSource.alt), 'iframe', iframe, 'type', blocSource.type, 'source', blocSource.source, 'vignette', vignette, 'date', date, 'identifiant', blocSource.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', blocSource.colonne, 'visibilite', blocSource.visibilite]
 					return { index, nouveauBlocId, champsBloc }
-				}))
+				}, tailleLotTransaction)
 				const pipelineBlocs = db.multi()
 				for (const bloc of blocsTraites.filter(Boolean)) {
 					pipelineBlocs.HSET('pad-' + padId + ':' + bloc.nouveauBlocId, bloc.champsBloc)
@@ -3140,11 +3143,10 @@ async function demarrerServeur () {
 				} else if (stockage === 's3') {
 					const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: padSource + '/' }))
 					if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
-						const promessesCopieS3 = listeObjets.Contents.map(objet => {
+						await executerTransactions(listeObjets.Contents, (objet) => {
 							const nouvelleCle = objet.Key.replace(padSource + '/', padId + '/')
 							return s3Client.send(new CopyObjectCommand(definirParametresCopierS3(nouvelleCle, '/' + bucket + '/' + objet.Key)))
-						})
-						await Promise.all(promessesCopieS3)
+						}, tailleLotTransaction)
 					}
 				}
 				return res.status(200).send(padId + '/' + token)
@@ -3248,8 +3250,8 @@ async function demarrerServeur () {
 				if (stockage === 'fs') {
 					await fs.mkdirp(dossierDestination)
 				}
-				// Traitement parallèle des blocs
-				const promessesBlocs = donnees.blocs.map(async (bloc, indexBloc) => {
+				// Traitement des blocs par lots
+				const blocs = await executerTransactions(donnees.blocs, async (bloc, indexBloc) => {
 					const blocValide = clesRequisesBlocs.every(cle => bloc.hasOwnProperty(cle))
 					if (!blocValide) return { bloc: 0, blocId: 0 }
 					const date = dayjs().format()
@@ -3291,8 +3293,7 @@ async function demarrerServeur () {
 						await televerserFichierArchive(dossierTemporaire, dossierDestination, vignette, id)
 					}
 					return { bloc: bloc.bloc, blocId: blocId }
-				})
-				const blocs = await Promise.all(promessesBlocs)
+				}, tailleLotTransaction)
 				const token = Math.random().toString(16).slice(2)
 				const date = dayjs().format()
 				const code = Math.floor(100000 + Math.random() * 900000)
@@ -3956,17 +3957,7 @@ async function demarrerServeur () {
 				if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
 					await supprimerFichier(pad, path.basename(donneesBloc.vignette))
 				}
-				let etherpadId, url
-				if (donneesBloc.hasOwnProperty('iframe') && donneesBloc.iframe !== '' && donneesBloc.iframe.includes(etherpad)) {
-					etherpadId = donneesBloc.iframe.replace(etherpad + '/p/', '')
-					url = etherpad + '/api/1/deletePad?apikey=' + etherpadApi + '&padID=' + etherpadId
-					await axios.get(url, { timeout: 5000 }).catch(() => {})
-				}
-				if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.media.includes(etherpad)) {
-					etherpadId = donneesBloc.media.replace(etherpad + '/p/', '')
-					url = etherpad + '/api/1/deletePad?apikey=' + etherpadApi + '&padID=' + etherpadId
-					await axios.get(url, { timeout: 5000 }).catch(() => {})
-				}
+				await supprimerEtherpad([donneesBloc.iframe, donneesBloc.media])
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				await db.multi()
@@ -5003,23 +4994,21 @@ async function demarrerServeur () {
 				affichageColonnes.splice(indexColonne, 0, true)
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
-				const promessesBlocs = blocs.map(async (blocId) => {
+				const donneesBlocs = await Promise.all(blocs.map(async (blocId) => {
 					const donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return donneesBloc ? { ...donneesBloc } : null
-				})
-				const donneesBlocs = await Promise.all(promessesBlocs)
+				}))
 				// Décalage des blocs situés dans une colonne insérée avant la leur (un bloc sans colonne est considéré comme faisant partie de la colonne 0)
 				const blocsADecaler = donneesBlocs.filter((item) => {
 					if (!item) return false
 					const colonneActuelle = item.hasOwnProperty('colonne') ? parseInt(item.colonne, 10) : 0
 					return colonneActuelle >= parseInt(indexColonne, 10)
 				})
-				const promessesDecalages = blocsADecaler.map(async (bloc) => {
+				await Promise.all(blocsADecaler.map(async (bloc) => {
 					const colonneActuelle = bloc.hasOwnProperty('colonne') ? parseInt(bloc.colonne, 10) : 0
 					const nouvelleColonne = colonneActuelle + 1
 					await db.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', nouvelleColonne)
-				})
-				await Promise.all(promessesDecalages)
+				}))
 				await db.multi()
 					.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
 					.HINCRBY('pads:' + pad, 'activite', 1)
@@ -5063,11 +5052,10 @@ async function demarrerServeur () {
 				const titre = colonnes[indexSource]
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
-				const promessesBlocs = blocs.map(async (blocId) => {
+				const donneesBlocs = await Promise.all(blocs.map(async (blocId) => {
 					const donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return donneesBloc ? { ...donneesBloc } : null
-				})
-				const donneesBlocs = await Promise.all(promessesBlocs)
+				}))
 				// Séparation des capsules à dupliquer et des capsules à décaler
 				const blocsADupliquer = []
 				const blocsADecaler = []
@@ -5085,11 +5073,11 @@ async function demarrerServeur () {
 				const blocCourant = parseInt(donneesPad.bloc, 10)
 				const scoreBase = Math.max(await definirScoreMaximum(pad), blocCourant)
 				// Contenu dupliqué avant toute écriture : si une copie échoue, rien n'a encore été modifié et la duplication est abandonnée
-				const duplications = await Promise.all(blocsADupliquer.map(async (donneesBloc, index) => {
+				const duplications = await executerTransactions(blocsADupliquer, async (donneesBloc, index) => {
 					const nouveauBloc = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 					const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer)
 					return { nouveauBloc, contenu, donneesBloc, blocId: blocCourant + index + 1, score: scoreBase + index + 1 }
-				}))
+				}, tailleLotTransaction)
 				if (duplications.some((duplication) => duplication.contenu.echec)) {
 					await annulerDupliquerBloc(pad, contenusANettoyer)
 					return socket.emit('erreur')
@@ -5227,11 +5215,10 @@ async function demarrerServeur () {
 				if (!Number.isInteger(colonne) || colonne < 0 || colonne >= colonnes.length) return socket.emit('erreur')
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
-				const promessesBlocs = blocs.map(async (blocId) => {
+				const donneesBlocs = await Promise.all(blocs.map(async (blocId) => {
 					const donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return donneesBloc ? { ...donneesBloc } : null
-				})
-				const donneesBlocs = await Promise.all(promessesBlocs)
+				}))
 				const blocsASupprimer = []
 				donneesBlocs.forEach((item) => {
 					if (!item) return
@@ -5272,11 +5259,10 @@ async function demarrerServeur () {
 				affichageColonnes.splice(colonne, 1)
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
-				const promessesBlocs = blocs.map(async (blocId) => {
+				const donneesBlocs = await Promise.all(blocs.map(async (blocId) => {
 					const donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return donneesBloc ? { ...donneesBloc } : null
-				})
-				const donneesBlocs = await Promise.all(promessesBlocs)
+				}))
 				// Séparation des blocs à supprimer et des blocs à modifier (décalage de colonne)
 				const blocsASupprimer = []
 				const blocsADecaler = []
@@ -5291,11 +5277,14 @@ async function demarrerServeur () {
 						blocsADecaler.push(item)
 					}
 				})
-				const promessesDecalages = blocsADecaler.map(async (bloc) => {
-					const nouvelleColonne = parseInt(bloc.colonne, 10) - 1
-					await db.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', nouvelleColonne)
-				})
-				await Promise.all([supprimerBlocs(pad, blocsASupprimer), ...promessesDecalages])
+				const [blocsSupprimes] = await Promise.all([
+					supprimerBlocs(pad, blocsASupprimer),
+					Promise.all(blocsADecaler.map(async (bloc) => {
+						const nouvelleColonne = parseInt(bloc.colonne, 10) - 1
+						await db.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', nouvelleColonne)
+					}))
+				])
+				if (blocsSupprimes.length !== blocsASupprimer.length) return socket.emit('erreur')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				await db.multi()
@@ -5341,13 +5330,12 @@ async function demarrerServeur () {
 				}
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
-				const promessesBlocs = blocs.map(async (blocId) => {
+				const donneesBlocs = await Promise.all(blocs.map(async (blocId) => {
 					const bloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return bloc ? { ...bloc } : null
-				})
-				const donneesBlocs = await Promise.all(promessesBlocs)
-				// Identification et mise à jour parallèle des blocs impactés
-				const promessesMisesAJour = donneesBlocs.map(async (item) => {
+				}))
+				// Identification et mise à jour des blocs impactés
+				await Promise.all(donneesBlocs.map(async (item) => {
 					if (!item || !item.hasOwnProperty('bloc')) return
 					const blocId = item.bloc
 					const colonneActuelle = parseInt(item.colonne, 10)
@@ -5373,8 +5361,7 @@ async function demarrerServeur () {
 							await db.HSET('pad-' + pad + ':' + blocId, 'colonne', nouvelleColonne)
 						}
 					}
-				})
-				await Promise.all(promessesMisesAJour)
+				}))
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				await db.multi()
@@ -5650,10 +5637,11 @@ async function demarrerServeur () {
 	}
 
 	async function recupererDonneesUtilisateur (identifiant) {
+		const nomsUtilisateurs = new Map()
 		const recupererDonnees = async (cleRedis) => {
 			const pads = await db.SMEMBERS(cleRedis)
 			if (!pads || pads.length === 0) return []
-			const promessesPads = pads.map(async (padId) => {
+			const donnees = await Promise.all(pads.map(async (padId) => {
 				let donneesPad = null
 				const padExiste = await db.EXISTS('pads:' + padId)
 				if (padExiste === 1) {
@@ -5670,19 +5658,10 @@ async function demarrerServeur () {
 				if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 					donneesPad.fond = path.basename(donneesPad.fond)
 				}
-				let nomAuteur = donneesPad.identifiant
-				const utilisateurExiste = await db.EXISTS('utilisateurs:' + donneesPad.identifiant)
-				if (utilisateurExiste === 1) {
-					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + donneesPad.identifiant)
-					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-					if (donneesUtilisateur && donneesUtilisateur.hasOwnProperty('nom') && donneesUtilisateur.nom !== '') {
-						nomAuteur = donneesUtilisateur.nom
-					}
-				}
-				donneesPad.nom = nomAuteur
+				const nomAuteur = await recupererNomUtilisateur(donneesPad.identifiant, nomsUtilisateurs)
+				donneesPad.nom = nomAuteur || donneesPad.identifiant
 				return donneesPad
-			})
-			const donnees = await Promise.all(promessesPads)
+			}))
 			return donnees.filter(item => item !== null && Object.keys(item).length > 0)
 		}
 		const [padsCrees, padsSupprimes, padsRejoints, padsAdmins, padsFavoris] = await Promise.all([
@@ -5699,7 +5678,7 @@ async function demarrerServeur () {
 		const recupererDonnees = async (cleRedis) => {
 			const pads = await db.SMEMBERS(cleRedis)
 			if (!pads || pads.length === 0) return []
-			const promessesPads = pads.map(async (pad) => {
+			const donneesPads = await Promise.all(pads.map(async (pad) => {
 				const padExiste = await db.EXISTS('pads:' + pad)
 				let donneesPad = null
 				if (padExiste === 1) {
@@ -5712,8 +5691,7 @@ async function demarrerServeur () {
 					}
 				}
 				return null
-			})
-			const donneesPads = await Promise.all(promessesPads)
+			}))
 			return donneesPads.filter(item => item !== null)
 		}
 		const [padsCrees, padsAdmins] = await Promise.all([
@@ -5789,7 +5767,7 @@ async function demarrerServeur () {
 		if (accesLecture) {
 			const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 			if (listeBlocs && listeBlocs.length > 0) {
-				const promessesBlocs = listeBlocs.map(async (blocId) => {
+				const resultatsBlocs = await Promise.all(listeBlocs.map(async (blocId) => {
 					let bloc = await db.HGETALL('pad-' + id + ':' + blocId)
 					if (!bloc || Object.keys(bloc).length === 0) return null
 					bloc = { ...bloc }
@@ -5804,12 +5782,12 @@ async function demarrerServeur () {
 					if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
 						bloc.vignette = path.basename(bloc.vignette)
 					}
-					// Compatibilité changement domaine digidoc
-					if (bloc.hasOwnProperty('iframe') && bloc.iframe.includes('env-7747481.jcloud-ver-jpe.ik-server.com')) {
-						bloc.iframe = bloc.iframe.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+					// Compatibilité changement domaine doc.digipad
+					if (bloc.hasOwnProperty('iframe') && bloc.iframe.includes(ancienDomaineEtherpad)) {
+						bloc.iframe = bloc.iframe.replace(ancienDomaineEtherpad, etherpad)
 					}
-					if (bloc.hasOwnProperty('media') && bloc.media.includes('env-7747481.jcloud-ver-jpe.ik-server.com')) {
-						bloc.media = bloc.media.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+					if (bloc.hasOwnProperty('media') && bloc.media.includes(ancienDomaineEtherpad)) {
+						bloc.media = bloc.media.replace(ancienDomaineEtherpad, etherpad)
 					}
 					if (!bloc.hasOwnProperty('couleur') || bloc.couleur === null || typeof bloc.couleur !== 'string') {
 						bloc.couleur = '#242f3d'
@@ -5839,8 +5817,7 @@ async function demarrerServeur () {
 					bloc.nom = nomAuteur
 					listeBlocsValides.push(blocId)
 					return bloc
-				})
-				const resultatsBlocs = await Promise.all(promessesBlocs)
+				}))
 				donneesBlocs = resultatsBlocs.filter(b => b !== null)
 			}
 		}
@@ -5852,14 +5829,13 @@ async function demarrerServeur () {
 		if (accesLecture) {
 			const activite = await db.ZRANGE('activite:' + id, 0, -1)
 			if (activite) {
-				const promessesActivite = activite.map(async (entreeStr) => {
+				const resultatsActivite = await Promise.all(activite.map(async (entreeStr) => {
 					const entree = parseJSON(entreeStr, null)
 					if (!entree) return null
 					entree.nom = await recupererNomUtilisateur(entree.identifiant, nomsUtilisateurs)
 					if (!verifierActiviteVisible(entree, pad, admin, identifiant, commentairesMasquesParBloc)) return null
 					return entree
-				})
-				const resultatsActivite = await Promise.all(promessesActivite)
+				}))
 				// Filtrage : seuls les événements liés aux blocs ou aux colonnes visibles sont gardés
 				donneesEntrees = resultatsActivite.filter(e => {
 					if (!e) return
@@ -5930,7 +5906,7 @@ async function demarrerServeur () {
 		let donneesBlocs = []
 		let listeBlocsValides = []
 		if (listeBlocs && listeBlocs.length > 0) {
-			const promessesBlocs = listeBlocs.map(async (blocId) => {
+			const resultatsBlocs = await Promise.all(listeBlocs.map(async (blocId) => {
 				let bloc = await db.HGETALL('pad-' + id + ':' + blocId)
 				if (!bloc || Object.keys(bloc).length === 0) return null
 				bloc = { ...bloc }
@@ -5946,11 +5922,11 @@ async function demarrerServeur () {
 				if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
 					bloc.vignette = path.basename(bloc.vignette)
 				}
-				if (bloc.hasOwnProperty('iframe') && bloc.iframe.includes('env-7747481.jcloud-ver-jpe.ik-server.com')) {
-					bloc.iframe = bloc.iframe.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+				if (bloc.hasOwnProperty('iframe') && bloc.iframe.includes(ancienDomaineEtherpad)) {
+					bloc.iframe = bloc.iframe.replace(ancienDomaineEtherpad, etherpad)
 				}
-				if (bloc.hasOwnProperty('media') && bloc.media.includes('env-7747481.jcloud-ver-jpe.ik-server.com')) {
-					bloc.media = bloc.media.replace('https://env-7747481.jcloud-ver-jpe.ik-server.com', process.env.VITE_ETHERPAD)
+				if (bloc.hasOwnProperty('media') && bloc.media.includes(ancienDomaineEtherpad)) {
+					bloc.media = bloc.media.replace(ancienDomaineEtherpad, etherpad)
 				}
 				if (!bloc.hasOwnProperty('couleur') || bloc.couleur === null || typeof bloc.couleur !== 'string') {
 					bloc.couleur = '#242f3d'
@@ -5981,8 +5957,7 @@ async function demarrerServeur () {
 				bloc.nom = nomAuteur
 				listeBlocsValides.push(blocId)
 				return bloc
-			})
-			const resultatsBlocs = await Promise.all(promessesBlocs)
+			}))
 			donneesBlocs = resultatsBlocs.filter(b => b !== null)
 		}
 		if (pad.ordre === 'decroissant') {
@@ -5991,14 +5966,13 @@ async function demarrerServeur () {
 		let donneesEntrees = []
 		const activite = await db.ZRANGE('activite:' + id, 0, -1)
 		if (activite) {
-			const promessesActivite = activite.map(async (entreeStr) => {
+			const resultatsActivite = await Promise.all(activite.map(async (entreeStr) => {
 				const entree = parseJSON(entreeStr, null)
 				if (!entree) return null
 				entree.nom = await recupererNomUtilisateur(entree.identifiant, nomsUtilisateurs)
 				if (!verifierActiviteVisible(entree, pad, admin, identifiant, commentairesMasquesParBloc)) return null
 				return entree
-			})
-			const resultatsActivite = await Promise.all(promessesActivite)
+			}))
 			donneesEntrees = resultatsActivite.filter(e => {
 				if (!e) return
 				const colonne = e.hasOwnProperty('type') && e.type.includes('colonne')
@@ -6219,7 +6193,7 @@ async function demarrerServeur () {
 		if (admin || (!accesCode && !accesPrive)) {
 			const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 			if (listeBlocs && listeBlocs.length > 0) {
-				const promessesBlocs = listeBlocs.map(async (blocId) => {
+				const resultatsBlocs = await Promise.all(listeBlocs.map(async (blocId) => {
 					let bloc = await db.HGETALL('pad-' + id + ':' + blocId)
 					if (!bloc || Object.keys(bloc).length === 0) return null
 					bloc = { ...bloc }
@@ -6232,8 +6206,7 @@ async function demarrerServeur () {
 					if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
 					bloc.nom = await recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 					return bloc
-				})
-				const resultatsBlocs = await Promise.all(promessesBlocs)
+				}))
 				donneesBlocs = resultatsBlocs.filter(b => b !== null)
 			}
 		}
@@ -6303,7 +6276,7 @@ async function demarrerServeur () {
 			let donneesBlocs = []
 			const nomsUtilisateurs = new Map()
 			if (listeBlocs && listeBlocs.length > 0) {
-				const promessesBlocs = listeBlocs.map(async (blocId) => {
+				const resultatsBlocs = await Promise.all(listeBlocs.map(async (blocId) => {
 					let bloc = await db.HGETALL('pad-' + id + ':' + blocId)
 					bloc = bloc ? { ...bloc } : {}
 					if (Object.keys(bloc).length === 0) return null
@@ -6331,8 +6304,7 @@ async function demarrerServeur () {
 					bloc.nom = nomUtilisateur || genererPseudo()
 					bloc.info = formaterDate(bloc, langue)
 					return bloc
-				})
-				const resultatsBlocs = await Promise.all(promessesBlocs)
+				}))
 				donneesBlocs = resultatsBlocs.filter(b => b !== null && Object.keys(b).length > 0)
 			}
 			let donneesEntrees = []
@@ -6351,48 +6323,48 @@ async function demarrerServeur () {
 			await fs.mkdirp(path.join(dossierStatic, 'img'))
 			await fs.writeFile(path.join(dossierPad, 'donnees.json'), JSON.stringify(parametres, '', 4), 'utf8')
 			await fs.writeFile(path.join(dossierPad, 'index.html'), html, 'utf8')
-			const promessesFichiers = []
+			const transactionsFichiers = []
 			if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 				const fichierFond = path.basename(donneesPad.fond)
-				promessesFichiers.push(
+				transactionsFichiers.push(() =>
 					copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + fichierFond), cleS3: id + '/' + fichierFond }, path.join(dossierFichiers, fichierFond))
 				)
 			} else if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && donneesPad.fond.includes('/img/')) {
-				promessesFichiers.push(
+				transactionsFichiers.push(() =>
 					fs.copy(path.join(__dirname, '..', '/public' + donneesPad.fond), path.join(dossierStatic, donneesPad.fond), { overwrite: true }).catch(() => {})
 				)
 			}
-			promessesFichiers.push(
-				fs.copy(path.join(__dirname, '..', '/static/export/css'), path.join(dossierStatic, 'css')).catch(() => {}),
-				fs.copy(path.join(__dirname, '..', '/static/export/js'), path.join(dossierStatic, 'js')).catch(() => {}),
-				fs.copy(path.join(__dirname, '..', '/public/fonts/MaterialIcons-Regular.woff2'), path.join(dossierStatic, 'fonts/MaterialIcons-Regular.woff2')).catch(() => {}),
-				fs.copy(path.join(__dirname, '..', '/public/fonts/Roboto-Slab-Medium.woff2'), path.join(dossierStatic, 'fonts/Roboto-Slab-Medium.woff2')).catch(() => {}),
-				fs.copy(path.join(__dirname, '..', '/public/img/favicon.png'), path.join(dossierStatic, 'img/favicon.png')).catch(() => {})
+			transactionsFichiers.push(
+				() => fs.copy(path.join(__dirname, '..', '/static/export/css'), path.join(dossierStatic, 'css')).catch(() => {}),
+				() => fs.copy(path.join(__dirname, '..', '/static/export/js'), path.join(dossierStatic, 'js')).catch(() => {}),
+				() => fs.copy(path.join(__dirname, '..', '/public/fonts/MaterialIcons-Regular.woff2'), path.join(dossierStatic, 'fonts/MaterialIcons-Regular.woff2')).catch(() => {}),
+				() => fs.copy(path.join(__dirname, '..', '/public/fonts/Roboto-Slab-Medium.woff2'), path.join(dossierStatic, 'fonts/Roboto-Slab-Medium.woff2')).catch(() => {}),
+				() => fs.copy(path.join(__dirname, '..', '/public/img/favicon.png'), path.join(dossierStatic, 'img/favicon.png')).catch(() => {})
 			)
 			for (const bloc of parametres.blocs) {
 				if (!bloc || Object.keys(bloc).length === 0) continue
 				if (bloc.media && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
-					promessesFichiers.push(
+					transactionsFichiers.push(() =>
 						copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + bloc.media), cleS3: id + '/' + bloc.media }, path.join(dossierFichiers, bloc.media))
 					)
 				}
 				if (bloc.vignette && bloc.vignette !== '' && typeof bloc.vignette === 'string') {
 					if (!verifierURL(bloc.vignette, ['https', 'http'])) {
 						if (bloc.vignette.includes('/img/')) {
-							promessesFichiers.push(
+							transactionsFichiers.push(() =>
 								fs.copy(path.join(__dirname, '..', '/public' + bloc.vignette), path.join(dossierStatic, bloc.vignette), { overwrite: true }).catch(() => {})
 							)
 						} else {
 							const fichierVignette = path.basename(bloc.vignette)
-							promessesFichiers.push(
+							transactionsFichiers.push(() =>
 								copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + fichierVignette), cleS3: id + '/' + fichierVignette }, path.join(dossierFichiers, fichierVignette))
 							)
 						}
 					}
 				}
 			}
-			// Exécution parallèle de tous les transferts de fichiers
-			await Promise.all(promessesFichiers)
+			// Exécution des transferts de fichiers par lots
+			await executerTransactions(transactionsFichiers, (tache) => tache(), tailleLotTransaction)
 			// Création de l'archive ZIP
 			const archiveId = Math.floor((Math.random() * 100000) + 1)
 			const nomArchive = 'pad-' + id + '_' + archiveId + '.zip'
@@ -6426,6 +6398,7 @@ async function demarrerServeur () {
 	async function supprimerPad (pad, identifiant, suppressionFichiers) {
 		const [blocs, utilisateurs] = await Promise.all([db.ZRANGE('blocs:' + pad, 0, -1), db.SMEMBERS('utilisateurs-pads:' + pad)])
 		if (blocs) {
+			await supprimerEtherpadBlocs(pad, blocs)
 			const pipelineBlocs = db.multi()
 			for (const blocId of blocs) {
 				pipelineBlocs
@@ -6466,11 +6439,7 @@ async function demarrerServeur () {
 				do {
 					const liste = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
 					if (liste && liste.hasOwnProperty('Contents') && Array.isArray(liste.Contents)) {
-						const promessesFichiersS3 = []
-						for (const objet of liste.Contents) {
-							promessesFichiersS3.push(s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))))
-						}
-						await Promise.all(promessesFichiersS3)
+						await executerTransactions(liste.Contents, (objet) => s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))), tailleLotTransaction)
 					}
 					jetonPagination = liste && liste.IsTruncated ? liste.NextContinuationToken : undefined
 				} while (jetonPagination)
@@ -6883,26 +6852,33 @@ async function demarrerServeur () {
 	}
 
 	async function supprimerBlocs (pad, blocsASupprimer) {
-		const promessesSuppressions = blocsASupprimer.map(async (blocSupprime) => {
+		const resultats = await executerTransactions(blocsASupprimer, async (blocSupprime) => {
 			const blocId = blocSupprime.bloc
-			let donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
-			donneesBloc = donneesBloc ? { ...donneesBloc } : {}
-			if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== blocId) return // Bloc déjà supprimé ou inexistant
-			if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
-				await supprimerFichier(pad, donneesBloc.media)
+			try {
+				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
+				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== blocId) return null // Bloc déjà supprimé ou inexistant
+				if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
+					await supprimerFichier(pad, donneesBloc.media)
+				}
+				if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
+					await supprimerFichier(pad, path.basename(donneesBloc.vignette))
+				}
+				await supprimerEtherpad([donneesBloc.iframe, donneesBloc.media])
+				await db.multi()
+					.UNLINK('pad-' + pad + ':' + blocId)
+					.ZREM('blocs:' + pad, blocId)
+					.UNLINK('commentaires:' + blocId)
+					.UNLINK('commentaires-masques:' + blocId)
+					.UNLINK('evaluations:' + blocId)
+					.exec()
+				return blocId
+			} catch (err) {
+				console.error('Suppression bloc ' + blocId + ' : ' + err.stack)
+				return null
 			}
-			if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
-				await supprimerFichier(pad, path.basename(donneesBloc.vignette))
-			}
-			await db.multi()
-				.UNLINK('pad-' + pad + ':' + blocId)
-				.ZREM('blocs:' + pad, blocId)
-				.UNLINK('commentaires:' + blocId)
-				.UNLINK('commentaires-masques:' + blocId)
-				.UNLINK('evaluations:' + blocId)
-				.exec()
-		})
-		await Promise.all(promessesSuppressions)
+		}, tailleLotTransaction)
+		return resultats.filter(blocId => blocId !== null)
 	}
 
 	async function supprimerArchives (source, cible) {
@@ -7017,7 +6993,49 @@ async function demarrerServeur () {
 		}
 	}
 
-	async function dupliquerPadEtherpad (pad, etherpadId) {
+	function extraireIdentifiantEtherpad (url) {
+		if (!etherpad || etherpad === '' || !url || typeof url !== 'string') return ''
+		for (const domaine of [etherpad, ancienDomaineEtherpad]) {
+			if (!domaine || domaine === '') continue
+			const prefixe = domaine + '/p/'
+			if (!url.startsWith(prefixe)) continue
+			const etherpadId = url.slice(prefixe.length).split(/[?#]/)[0]
+			if (/^[\w-]+$/.test(etherpadId)) return etherpadId
+		}
+		return ''
+	}
+
+	async function supprimerEtherpadBlocs (pad, blocIds) {
+		if (!etherpad || etherpad === '' || !etherpadApi || etherpadApi === '' || !Array.isArray(blocIds) || blocIds.length === 0) return
+		const urls = await executerTransactions(blocIds, async (blocId) => {
+			try {
+				const champs = await db.HMGET('pad-' + pad + ':' + blocId, ['iframe', 'media'])
+				return Array.isArray(champs) ? champs : []
+			} catch (err) {
+				console.error('Lecture bloc ' + blocId + ' pour suppression Etherpad : ' + err.stack)
+				return []
+			}
+		}, tailleLotTransaction)
+		await supprimerEtherpad(urls.flat())
+	}
+
+	async function supprimerEtherpad (urls) {
+		if (!etherpad || etherpad === '' || !etherpadApi || etherpadApi === '') return
+		const identifiants = [...new Set(urls.map((url) => extraireIdentifiantEtherpad(url)).filter((etherpadId) => etherpadId !== ''))]
+		for (const etherpadId of identifiants) {
+			try {
+				const reponse = await axios.get(etherpad + '/api/1/deletePad?apikey=' + etherpadApi + '&padID=' + etherpadId, { timeout: 5000 })
+				const code = (reponse && reponse.data && reponse.data.hasOwnProperty('code')) ? parseInt(reponse.data.code, 10) : 0
+				if (code !== 0 && reponse.data.message !== 'padID does not exist') {
+					console.error('Suppression Etherpad ' + etherpadId + ' : ' + reponse.data.message)
+				}
+			} catch (err) {
+				console.error('Suppression Etherpad ' + etherpadId + ' : ' + err.message)
+			}
+		}
+	}
+
+	async function dupliquerEtherpad (pad, etherpadId) {
 		if (!etherpadApi || etherpadApi === '') return { statut: 'echec' }
 		const destinationId = 'pad-' + pad + '-' + randomBytes(8).toString('hex')
 		const urlCopie = etherpad + '/api/1.2.14/copyPad?apikey=' + etherpadApi + '&sourceID=' + etherpadId + '&destinationID=' + destinationId
@@ -7046,8 +7064,9 @@ async function demarrerServeur () {
 			}
 			return nouveauNom
 		}
-		if (etherpad && contenu.iframe !== '' && contenu.iframe.includes(etherpad)) {
-			const copie = await dupliquerPadEtherpad(pad, contenu.iframe.replace(etherpad + '/p/', ''))
+		const etherpadIdSource = extraireIdentifiantEtherpad(contenu.iframe)
+		if (etherpadIdSource !== '') {
+			const copie = await dupliquerEtherpad(pad, etherpadIdSource)
 			if (copie.statut === 'copie') {
 				contenu.padCree = copie.destinationId
 				contenu.iframe = etherpad + '/p/' + copie.destinationId
@@ -7185,6 +7204,17 @@ async function demarrerServeur () {
 	function assainirTexteAlternatif (alt) {
 		if (!alt || typeof alt !== 'string') return ''
 		return alt.replace(/[<>]/g, '').trim().substring(0, limitesTailleInput.alt)
+	}
+
+	async function executerTransactions (liste, traitement, taille = tailleLotTransaction) {
+		if (!Array.isArray(liste)) throw new TypeError('executerTransactions attend un tableau')
+		const resultats = []
+		for (let debut = 0; debut < liste.length; debut += taille) {
+			const lot = liste.slice(debut, debut + taille)
+			const resultatsLot = await Promise.all(lot.map((element, index) => traitement(element, debut + index)))
+			resultats.push(...resultatsLot)
+		}
+		return resultats
 	}
 
 	function parseJSON (str, fallback) {
