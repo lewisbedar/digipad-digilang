@@ -32,7 +32,8 @@ export default {
 			element.textContent = notification
 			element.classList.add('notification')
 			document.querySelector('#notification')?.appendChild(element)
-			if (notification !== this.$t('rechargerPage')) {
+			const notificationsPersistantes = [this.$t('rechargerPage'), this.$t('sessionExpiree')]
+			if (!notificationsPersistantes.includes(notification)) {
 				this.timeoutNotification = setTimeout(() => {
 					this.timeoutNotification = null
 					element?.remove()

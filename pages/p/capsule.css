@@ -213,18 +213,18 @@
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-#blocs.colonnes .menu-deroulant {
+#blocs.colonnes .menu-deroulant-colonne {
 	position: relative;
 	width: calc(0.5rem + 24px);
 }
 
-#blocs.colonnes .bouton-menu {
+#blocs.colonnes .menu-deroulant-colonne .bouton-menu {
 	font-size: 24px;
 	margin: 0 0.5rem 0 0;
 	cursor: pointer;
 }
 
-#blocs.colonnes .contenu-menu-deroulant {
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant {
 	position: absolute;
 	right: 0;
 	background-color: #f9f9f9;
@@ -234,24 +234,71 @@
 	z-index: 1;
 }
 
-#blocs.colonnes .contenu-menu-deroulant button {
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button {
 	display: flex;
 	align-items: center;
 	width: 100%;
 	padding: 1rem 1.2rem;
 }
 
-#blocs.colonnes .contenu-menu-deroulant button i {
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button i {
 	font-size: 24px;
 	margin-right: 0.8rem;
 	line-height: 1;
 }
 
-#blocs.colonnes .contenu-menu-deroulant button svg {
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button svg {
 	margin-right: 0.8rem;
 }
 
-#blocs.colonnes .contenu-menu-deroulant button:hover {
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button:hover {
+	background-color: #ddd;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule {
+	display: flex;
+	align-items: center;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .bouton-menu {
+	font-size: 24px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant {
+	position: fixed;
+	top: 0;
+	left: 0;
+	background-color: #f9f9f9;
+	min-width: 30rem;
+	max-width: calc(100vw - 2rem);
+	opacity: 1;
+	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+	color: #001d1d;
+	text-align: left;
+	z-index: 101;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 1rem 1.2rem;
+	cursor: pointer;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button i {
+	font-size: 24px;
+	margin-right: 0.8rem;
+	line-height: 1;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button.supprimer i {
+	color: #ff6259;
+}
+
+#blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button:hover {
 	background-color: #ddd;
 }
 
@@ -326,7 +373,8 @@
 }
 
 #blocs .bloc .media a,
-#blocs .bloc .media button {
+#blocs .bloc .media button,
+#blocs .bloc .media span {
 	display: block;
     text-align: center;
 	padding: 1rem;
@@ -343,7 +391,8 @@
 }
 
 #blocs .bloc .media a img.vignette,
-#blocs .bloc .media button img.vignette {
+#blocs .bloc .media button img.vignette,
+#blocs .bloc .media span img.vignette {
 	max-width: 100%;
 	border-radius: 1rem;
 }
@@ -427,10 +476,6 @@
 	position: relative;
 	font-size: 24px;
 	cursor: pointer;
-}
-
-#blocs .bloc .action .bouton.supprimer {
-	color: #ff6259;
 }
 
 #blocs .bloc .action .media-type {

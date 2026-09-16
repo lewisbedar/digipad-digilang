@@ -32,12 +32,18 @@
 			</div>
 		</div>
 		<div class="action" :style="{'color': item.couleur}">
-			<button type="button" class="bouton" :disabled="disabled" :title="$t('modifierCapsule')" :aria-label="$t('modifierCapsule')" @click="parent.ouvrirModaleBloc('edition', item, indexCol)" v-if="(item.identifiant === identifiant || admin || (pad.contributions === 'modifiables' && item.visibilite !== 'masquee' && item.visibilite !== 'privee')) && action !== 'organiser'"><i class="material-icons" aria-hidden="true">edit</i></button>
 			<button type="button" class="bouton" :disabled="disabled" :title="$t('commenterCapsule')" :aria-label="$t('commenterCapsule')" @click="parent.ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && parent.commentairesVisibles"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
 			<button type="button" class="bouton info" :disabled="disabled" :title="$t('informationsCapsule')" :aria-label="$t('informationsCapsule')" :data-description="parent.definirDescription(item)"><i class="material-icons" aria-hidden="true">info</i></button>
 			<span class="media-type" v-if="item.media"><i class="material-icons" aria-hidden="true">{{ parent.definirIconeMedia(item) }}</i></span>
-			<button type="button" class="bouton" :disabled="disabled" :title="$t('copierCapsule')" :aria-label="$t('copierCapsule')" @click="parent.afficherEnvoyerBloc(item.bloc, item.titre)" v-if="admin && pad.copieBloc === 'activee' && (statut === 'utilisateur' || viaDigidrive) && action !== 'organiser'"><i class="material-icons" aria-hidden="true">send</i></button>
-			<button type="button" class="bouton supprimer" :disabled="disabled" :title="$t('supprimerCapsule')" :aria-label="$t('supprimerCapsule')" @click="parent.afficherSupprimerBloc(item.bloc, item.titre, indexCol)" v-if="(item.identifiant === identifiant || admin) && action !== 'organiser'"><i class="material-icons" aria-hidden="true">delete</i></button>
+			<div class="menu-deroulant menu-deroulant-capsule" :data-menu-capsule="item.bloc" v-if="menuDisponible">
+				<button type="button" class="bouton-menu" :id="'bouton-menu-capsule-' + item.bloc" :disabled="disabled" :aria-label="$t('parametresCapsule')" aria-haspopup="true" :aria-expanded="parent.menuCapsule === item.bloc" @click="parent.gererMenuCapsule(item.bloc)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
+				<div :id="'menu-capsule-' + item.bloc" class="contenu-menu-deroulant" role="menu" :aria-labelledby="'bouton-menu-capsule-' + item.bloc" @keydown="parent.gererClavierMenu($event, 'menu-capsule-' + item.bloc)" v-show="parent.menuCapsule === item.bloc">
+					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.ouvrirModaleBloc('edition', item, indexCol)" v-if="modificationAutorisee"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierCapsule') }}</button>
+					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.dupliquerBloc(item.bloc)" v-if="duplicationAutorisee"><i class="material-icons" aria-hidden="true">content_copy</i>{{ $t('dupliquerCapsule') }}</button>
+					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.afficherEnvoyerBloc(item.bloc, item.titre)" v-if="copieAutorisee"><i class="material-icons" aria-hidden="true">send</i>{{ $t('copierCapsule') }}</button>
+					<button type="button" role="menuitem" tabindex="-1" class="supprimer" :disabled="disabled" @click="parent.afficherSupprimerBloc(item.bloc, item.titre, indexCol)" v-if="suppressionAutorisee"><i class="material-icons" aria-hidden="true">delete</i>{{ $t('supprimerCapsule') }}</button>
+				</div>
+			</div>
 		</div>
 		<div class="moderation" v-if="item.visibilite === 'privee' && admin">
 			<button type="button" class="bouton" :disabled="disabled" @click="parent.autoriserBloc(item, 'privee')">{{ $t('afficherCapsule') }}</button>
@@ -65,6 +71,23 @@ export default {
 		statut: String,
 		viaDigidrive: Boolean,
 		visionneuse: String
+	},
+	computed: {
+		modificationAutorisee () {
+			return (this.item.identifiant === this.identifiant || this.admin || (this.pad.contributions === 'modifiables' && this.item.visibilite !== 'masquee' && this.item.visibilite !== 'privee')) && this.action !== 'organiser'
+		},
+		duplicationAutorisee () {
+			return this.admin && this.action !== 'organiser'
+		},
+		copieAutorisee () {
+			return this.admin && this.pad.copieBloc === 'activee' && (this.statut === 'utilisateur' || this.viaDigidrive) && this.action !== 'organiser'
+		},
+		suppressionAutorisee () {
+			return (this.item.identifiant === this.identifiant || this.admin) && this.action !== 'organiser'
+		},
+		menuDisponible () {
+			return this.modificationAutorisee || this.duplicationAutorisee || this.copieAutorisee || this.suppressionAutorisee
+		}
 	},
 	methods: {
 		definirEtoiles (evaluations) {

@@ -72,6 +72,7 @@ export default {
 			chargementMedia: false,
 			menu: '',
 			menuColonne: null,
+			menuCapsule: null,
 			commentaires: [],
 			commentaire: '',
 			commentaireId: '',
@@ -310,9 +311,9 @@ export default {
 					if (blocActif && this.action !== 'modifier' && this.bloc !== '' && auteur === true) {
 						blocActif.classList.remove('actif')
 					}
-					if (this.action === 'ajouter' && auteur === true) {
-						this.notification = this.$t('capsuleAjoutee')
-						document.querySelector('#' + this.bloc).classList.add('actif')
+					if ((this.action === 'ajouter' || this.action === 'dupliquer') && auteur === true && this.bloc !== '') {
+						this.notification = this.action === 'dupliquer' ? this.$t('capsuleDupliquee') : this.$t('capsuleAjoutee')
+						document.querySelector('#' + this.bloc)?.classList.add('actif')
 						const bloc = this.bloc
 						this.$nextTick(() => {
 							document.querySelector('#' + bloc)?.focus()
@@ -500,6 +501,7 @@ export default {
 			document.querySelector('#pad').addEventListener('drop', this.gererDrop, false)
 			document.addEventListener('click', this.gererClic, false)
 			document.addEventListener('keydown', this.gererClavier, false)
+			document.addEventListener('scroll', this.gererDefilement, true)
 			window.addEventListener('paste', this.gererColler, false)
 
 			if (window !== window.parent) {
@@ -529,6 +531,7 @@ export default {
 		document.querySelector('#pad').removeEventListener('drop', this.gererDrop, false)
 		document.removeEventListener('click', this.gererClic, false)
 		document.removeEventListener('keydown', this.gererClavier, false)
+		document.removeEventListener('scroll', this.gererDefilement, true)
 		window.removeEventListener('paste', this.gererColler, false)
 	},
 	methods: {
@@ -830,10 +833,81 @@ export default {
 			this.menuColonne = this.menuColonne === indexCol ? null : indexCol
 			if (this.menuColonne === indexCol) {
 				this.$nextTick(() => {
-					const menu = document.querySelectorAll('.menu-deroulant')[indexCol]
+					const menu = document.querySelectorAll('.menu-deroulant-colonne')[indexCol]
 					if (menu) menu.querySelector('[role="menuitem"]')?.focus()
 				})
 			}
+		},
+		gererMenuCapsule (bloc) {
+			this.menuColonne = null
+			const menuFerme = (this.menuCapsule !== bloc)
+			this.fermerMenuCapsule()
+			if (!menuFerme) return
+			this.definirElementPrecedentCapsule(bloc)
+			this.menuCapsule = bloc
+			this.$nextTick(() => {
+				this.positionnerMenuCapsule(bloc)
+				document.querySelector('#menu-capsule-' + bloc)?.querySelector('[role="menuitem"]')?.focus({ preventScroll: true })
+			})
+		},
+		positionnerMenuCapsule (bloc) {
+			const conteneur = document.querySelector('[data-menu-capsule="' + bloc + '"]')
+			const menu = document.querySelector('#menu-capsule-' + bloc)
+			if (!conteneur || !menu) return
+			const bouton = conteneur.querySelector('.bouton-menu')
+			if (!bouton) return
+			const positionBouton = bouton.getBoundingClientRect()
+			const marge = this.convertirRem(0.5)
+			const largeur = menu.offsetWidth
+			const hauteur = menu.offsetHeight
+			const pad = document.querySelector('#pad')
+			const zone = pad ? pad.getBoundingClientRect() : { top: 0, bottom: window.innerHeight, left: 0, right: window.innerWidth }
+			const limiteHaut = Math.max(marge, zone.top + marge)
+			const limiteBas = Math.min(window.innerHeight, zone.bottom) - marge
+			const limiteGauche = Math.max(marge, zone.left + marge)
+			const limiteDroite = Math.min(window.innerWidth, zone.right) - marge
+			let gauche = positionBouton.right - largeur
+			if (gauche + largeur > limiteDroite) {
+				gauche = limiteDroite - largeur
+			}
+			if (gauche < limiteGauche) {
+				gauche = limiteGauche
+			}
+			const placeAuDessus = positionBouton.top - limiteHaut
+			const placeEnDessous = limiteBas - positionBouton.bottom
+			let haut
+			if (hauteur <= placeAuDessus) {
+				haut = positionBouton.top - hauteur
+			} else if (hauteur <= placeEnDessous) {
+				haut = positionBouton.bottom
+			} else if (placeAuDessus >= placeEnDessous) {
+				haut = limiteHaut
+			} else {
+				haut = limiteBas - hauteur
+			}
+			menu.style.left = gauche + 'px'
+			menu.style.top = Math.max(limiteHaut, Math.min(haut, limiteBas - hauteur)) + 'px'
+		},
+		fermerMenuCapsule () {
+			if (this.menuCapsule === null) return
+			const bloc = this.menuCapsule
+			const menu = document.querySelector('#menu-capsule-' + bloc)
+			const focusMenu = (menu !== null && menu.contains(document.activeElement))
+			this.menuCapsule = null
+			this.elementPrecedent = null
+			if (focusMenu) {
+				const bouton = this.definirBoutonMenuCapsule(bloc)
+				this.$nextTick(() => {
+					bouton?.focus({ preventScroll: true })
+				})
+			}
+		},
+		definirBoutonMenuCapsule (bloc) {
+			const conteneur = document.querySelector('[data-menu-capsule="' + bloc + '"]')
+			return (conteneur ? (conteneur.querySelector('.bouton-menu') || document.body) : document.body)
+		},
+		definirElementPrecedentCapsule (bloc) {
+			this.elementPrecedent = this.definirBoutonMenuCapsule(bloc)
 		},
 		ouvrirModaleColonne (type, index) {
 			if (type === 'edition') {
@@ -841,7 +915,7 @@ export default {
 				this.titreModaleColonne = this.$t('modifierColonne')
 				this.titreColonne = this.pad.colonnes[index]
 				this.menuColonne = null
-				const menu = document.querySelectorAll('.menu-deroulant')[index]
+				const menu = document.querySelectorAll('.menu-deroulant-colonne')[index]
 				this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
 			} else {
 				this.titreModaleColonne = this.$t('ajouterColonne')
@@ -877,6 +951,17 @@ export default {
 				this.fermerModaleColonne()
 			}
 		},
+		dupliquerColonne (index) {
+			const menu = document.querySelectorAll('.menu-deroulant-colonne')[index]
+			const bouton = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
+			this.elementPrecedent = null
+			this.menuColonne = null
+			this.chargement = true
+			this.$nextTick(() => {
+				bouton.focus()
+			})
+			this.$socket.emit('dupliquercolonne', this.pad.id, this.pad.token, index, this.identifiant, this.nom)
+		},
 		afficherColonne (colonne) {
 			this.menuColonne = null
 			this.chargement = true
@@ -892,7 +977,7 @@ export default {
 			this.titreColonne = this.pad.colonnes[index]
 			this.messageConfirmation = this.$t('confirmationViderColonne')
 			this.typeConfirmation = 'vider-colonne'
-			const menu = document.querySelectorAll('.menu-deroulant')[index]
+			const menu = document.querySelectorAll('.menu-deroulant-colonne')[index]
 			this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
 			this.menuColonne = null
 			this.modaleConfirmation = true
@@ -911,7 +996,7 @@ export default {
 			this.titreColonne = this.pad.colonnes[index]
 			this.messageConfirmation = this.$t('confirmationSupprimerColonne')
 			this.typeConfirmation = 'supprimer-colonne'
-			const menu = document.querySelectorAll('.menu-deroulant')[index]
+			const menu = document.querySelectorAll('.menu-deroulant-colonne')[index]
 			this.elementPrecedent = (menu ? (menu.querySelector('.bouton-menu') || document.body) : document.body)
 			this.menuColonne = null
 			this.modaleConfirmation = true
@@ -990,7 +1075,12 @@ export default {
 				this.colonne = colonne
 			}
 			this.menu = ''
-			this.elementPrecedent = (document.activeElement || document.body)
+			if (this.menuCapsule !== null) {
+				this.definirElementPrecedentCapsule(this.menuCapsule)
+				this.menuCapsule = null
+			} else {
+				this.elementPrecedent = (document.activeElement || document.body)
+			}
 			this.modale = 'bloc'
 			this.$nextTick(() => {
 				if (mode === 'creation') {
@@ -1660,6 +1750,18 @@ export default {
 				this.ajouterAudio()
 			}
 		},
+		dupliquerBloc (bloc) {
+			const bouton = this.definirBoutonMenuCapsule(bloc)
+			this.elementPrecedent = null
+			this.menuCapsule = null
+			this.chargement = true
+			this.$nextTick(() => {
+				bouton.focus({ preventScroll: true })
+			})
+			const randomHex = crypto.getRandomValues(new Uint8Array(8)).reduce((hex, octet) => hex + octet.toString(16).padStart(2, '0'), '')
+			const id = 'bloc-id-' + Date.now() + randomHex
+			this.$socket.emit('dupliquerbloc', id, this.pad.id, this.pad.token, bloc, this.identifiant, this.nom)
+		},
 		autoriserBloc (donneesBloc, moderation) {
 			this.chargement = true
 			let indexBloc = -1
@@ -1749,7 +1851,8 @@ export default {
 			this.colonne = colonne
 			this.messageConfirmation = this.$t('confirmationSupprimerCapsule')
 			this.typeConfirmation = 'supprimer-bloc'
-			this.elementPrecedent = (document.activeElement || document.body)
+			this.definirElementPrecedentCapsule(bloc)
+			this.menuCapsule = null
 			this.modaleConfirmation = true
 			this.$socket.emit('verifiermodifierbloc', this.pad.id, bloc, this.identifiant)
 			this.$nextTick(() => {
@@ -1772,6 +1875,8 @@ export default {
 		async afficherEnvoyerBloc (bloc, titre) {
 			this.blocId = bloc
 			this.titre = titre
+			this.definirElementPrecedentCapsule(bloc)
+			this.menuCapsule = null
 			if (Object.keys(this.donneesUtilisateur).length === 0) {
 				this.chargement = true
 				let reponse
@@ -1812,7 +1917,6 @@ export default {
 				this.donneesUtilisateur.padsAdmins = padsAdmins
 			}
 			if (this.donneesUtilisateur.hasOwnProperty('padsCrees') || this.donneesUtilisateur.hasOwnProperty('padsAdmins')) {
-				this.elementPrecedent = (document.activeElement || document.body)
 				this.modale = 'copier-bloc'
 				this.$nextTick(() => {
 					document.querySelector('.modale .fermer')?.focus()
@@ -2430,6 +2534,8 @@ export default {
 			}
 		},
 		activerActionBloc (event) {
+			if (event.target !== event.currentTarget) return
+			event.preventDefault()
 			if (event.target.querySelector('.media') && event.target.querySelector('.media').firstElementChild) {
 				event.target.querySelector('.media').firstElementChild.click()
 			}
@@ -2540,6 +2646,10 @@ export default {
 			this.emojis = ''
 			this.donneesBloc = {}
 			window.history.replaceState({}, document.title, window.location.href.split('?')[0])
+			const blocActif = document.querySelector('.bloc.actif')
+			if (blocActif) {
+				this.elementPrecedent = blocActif
+			}
 			this.gererFocus()
 		},
 		ouvrirModaleAdmins () {
@@ -2965,6 +3075,7 @@ export default {
 			}
 		},
 		redimensionner () {
+			this.fermerMenuCapsule()
 			const diapositive = document.querySelector('#diapositive')
 			if (diapositive) {
 				const contenuDiapositive = document.querySelector('#diapositive .contenu')
@@ -3958,6 +4069,9 @@ export default {
 		definirElementPrecedent (element) {
 			this.elementPrecedent = element
 		},
+		gererDefilement () {
+			this.fermerMenuCapsule()
+		},
 		gererDrag (event) {
 			event.preventDefault()
 			event.stopPropagation()
@@ -3996,8 +4110,13 @@ export default {
 			}
 		},
 		gererClic (event) {
-			if (this.menuColonne !== null && !event.target.closest('.menu-deroulant')) {
+			const menuDeroulant = event.target.closest('.menu-deroulant')
+			const capsule = menuDeroulant ? menuDeroulant.dataset.menuCapsule : undefined
+			if (this.menuColonne !== null && (!menuDeroulant || capsule !== undefined)) {
 				this.menuColonne = null
+			}
+			if (this.menuCapsule !== null && capsule !== this.menuCapsule) {
+				this.fermerMenuCapsule()
 			}
 		},
 		gererColler (event) {
@@ -4127,6 +4246,7 @@ export default {
 			const items = [...document.querySelectorAll('#' + id + ' [role="menuitem"]')]
 			if (items.length === 0) return
 			const index = items.indexOf(document.activeElement)
+			const options = { preventScroll: id.startsWith('menu-capsule-') }
 			switch (event.key) {
 			case 'ArrowDown':
 				event.preventDefault()
@@ -4136,7 +4256,7 @@ export default {
 					})
 					if (items[(index + 1) % items.length].closest('.menu-entree')) items[(index + 1) % items.length].closest('.menu-entree').style.display = 'block'
 				}
-				items[(index + 1) % items.length].focus()
+				items[(index + 1) % items.length].focus(options)
 				break
 			case 'ArrowUp':
 				event.preventDefault()
@@ -4146,31 +4266,26 @@ export default {
 					})
 					if (items[(index - 1 + items.length) % items.length].closest('.menu-entree')) items[(index - 1 + items.length) % items.length].closest('.menu-entree').style.display = 'block'
 				}
-				items[(index - 1 + items.length) % items.length].focus()
+				items[(index - 1 + items.length) % items.length].focus(options)
 				break
 			case 'Home':
 				event.preventDefault()
-				items[0].focus()
+				items[0].focus(options)
 				break
 			case 'End':
 				event.preventDefault()
-				items[items.length - 1].focus()
+				items[items.length - 1].focus(options)
 				break
 			case 'Escape':
-				if (this.menu !== '') {
-					this.menu = ''
-				}
-				if (this.menuColonne !== null) {
-					this.menuColonne = null
-				}
-				this.gererFocus()
-				break
 			case 'Tab':
 				if (this.menu !== '') {
 					this.menu = ''
 				}
 				if (this.menuColonne !== null) {
 					this.menuColonne = null
+				}
+				if (this.menuCapsule !== null) {
+					this.menuCapsule = null
 				}
 				this.gererFocus()
 				break
@@ -4201,6 +4316,11 @@ export default {
 			this.$socket.on('colonnesverrouillees', () => {
 				this.chargement = false
 				this.message = this.$t('verrouColonnes')
+			})
+
+			this.$socket.on('espacedisque', () => {
+				this.chargement = false
+				this.message = this.$t('erreurEspaceDisque')
 			})
 
 			this.$socket.on('verifieracces', (donnees) => {
@@ -4244,7 +4364,9 @@ export default {
 					} else {
 						this.blocs.push(donnees)
 					}
-					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
+					if (donnees.hasOwnProperty('activiteId')) {
+						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
+					}
 					if (!donnees.hasOwnProperty('texte')) {
 						this.recupererBloc(donnees.bloc)
 					}
@@ -4265,6 +4387,56 @@ export default {
 					}
 					this.envoyerNotificationAdmins()
 				}
+			})
+
+			this.$socket.on('dupliquerbloc', (donnees) => {
+				this.action = 'dupliquer'
+				this.utilisateur = donnees.identifiant
+				if (this.utilisateur === this.identifiant) {
+					this.bloc = donnees.bloc
+				}
+				if (donnees.visibilite === 'visible' || this.admin || (this.pad.contributions === 'moderees' && (this.utilisateur === this.identifiant))) {
+					const inserer = (liste) => {
+						const index = liste.findIndex((item) => item.bloc === donnees.blocOrigine)
+						if (index === -1) {
+							if (this.pad.ordre === 'decroissant') {
+								liste.unshift(donnees)
+							} else {
+								liste.push(donnees)
+							}
+						} else if (this.pad.ordre === 'decroissant') {
+							liste.splice(index, 0, donnees)
+						} else {
+							liste.splice(index + 1, 0, donnees)
+						}
+					}
+					if (this.pad.affichage === 'colonnes' && this.colonnes[donnees.colonne]) {
+						inserer(this.colonnes[donnees.colonne])
+					}
+					inserer(this.blocs)
+					if (donnees.hasOwnProperty('activiteId')) {
+						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-duplique' })
+					}
+					if (!donnees.hasOwnProperty('texte')) {
+						this.recupererBloc(donnees.bloc)
+					}
+					if (this.admin || this.pad.affichage !== 'colonnes' || (this.pad.affichage === 'colonnes' && this.affichageColonnes[donnees.colonne])) {
+						const auteur = (this.utilisateur === this.identifiant)
+						this.$nextTick(() => {
+							const bloc = document.querySelector('#' + donnees.bloc)
+							if (!bloc) return
+							bloc.classList.add('anime')
+							bloc.addEventListener('animationend', () => {
+								bloc.classList.remove('anime')
+							})
+							if (auteur) {
+								bloc.scrollIntoView()
+							}
+						})
+					}
+					this.envoyerNotificationAdmins()
+				}
+				this.chargement = false
 			})
 
 			this.$socket.on('modifierbloc', (donnees) => {
@@ -4296,7 +4468,7 @@ export default {
 							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
 						}
 					}
-					if (donneesCompletes) {
+					if (donnees.hasOwnProperty('activiteId')) {
 						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.modifie, type: 'bloc-modifie' })
 					}
 					if (!donneesCompletes && !(donnees.visibilite === 'privee' && !this.admin)) {
@@ -4982,7 +5154,35 @@ export default {
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneAjoutee')
 					this.$nextTick(() => {
-						const menu = document.querySelectorAll('.menu-deroulant')[donnees.indexColonne]
+						const menu = document.querySelectorAll('.menu-deroulant-colonne')[donnees.indexColonne]
+						if (menu) menu.querySelector('.bouton-menu')?.focus()
+					})
+				} else if ((this.modale === 'bloc' || (this.modale === 'colonne' && this.modeColonne === 'edition')) && parseInt(this.colonne, 10) >= parseInt(donnees.indexColonne, 10)) {
+					this.colonne = parseInt(this.colonne, 10) + 1
+				}
+				this.chargement = false
+			})
+
+			this.$socket.on('dupliquercolonne', (donnees) => {
+				this.menuColonne = null
+				const blocsColonne = this.pad.ordre === 'decroissant' ? donnees.blocs.slice().reverse() : donnees.blocs
+				this.colonnes.splice(donnees.indexColonne, 0, blocsColonne)
+				this.affichageColonnes.splice(donnees.indexColonne, 0, donnees.affichageColonnes[donnees.indexColonne])
+				const blocs = []
+				this.colonnes.forEach((colonne, index) => {
+					colonne.forEach((bloc) => {
+						bloc.colonne = index
+					})
+					blocs.push(...colonne)
+				})
+				this.pad.colonnes = donnees.colonnes
+				this.pad.affichageColonnes = donnees.affichageColonnes
+				this.blocs = blocs
+				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-dupliquee' })
+				if (this.admin && this.identifiant === donnees.identifiant) {
+					this.notification = this.$t('colonneDupliquee')
+					this.$nextTick(() => {
+						const menu = document.querySelectorAll('.menu-deroulant-colonne')[donnees.indexColonne]
 						if (menu) menu.querySelector('.bouton-menu')?.focus()
 					})
 				} else if ((this.modale === 'bloc' || (this.modale === 'colonne' && this.modeColonne === 'edition')) && parseInt(this.colonne, 10) >= parseInt(donnees.indexColonne, 10)) {
@@ -5144,9 +5344,9 @@ export default {
 				}
 			})
 
-			this.$socket.on('deconnecte', () => {
+			this.$socket.on('deconnecte', (sessionExpiree) => {
 				this.chargement = false
-				this.notification = this.$t('problemeConnexion')
+				this.notification = sessionExpiree === true ? this.$t('sessionExpiree') : this.$t('problemeConnexion')
 			})
 
 			this.$socket.on('nonautorise', () => {

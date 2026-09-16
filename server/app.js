@@ -382,7 +382,7 @@ async function demarrerServeur () {
 	}
 
 	if (!production) {
-    	const { devMiddleware } = await createDevMiddleware({ root })
+    	const { devMiddleware } = await createDevMiddleware({ root, viteConfig: { server: { ws: { server: httpServer } } } })
     	app.use(devMiddleware)
   	} else if (production && parseInt(process.env.REVERSE_PROXY) !== 1) {
 		const sirv = (await import('sirv')).default
@@ -1239,15 +1239,7 @@ async function demarrerServeur () {
 		try {
 			const admin = await verifierAdminUtilisateur(padSource, identifiant, req.session.motdepasse)
 			if (!admin) return res.status(401).send('non_connecte')
-			// Vérification de l'espace disque (si stockage local)
-			if (stockage === 'fs') {
-				const dossierFichiers = path.join(__dirname, '..', '/static' + definirCheminFichiers())
-				const espaceDisque = await checkDiskSpace(dossierFichiers)
-				const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-				if (pourcentageLibre < minimumEspaceDisque) {
-					return res.status(507).send('erreur_espace_disque')
-				}
-			}
+			if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
 			// Récupération des données source (Redis ou JSON)
 			let donneesPadSource = {}
 			const padExiste = await db.EXISTS('pads:' + padSource)
@@ -1402,12 +1394,8 @@ async function demarrerServeur () {
 					if (!structureValide) throw new Error('structure_invalide')
 					const id = await db.INCR('pad')
 					const dossierDestination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id)
-					// Vérification espace disque
+					if (!await verifierEspaceDisque()) throw new Error('espace_disque_insuffisant')
 					if (stockage === 'fs') {
-						const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers())
-						const espaceDisque = await checkDiskSpace(dossier)
-						const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-						if (pourcentageLibre < minimumEspaceDisque) throw new Error('espace_disque_insuffisant')
 						await fs.mkdirp(dossierDestination)
 					}
 					// Traitement parallèle des blocs
@@ -2644,9 +2632,7 @@ async function demarrerServeur () {
 					res.status(200).json({ fichier: fichierFinal.nom, mimetype: mimetypeRetour, vignetteGeneree })
 				} else if (stockage === 'fs') {
 					const cheminFichier = path.join(__dirname, '..', '/static/temp/' + fichierFinal.nom)
-					const espaceDisque = await checkDiskSpace(path.join(__dirname, '..', '/static/temp'))
-					const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-					if (pourcentageLibre < minimumEspaceDisque) return res.status(507).send('erreur_espace_disque')
+					if (!await verifierEspaceDisque('temp')) return res.status(507).send('erreur_espace_disque')
 					await fs.writeFile(cheminFichier, fichierFinal.buffer)
 					if (fichierVignette) {
 						const cheminVignette = path.join(__dirname, '..', '/static/temp/' + fichierVignette.nom)
@@ -2701,9 +2687,7 @@ async function demarrerServeur () {
 					res.status(200).send(nomFichier)
 				} else {
 					const cheminFichier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padId + '/' + nomFichier)
-					const espaceDisque = await checkDiskSpace(path.join(__dirname, '..', '/static' + definirCheminFichiers()))
-					const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-					if (pourcentageLibre < minimumEspaceDisque) return res.status(507).send('erreur_espace_disque')
+					if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
 					await fs.ensureDir(path.dirname(cheminFichier))
 					await fs.writeFile(cheminFichier, bufferAudio)
 					res.status(200).send(nomFichier)
@@ -2772,9 +2756,7 @@ async function demarrerServeur () {
 					res.status(200).send(nomFichier)
 				} else {
 					const cheminFichier = path.join(__dirname, '..', '/static/temp/' + nomFichier)
-					const espaceDisque = await checkDiskSpace(path.join(__dirname, '..', '/static/temp'))
-					const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-					if (pourcentageLibre < minimumEspaceDisque) return res.status(507).send('erreur_espace_disque')
+					if (!await verifierEspaceDisque('temp')) return res.status(507).send('erreur_espace_disque')
 					await fs.writeFile(cheminFichier, bufferOptimise)
 					res.status(200).send(nomFichier)
 				}
@@ -2847,9 +2829,7 @@ async function demarrerServeur () {
 					res.status(200).send(nomFichier)
 				} else {
 					const cheminFichier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padId + '/' + nomFichier)
-					const espaceDisque = await checkDiskSpace(path.join(__dirname, '..', '/static' + definirCheminFichiers()))
-					const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-					if (pourcentageLibre < minimumEspaceDisque) return res.status(507).send('erreur_espace_disque')
+					if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
 					await fs.ensureDir(path.dirname(cheminFichier))
 					await fs.writeFile(cheminFichier, bufferOptimise)
 					res.status(200).send(nomFichier)
@@ -3070,12 +3050,7 @@ async function demarrerServeur () {
 				const motdepasse = req.body.motdepasse
 				const padSource = req.body.id
 				const nouveaumotdepasse = req.body.nouveaumotdepasse
-				if (stockage === 'fs') {
-					const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers())
-					const espaceDisque = await checkDiskSpace(dossier)
-					const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-					if (pourcentageLibre < minimumEspaceDisque) return res.status(500).send('erreur')
-				}
+				if (!await verifierEspaceDisque()) return res.status(500).send('erreur')
 				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + padSource)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + padSource + '.json'))) {
@@ -3265,11 +3240,7 @@ async function demarrerServeur () {
 					return res.status(400).send('donnees_corrompues')
 				}
 				const id = await db.INCR('pad')
-				const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers())
-				// Vérification espace disque
-				const espaceDisque = await checkDiskSpace(dossier)
-				const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
-				if (stockage === 'fs' && pourcentageLibre < minimumEspaceDisque) {
+				if (!await verifierEspaceDisque()) {
 					await supprimerArchives(source, dossierTemporaire)
 					return res.status(500).send('erreur')
 				}
@@ -3394,7 +3365,7 @@ async function demarrerServeur () {
 	const io = new Server(httpServer, {
 		wsEngine: eiows.Server,
 		cors: {
-			origin: hoteWs
+			origin: hote
 		},
 		pingInterval: 120000,
     	pingTimeout: 100000,
@@ -3459,7 +3430,10 @@ async function demarrerServeur () {
 		const req = socket.request
 		socket.use((__, next) => {
 			req.session.reload((err) => {
-				if (err) return socket.disconnect()
+				if (err) {
+					socket.emit('deconnecte', true)
+					return socket.disconnect()
+				}
 				next()
 			})
 		})
@@ -3564,6 +3538,7 @@ async function demarrerServeur () {
 		socket.on('ajouterbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom, alt) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!verifierIdentifiantBloc(bloc)) return socket.emit('erreur')
 			if (typeof titre === 'string' && titre.length > limitesTailleInput.titre) return socket.emit('erreur')
 			if (typeof texte === 'string' && texte.length > limitesTailleInput.texte) return socket.emit('erreur')
 			if (typeof iframe === 'string' && iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
@@ -3601,7 +3576,9 @@ async function demarrerServeur () {
 					.HSET('pads:' + pad, 'bloc', blocId)
 					.HSET('dates-pads:' + pad, 'date', date)
 					.exec()
-				if (visibilite === 'visible' || visibilite === 'masquee') {
+				// Entrée d'activité enregistrée que si la capsule n'est pas privée
+				const activiteEnregistree = (visibilite === 'visible' || visibilite === 'masquee')
+				if (activiteEnregistree) {
 					await db.multi()
 						.HINCRBY('pads:' + pad, 'activite', 1)
 						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-ajoute' }) }])
@@ -3613,7 +3590,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -3678,12 +3655,12 @@ async function demarrerServeur () {
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				texte = assainirHTML(texte)
 				iframe = assainirIframe(iframe)
-				// Argument absent (client non à jour) : on conserve le texte alternatif existant
 				alt = (typeof alt === 'string') ? assainirTexteAlternatif(alt) : (donneesBloc.alt || '')
 				const statuts = ['visible', 'privee', 'masquee']
+				// Ajout dans le registre d'activité, seulement si la capsule n'est pas privée
+				const activiteEnregistree = (visibilite === 'visible' || visibilite === 'masquee')
 				if (statuts.includes(visibilite)) {
-					// Ajout dans le registre d'activité uniquement si visible ou masquée
-					if (visibilite === 'visible' || visibilite === 'masquee') {
+					if (activiteEnregistree) {
 						await db.multi()
 							.HINCRBY('pads:' + pad, 'activite', 1)
 							.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-modifie' }) }])
@@ -3710,7 +3687,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad)
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, activiteId }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -3720,9 +3697,72 @@ async function demarrerServeur () {
 			}
 		})
 
+		socket.on('dupliquerbloc', async (bloc, pad, token, blocOrigine, identifiant, nom) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!verifierIdentifiantBloc(bloc)) return socket.emit('erreur')
+			const contenusANettoyer = []
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const clesRequises = ['id', 'token', 'bloc', 'contributions', 'activite']
+				const padValide = clesRequises.every(champ => donneesPad.hasOwnProperty(champ))
+				if (!padValide) return socket.emit('erreur')
+				if (donneesPad.id !== pad || donneesPad.token !== token) return socket.emit('nonautorise')
+				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocOrigine)
+				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== blocOrigine) return socket.emit('erreur')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				const blocExiste = await db.EXISTS('pad-' + pad + ':' + bloc)
+				if (blocExiste === 1) return socket.emit('erreur')
+				if (!await verifierEspaceDisque()) return socket.emit('espacedisque')
+				const blocId = parseInt(donneesPad.bloc, 10) + 1
+				const date = dayjs().format()
+				const activiteId = parseInt(donneesPad.activite, 10) + 1
+				const visibilite = donneesBloc.visibilite || 'visible'
+				const colonne = donneesBloc.hasOwnProperty('colonne') ? parseInt(donneesBloc.colonne, 10) || 0 : 0
+				const titre = donneesBloc.titre || ''
+				const type = donneesBloc.type || ''
+				const sourceBloc = donneesBloc.source || ''
+				const couleur = donneesBloc.couleur || ''
+				const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer)
+				if (contenu.echec) {
+					await annulerDupliquerBloc(pad, contenusANettoyer)
+					return socket.emit('erreur')
+				}
+				const score = await definirScoreDuplication(pad, blocOrigine, blocId)
+				await db.multi()
+					.HSET('pad-' + pad + ':' + bloc, ['id', blocId, 'bloc', bloc, 'titre', titre, 'texte', contenu.texte, 'media', contenu.media, 'alt', contenu.alt, 'iframe', contenu.iframe, 'type', type, 'source', sourceBloc, 'vignette', contenu.vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', colonne, 'visibilite', visibilite, 'couleur', couleur])
+					.ZADD('blocs:' + pad, [{ score: score, value: bloc }])
+					.HSET('pads:' + pad, 'bloc', blocId)
+					.HSET('dates-pads:' + pad, 'date', date)
+					.exec()
+				contenusANettoyer.length = 0
+				// Ajout dans le registre d'activité, seulement si la capsule n'est pas privée
+				const activiteEnregistree = (visibilite === 'visible' || visibilite === 'masquee')
+				if (activiteEnregistree) {
+					await db.multi()
+						.HINCRBY('pads:' + pad, 'activite', 1)
+						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-duplique' }) }])
+						.exec()
+				}
+				const blocDiffuse = definirBlocDiffuse({ bloc, blocOrigine, titre, type, source: sourceBloc, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, contenu, donneesPad.contributions)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
+				diffuserBloc(pad, 'dupliquerbloc', blocDiffuse, identifiant, colonneMasquee)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+				await annulerDupliquerBloc(pad, contenusANettoyer)
+			}
+		})
+
 		socket.on('copierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, visibilite, identifiant, nom, padOrigine, alt) => {
 			if (maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!verifierIdentifiantBloc(bloc)) return socket.emit('erreur')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
@@ -3752,8 +3792,9 @@ async function demarrerServeur () {
 					.HSET('pads:' + pad, 'bloc', blocId)
 					.HSET('dates-pads:' + pad, 'date', date)
 					.exec()
-				// Ajout dans le registre d'activité
-				if (visibilite === 'visible') {
+				// Ajout dans le registre d'activité, seulement si la capsule n'est pas privée ou en attente de modération
+				const activiteEnregistree = (visibilite === 'visible')
+				if (activiteEnregistree) {
 					await db.multi()
 						.HINCRBY('pads:' + pad, 'activite', 1)
 						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-ajoute' }) }])
@@ -3765,7 +3806,7 @@ async function demarrerServeur () {
 				if (vignettePersonnalisee && vignette !== '') {
 					await copierFichier(padOrigine, pad, vignette, 'vignette')
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, activiteId, type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}), type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				socket.emit('copierbloc')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -4991,7 +5032,103 @@ async function demarrerServeur () {
 				console.error(err.stack)
 				socket.emit('erreur')
 			} finally {
-				await libererVerrouColonnes(pad)
+				await libererVerrouColonnes(pad, verrouColonne)
+			}
+		})
+
+		socket.on('dupliquercolonne', async (pad, token, colonne, identifiant, nom) => {
+			if (maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			const verrouColonne = await acquerirVerrouColonnes(pad)
+			if (!verrouColonne) return socket.emit('colonnesverrouillees')
+			const contenusANettoyer = []
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const clesRequises = ['id', 'token', 'colonnes', 'bloc', 'contributions', 'activite']
+				const padValide = clesRequises.every(champ => donneesPad.hasOwnProperty(champ))
+				if (!padValide) return socket.emit('erreur')
+				if (donneesPad.id !== pad || donneesPad.token !== token) return socket.emit('nonautorise')
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (!await verifierEspaceDisque()) return socket.emit('espacedisque')
+				const colonnes = JSON.parse(donneesPad.colonnes)
+				let affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : null
+				if (!Array.isArray(affichageColonnes) || affichageColonnes.length !== colonnes.length) {
+					affichageColonnes = colonnes.map(() => true)
+				}
+				const indexSource = parseInt(colonne, 10)
+				if (!Number.isInteger(indexSource) || indexSource < 0 || indexSource >= colonnes.length) return socket.emit('erreur')
+				const indexColonne = indexSource + 1
+				const titre = colonnes[indexSource]
+				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
+				if (blocs === null) return socket.emit('erreur')
+				const promessesBlocs = blocs.map(async (blocId) => {
+					const donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
+					return donneesBloc ? { ...donneesBloc } : null
+				})
+				const donneesBlocs = await Promise.all(promessesBlocs)
+				// Séparation des capsules à dupliquer et des capsules à décaler
+				const blocsADupliquer = []
+				const blocsADecaler = []
+				donneesBlocs.forEach((item) => {
+					if (!item || !item.hasOwnProperty('bloc')) return
+					const colonneActuelle = item.hasOwnProperty('colonne') ? parseInt(item.colonne, 10) : 0
+					if (colonneActuelle === indexSource) {
+						blocsADupliquer.push(item)
+					} else if (colonneActuelle >= indexColonne) {
+						blocsADecaler.push(item)
+					}
+				})
+				const date = dayjs().format()
+				const activiteId = parseInt(donneesPad.activite, 10) + 1
+				const blocCourant = parseInt(donneesPad.bloc, 10)
+				const scoreBase = Math.max(await definirScoreMaximum(pad), blocCourant)
+				// Contenu dupliqué avant toute écriture : si une copie échoue, rien n'a encore été modifié et la duplication est abandonnée
+				const duplications = await Promise.all(blocsADupliquer.map(async (donneesBloc, index) => {
+					const nouveauBloc = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
+					const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer)
+					return { nouveauBloc, contenu, donneesBloc, blocId: blocCourant + index + 1, score: scoreBase + index + 1 }
+				}))
+				if (duplications.some((duplication) => duplication.contenu.echec)) {
+					await annulerDupliquerBloc(pad, contenusANettoyer)
+					return socket.emit('erreur')
+				}
+				colonnes.splice(indexColonne, 0, titre)
+				affichageColonnes.splice(indexColonne, 0, affichageColonnes[indexSource] !== false)
+				const pipeline = db.multi()
+				blocsADecaler.forEach((item) => {
+					const colonneActuelle = item.hasOwnProperty('colonne') ? parseInt(item.colonne, 10) : 0
+					pipeline.HSET('pad-' + pad + ':' + item.bloc, 'colonne', colonneActuelle + 1)
+				})
+				duplications.forEach((duplication) => {
+					const { nouveauBloc, contenu, donneesBloc, blocId, score } = duplication
+					pipeline.HSET('pad-' + pad + ':' + nouveauBloc, ['id', blocId, 'bloc', nouveauBloc, 'titre', donneesBloc.titre || '', 'texte', contenu.texte, 'media', contenu.media, 'alt', contenu.alt, 'iframe', contenu.iframe, 'type', donneesBloc.type || '', 'source', donneesBloc.source || '', 'vignette', contenu.vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', indexColonne, 'visibilite', donneesBloc.visibilite || 'visible', 'couleur', donneesBloc.couleur || ''])
+					pipeline.ZADD('blocs:' + pad, [{ score: score, value: nouveauBloc }])
+				})
+				pipeline.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', blocCourant + duplications.length])
+				pipeline.HSET('dates-pads:' + pad, 'date', date)
+				pipeline.HINCRBY('pads:' + pad, 'activite', 1)
+				pipeline.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, identifiant: identifiant, titre: titre, date: date, type: 'colonne-dupliquee' }) }])
+				await pipeline.exec()
+				contenusANettoyer.length = 0
+				const blocsDupliques = duplications.map((duplication) => {
+					const { nouveauBloc, contenu, donneesBloc, blocId } = duplication
+					return { bloc: nouveauBloc, titre: donneesBloc.titre || '', type: donneesBloc.type || '', source: donneesBloc.source || '', identifiant, nom, date, couleur: donneesBloc.couleur || '', commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne: indexColonne, visibilite: donneesBloc.visibilite || 'visible', texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette, id: blocId }
+				})
+				const donneesColonne = { identifiant, nom, titre, indexColonne, colonnes, affichageColonnes, date, activiteId }
+				const salonAdmin = definirSalonAdmin(pad)
+				io.to(salonAdmin).emit('dupliquercolonne', { ...donneesColonne, blocs: blocsDupliques })
+				const colonneMasquee = verifierColonneMasquee(donneesPad, affichageColonnes, indexColonne)
+				io.to('pad-' + pad).except(salonAdmin).emit('dupliquercolonne', { ...donneesColonne, blocs: colonneMasquee ? [] : blocsDupliques.filter((item) => verifierBlocVisible(item, donneesPad.contributions)) })
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+				await annulerDupliquerBloc(pad, contenusANettoyer)
+			} finally {
+				await libererVerrouColonnes(pad, verrouColonne)
 			}
 		})
 
@@ -5173,7 +5310,7 @@ async function demarrerServeur () {
 				console.error(err.stack)
 				socket.emit('erreur')
 			} finally {
-				await libererVerrouColonnes(pad)
+				await libererVerrouColonnes(pad, verrouColonne)
 			}
 		})
 
@@ -5252,7 +5389,7 @@ async function demarrerServeur () {
 				console.error(err.stack)
 				socket.emit('erreur')
 			} finally {
-				await libererVerrouColonnes(pad)
+				await libererVerrouColonnes(pad, verrouColonne)
 			}
 		})
 
@@ -5914,13 +6051,15 @@ async function demarrerServeur () {
 		delete blocReduit.source
 		delete blocReduit.identifiant
 		delete blocReduit.nom
+		delete blocReduit.blocOrigine
+		delete blocReduit.activiteId
 		return { complet: blocComplet, reduit: blocReduit }
 	}
 
-	function diffuserBloc (pad, evenement, blocDiffuse, identifiantAuteur) {
+	function diffuserBloc (pad, evenement, blocDiffuse, identifiantAuteur, diffusionRestreinte = false) {
 		const salonAdmin = definirSalonAdmin(pad)
 		const salonPad = 'pad-' + pad
-		if (blocDiffuse.complet === blocDiffuse.reduit) {
+		if (!diffusionRestreinte && blocDiffuse.complet === blocDiffuse.reduit) {
 			return io.to(salonPad).emit(evenement, blocDiffuse.complet)
 		}
 		io.to(salonAdmin).emit(evenement, blocDiffuse.complet)
@@ -5930,7 +6069,16 @@ async function demarrerServeur () {
 			io.to(salonAuteur).except(salonAdmin).emit(evenement, blocDiffuse.complet)
 			exclusions.push(salonAuteur)
 		}
+		if (diffusionRestreinte) return
 		io.to(salonPad).except(exclusions).emit(evenement, blocDiffuse.reduit)
+	}
+
+	function verifierColonneMasquee (donneesPad, affichageColonnes, colonne) {
+		return (donneesPad.affichage === 'colonnes' && Array.isArray(affichageColonnes) && affichageColonnes[colonne] === false)
+	}
+
+	function verifierIdentifiantBloc (bloc) {
+		return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{20,64}$/.test(bloc)
 	}
 
 	function verifierBlocVisible (bloc, contributions) {
@@ -6703,18 +6851,35 @@ async function demarrerServeur () {
 		}
 	}
 
+	const dureeVerrouColonnes = 2000
+	const scriptProlongerVerrou = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("pexpire", KEYS[1], ARGV[2]) else return 0 end'
+	const scriptLibererVerrou = 'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end'
+
 	async function acquerirVerrouColonnes (pad) {
 		const cle = 'verrou-colonnes:' + pad
+		const jeton = randomBytes(16).toString('hex')
 		for (let tentative = 0; tentative < 40; tentative++) {
-			const acquis = await db.SET(cle, '1', { NX: true, PX: 2000 })
-			if (acquis) return true
+			const verrouAcquis = await db.SET(cle, jeton, { NX: true, PX: dureeVerrouColonnes })
+			if (verrouAcquis) {
+				const minuteur = setInterval(() => {
+					db.EVAL(scriptProlongerVerrou, { keys: [cle], arguments: [jeton, String(dureeVerrouColonnes)] }).catch(() => {})
+				}, Math.round(dureeVerrouColonnes / 2))
+				minuteur.unref()
+				return { jeton, minuteur }
+			}
 			await new Promise((resolve) => setTimeout(resolve, 25))
 		}
-		return false
+		return null
 	}
 
-	async function libererVerrouColonnes (pad) {
-		await db.UNLINK('verrou-colonnes:' + pad)
+	async function libererVerrouColonnes (pad, verrou) {
+		if (!verrou) return
+		clearInterval(verrou.minuteur)
+		try {
+			await db.EVAL(scriptLibererVerrou, { keys: ['verrou-colonnes:' + pad], arguments: [verrou.jeton] })
+		} catch (err) {
+			console.error(err.stack)
+		}
 	}
 
 	async function supprimerBlocs (pad, blocsASupprimer) {
@@ -6804,6 +6969,124 @@ async function demarrerServeur () {
 		}
 	}
 
+	async function verifierEspaceDisque (emplacement = 'fichiers') {
+		if (emplacement !== 'temp' && stockage !== 'fs') return true
+		const dossier = (emplacement === 'temp') ? path.join(__dirname, '..', '/static/temp') : path.join(__dirname, '..', '/static' + definirCheminFichiers())
+		const espaceDisque = await checkDiskSpace(dossier)
+		const pourcentageLibre = Math.round((espaceDisque.free / espaceDisque.size) * 100)
+		return pourcentageLibre >= minimumEspaceDisque
+	}
+
+	async function dupliquerFichier (pad, nomFichier) {
+		if (!nomFichier || typeof nomFichier !== 'string' || nomFichier === '' || /[/\\]/.test(nomFichier) || nomFichier.includes('..')) return nomFichier
+		const nouveauNom = definirNomFichier(nomFichier)
+		if (stockage === 'fs') {
+			const source = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad + '/' + nomFichier)
+			const destination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad + '/' + nouveauNom)
+			if (!await fs.pathExists(source)) return ''
+			try {
+				await fs.copy(source, destination)
+				return nouveauNom
+			} catch {
+				return null
+			}
+		} else if (stockage === 's3') {
+			try {
+				const cleSource = pad + '/' + nomFichier
+				const meta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: cleSource }))
+				if (!meta.hasOwnProperty('ContentLength')) return ''
+				await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + nouveauNom, '/' + bucket + '/' + cleSource)))
+				return nouveauNom
+			} catch (err) {
+				if (err && (err.name === 'NotFound' || err.name === 'NoSuchKey' || (err.$metadata && err.$metadata.httpStatusCode === 404))) return ''
+				return null
+			}
+		}
+		return nomFichier
+	}
+
+	async function annulerDupliquerBloc (pad, contenus) {
+		for (const contenu of contenus) {
+			if (!contenu) continue
+			if (Array.isArray(contenu.fichiersCrees) && contenu.fichiersCrees.length > 0) {
+				await Promise.all(contenu.fichiersCrees.map((fichier) => supprimerFichier(pad, fichier).catch(() => {})))
+			}
+			if (contenu.padCree && etherpad && etherpadApi) {
+				await axios.get(etherpad + '/api/1/deletePad?apikey=' + etherpadApi + '&padID=' + contenu.padCree, { timeout: 5000 }).catch(() => {})
+			}
+		}
+	}
+
+	async function dupliquerPadEtherpad (pad, etherpadId) {
+		if (!etherpadApi || etherpadApi === '') return { statut: 'echec' }
+		const destinationId = 'pad-' + pad + '-' + randomBytes(8).toString('hex')
+		const urlCopie = etherpad + '/api/1.2.14/copyPad?apikey=' + etherpadApi + '&sourceID=' + etherpadId + '&destinationID=' + destinationId
+		try {
+			const reponse = await axios.get(urlCopie, { timeout: 5000 })
+			const code = (reponse && reponse.data && reponse.data.hasOwnProperty('code')) ? parseInt(reponse.data.code, 10) : 0
+			if (code === 0) return { statut: 'copie', destinationId }
+			return { statut: 'echec' }
+		} catch {
+			return { statut: 'echec' }
+		}
+	}
+
+	async function dupliquerBloc (pad, donneesBloc, contenusANettoyer) {
+		const type = donneesBloc.type || ''
+		const contenu = { texte: donneesBloc.texte || '', media: donneesBloc.media || '', alt: donneesBloc.alt || '', iframe: donneesBloc.iframe || '', vignette: donneesBloc.vignette || '', echec: false, fichiersCrees: [], padCree: '' }
+		contenusANettoyer.push(contenu)
+		const dupliquerFichierSuivi = async (nomFichier) => {
+			const nouveauNom = await dupliquerFichier(pad, nomFichier)
+			if (nouveauNom === null) {
+				contenu.echec = true
+				return nomFichier
+			}
+			if (nouveauNom !== '' && nouveauNom !== nomFichier) {
+				contenu.fichiersCrees.push(nouveauNom)
+			}
+			return nouveauNom
+		}
+		if (etherpad && contenu.iframe !== '' && contenu.iframe.includes(etherpad)) {
+			const copie = await dupliquerPadEtherpad(pad, contenu.iframe.replace(etherpad + '/p/', ''))
+			if (copie.statut === 'copie') {
+				contenu.padCree = copie.destinationId
+				contenu.iframe = etherpad + '/p/' + copie.destinationId
+				contenu.media = etherpad + '/p/' + copie.destinationId
+			} else {
+				contenu.iframe = ''
+				contenu.media = ''
+			}
+		} else if (contenu.media !== '' && type !== 'embed' && type !== 'lien') {
+			contenu.media = await dupliquerFichierSuivi(contenu.media)
+		}
+		if (definirVignettePersonnalisee(contenu.vignette) === true) {
+			contenu.vignette = await dupliquerFichierSuivi(path.basename(contenu.vignette))
+		}
+		return contenu
+	}
+
+	async function definirScoreDuplication (pad, blocOrigine, scoreDefaut) {
+		const rang = await db.ZRANK('blocs:' + pad, blocOrigine)
+		if (rang === null || rang === undefined) return scoreDefaut
+		const entrees = await db.ZRANGE_WITHSCORES('blocs:' + pad, rang, rang + 1)
+		if (!Array.isArray(entrees) || entrees.length === 0) return scoreDefaut
+		const scoreOrigine = Number(entrees[0].score)
+		if (!Number.isFinite(scoreOrigine)) return scoreDefaut
+		if (entrees.length === 1) return Math.max(scoreDefaut, scoreOrigine + 1)
+		const scoreSuivant = Number(entrees[1].score)
+		if (!Number.isFinite(scoreSuivant) || scoreSuivant <= scoreOrigine) return scoreDefaut
+		const score = (scoreOrigine + scoreSuivant) / 2
+		if (score <= scoreOrigine || score >= scoreSuivant) return scoreDefaut
+		return score
+	}
+
+	async function definirScoreMaximum (pad) {
+		const entrees = await db.ZRANGE_WITHSCORES('blocs:' + pad, -1, -1)
+		if (!Array.isArray(entrees) || entrees.length === 0) return 0
+		const score = Number(entrees[0].score)
+		return Number.isFinite(score) ? score : 0
+	}
+
 	async function copierFichierExport (sourceInfo, destination) {
 		try {
 			if (stockage === 'fs') {
@@ -6841,10 +7124,8 @@ async function demarrerServeur () {
 		}),
 		fileFilter: (req, fichier, callback) => {
 			if (req.body.pad) {
-				const dossier = path.join(__dirname, '..', '/static' + definirCheminFichiers())
-				checkDiskSpace(dossier).then(function (diskSpace) {
-					const espace = Math.round((diskSpace.free / diskSpace.size) * 100)
-					if (espace < minimumEspaceDisque) {
+				verifierEspaceDisque('temp').then((espaceSuffisant) => {
+					if (!espaceSuffisant) {
 						callback('erreur_espace_disque')
 					} else {
 						callback(null, true)
