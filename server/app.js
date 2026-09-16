@@ -1270,7 +1270,7 @@ async function demarrerServeur () {
 			// Duplication des blocs par lots
 			const listeBlocs = await db.ZRANGE('blocs:' + padSource, 0, -1)
 			if (listeBlocs === null) return res.status(500).send('erreur_duplication')
-			await executerTransactions(listeBlocs, async (blocSource, index) => {
+			const blocsTraites = await executerTransactions(listeBlocs, async (blocSource, index) => {
 				let infosBloc = await db.HGETALL('pad-' + padSource + ':' + blocSource)
 				infosBloc = infosBloc ? { ...infosBloc } : {}
 				if (!infosBloc || Object.keys(infosBloc).length === 0) return null
@@ -1289,12 +1289,16 @@ async function demarrerServeur () {
 					infosBloc.vignette = path.basename(infosBloc.vignette)
 				}
 				const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
-				await db.multi()
-					.HSET('pad-' + nId + ':' + blocId, ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'alt', assainirTexteAlternatif(infosBloc.alt), 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d'])
-					.ZADD('blocs:' + nId, { score: index, value: blocId })
-					.exec()
-				return blocId
+				const champsBloc = ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'alt', assainirTexteAlternatif(infosBloc.alt), 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d']
+				return { index, blocId, champsBloc }
 			}, tailleLotTransaction)
+			const pipelineBlocsDupliques = db.multi()
+			for (const bloc of blocsTraites.filter(Boolean)) {
+				pipelineBlocsDupliques
+					.HSET('pad-' + nId + ':' + bloc.blocId, bloc.champsBloc)
+					.ZADD('blocs:' + nId, { score: bloc.index, value: bloc.blocId })
+			}
+			await pipelineBlocsDupliques.exec()
 			// Création des métadonnées du pad
 			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', donneesPadSource.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
 			// Ajout du code d'accès seulement s'il existait dans l'original
