@@ -215,6 +215,7 @@
 	"identifiantOublie": "Identifiant oublié ?",
 	"identifiantEnvoye": "Si un compte est associé à cette adresse électronique, l'identifiant a été envoyé par courriel.",
 	"recupererDonneesPad": "Récupérer les données du pad",
+	"recupererDonneesUtilisateur": "Récupérer les données de l'utilisateur",
 	"recuperationContenuEnCours": "Récupération du contenu en cours…",
 	"numeroPad": "Numéro du pad",
 	"compteSupprime": "Compte supprimé.",

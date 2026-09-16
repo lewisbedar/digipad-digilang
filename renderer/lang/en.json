@@ -215,6 +215,7 @@
 	"identifiantOublie": "Forgot your username?",
 	"identifiantEnvoye": "If an account is associated with this email address, the username has been sent by email.",
 	"recupererDonneesPad": "Retrieve data from the pad",
+	"recupererDonneesUtilisateur": "Retrieve the user's data",
 	"recuperationContenuEnCours": "Retrieving content…",
 	"numeroPad": "Pad number",
 	"compteSupprime": "Account deleted.",

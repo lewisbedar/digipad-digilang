@@ -36,6 +36,23 @@
 					<button type="button" class="bouton" :disabled="disabled" @click="modifierMotDePasse">{{ $t('valider') }}</button>
 				</div>
 				<h1>
+					<span>{{ $t('recupererDonneesUtilisateur') }}</span>
+				</h1>
+				<div class="conteneur">
+					<label for="champ-identifiant-u">{{ $t('identifiant') }}</label>
+					<input id="champ-identifiant-u" type="text" :value="identifiantU" :disabled="disabled" @input="identifiantU = $event.target.value" @keydown.enter="recupererDonneesUtilisateur">
+				</div>
+				<div class="conteneur">
+					<label for="champ-email-u">{{ $t('email') }}</label>
+					<input id="champ-email-u" type="email" :value="emailU" :disabled="disabled" @input="emailU = $event.target.value" @keydown.enter="recupererDonneesUtilisateur">
+				</div>
+				<div class="conteneur" v-if="donneesUtilisateur !== ''">
+					<span class="donnees">{{ donneesUtilisateur }}</span>
+				</div>
+				<div class="conteneur actions">
+					<button type="button" class="bouton" :disabled="disabled" @click="recupererDonneesUtilisateur">{{ $t('valider') }}</button>
+				</div>
+				<h1>
 					<span>{{ $t('recupererDonneesPad') }}</span>
 				</h1>
 				<div class="conteneur">
@@ -211,6 +228,9 @@ export default {
 			identifiant: '',
 			email: '',
 			motdepasse: '',
+			identifiantU: '',
+			emailU: '',
+			donneesUtilisateur: '',
 			padId: '',
 			padIdS: '',
 			padIdM: '',
@@ -350,6 +370,32 @@ export default {
 						this.message = this.$t('identifiantNonValide')
 					} else if (err.response?.data === 'email_non_valide') {
 						this.message = this.$t('erreurEmail')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
+			}
+		},
+		recupererDonneesUtilisateur () {
+			if (this.identifiantU !== '' || this.emailU !== '') {
+				this.chargement = true
+				axios.post(this.hote + '/api/recuperer-donnees-utilisateur-admin', {
+					admin: this.admin,
+					identifiant: this.identifiantU,
+					email: this.emailU
+				}).then((reponse) => {
+					this.chargement = false
+					this.donneesUtilisateur = reponse.data
+					this.identifiantU = ''
+					this.emailU = ''
+				}).catch((err) => {
+					this.chargement = false
+					if (err.response?.data === 'identifiant_non_valide') {
+						this.message = this.$t('identifiantNonValide')
+					} else if (err.response?.data === 'email_non_valide') {
+						this.message = this.$t('erreurEmail')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}

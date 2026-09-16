@@ -215,6 +215,7 @@
 	"identifiantOublie": "¿Ha olvidado su usuario?",
 	"identifiantEnvoye": "Si existe una cuenta asociada a esta dirección de correo electrónico, el usuario ha sido enviado por correo electrónico.",
 	"recupererDonneesPad": "Recuperar datos del pad",
+	"recupererDonneesUtilisateur": "Recuperar los datos del usuario",
 	"recuperationContenuEnCours": "Recuperando el contenido…",
 	"numeroPad": "Número del pad",
 	"compteSupprime": "Cuenta borrada.",

@@ -1855,6 +1855,50 @@ async function demarrerServeur () {
 		}
 	})
 
+	app.post('/api/recuperer-donnees-utilisateur-admin', limiteAuthAdmin, async (req, res) => {
+		const admin = req.body.admin
+		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
+		const identifiant = req.body.identifiant
+		const email = req.body.email ? req.body.email.toLowerCase() : ''
+		try {
+			if (identifiant !== '') {
+				const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
+				if (utilisateurExiste !== 1) return res.status(400).send('identifiant_non_valide')
+				let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+				donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+				return res.status(200).json([donneesUtilisateur])
+			}
+			if (email !== '') {
+				const clesUtilisateurs = []
+				for await (const cle of db.scanIterator({ MATCH: 'utilisateurs:*', COUNT: 100 })) {
+					clesUtilisateurs.push(...cle)
+				}
+				if (clesUtilisateurs.length === 0) return res.status(400).send('email_non_valide')
+				const utilisateurs = clesUtilisateurs.map(cle => cle.substring(13))
+				// Récupération des données pour chaque utilisateur potentiel
+				const listeUtilisateurs = await Promise.all(utilisateurs.map(async (id) => {
+					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + id)
+					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+					if (donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email.toLowerCase() === email) {
+						return donneesUtilisateur
+					}
+					return null
+				}))
+				// Recherche des utilisateurs correspondant à l'email
+				const utilisateursTrouves = listeUtilisateurs.filter(utilisateur => utilisateur !== null)
+				if (utilisateursTrouves.length > 0) {
+					return res.status(200).json(utilisateursTrouves)
+				} else {
+					return res.status(400).send('email_non_valide')
+				}
+			}
+			return res.status(500).send('erreur')
+		} catch (err) {
+			console.error(err.stack)
+			return res.status(500).send('erreur')
+		}
+	})
+
 	app.post('/api/recuperer-donnees-pad-admin', limiteAuthAdmin, async (req, res) => {
 		const pad = req.body.padId
 		const admin = req.body.admin
