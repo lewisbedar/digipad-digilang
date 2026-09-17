@@ -467,5 +467,9 @@
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
 	"visionneuseOffice": "Visualizzatore per i documenti Office",
-	"votreNom": "Il tuo nome"
+	"votreNom": "Il tuo nome",
+	"transfertPropriete": "Trasferimento di proprietà",
+	"parametreTransfertProprieteModifie": "Parametro di trasferimento di proprietà modificato.",
+	"transfererProprietePad": "Trasferisci la proprietà di questo pad",
+	"texteTransfertPropriete": "Indica l'identificativo dell'account a cui trasferire questo pad. Questa azione è irreversibile."
 }

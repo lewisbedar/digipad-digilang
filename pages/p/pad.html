@@ -447,6 +447,15 @@
 					</select>
 				</div>
 			</div>
+			<div class="conteneur" v-if="pad.identifiant === identifiant && statut === 'utilisateur'">
+				<div class="conteneur-interrupteur">
+					<span>{{ $t('transfertPropriete') }}</span>
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-transfert-propriete')">
+						<input id="parametre-transfert-propriete" type="checkbox" :checked="pad.transfertPropriete === 'active'" @change="modifierTransfertPropriete">
+						<span class="barre" />
+					</label>
+				</div>
+			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
 				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad">{{ $t('exporterPad') }}</button>
 			</div>

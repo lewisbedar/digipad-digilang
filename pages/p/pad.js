@@ -3464,6 +3464,14 @@ export default {
 			}
 			this.chargement = true
 		},
+		modifierTransfertPropriete (event) {
+			if (event.target.checked) {
+				this.$socket.emit('modifiertransfertpropriete', this.pad.id, 'active', this.identifiant)
+			} else {
+				this.$socket.emit('modifiertransfertpropriete', this.pad.id, 'desactive', this.identifiant)
+			}
+			this.chargement = true
+		},
 		modifierListeUtilisateurs (event) {
 			if (event.target.checked) {
 				this.$socket.emit('modifierlisteutilisateurs', this.pad.id, 'activee', this.identifiant)
@@ -4932,6 +4940,14 @@ export default {
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('parametreConversationModifie')
+				}
+			})
+
+			this.$socket.on('modifiertransfertpropriete', (statut, identifiant) => {
+				this.pad.transfertPropriete = statut
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreTransfertProprieteModifie')
 				}
 			})
 

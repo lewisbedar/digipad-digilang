@@ -467,5 +467,9 @@
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
 	"visionneuseOffice": "Viewer for Office documents",
-	"votreNom": "Your name"
+	"votreNom": "Your name",
+	"transfertPropriete": "Ownership transfer",
+	"parametreTransfertProprieteModifie": "Ownership transfer setting changed.",
+	"transfererProprietePad": "Transfer ownership of this pad",
+	"texteTransfertPropriete": "Enter the username of the account to transfer this pad to. This action is irreversible."
 }

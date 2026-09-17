@@ -467,5 +467,9 @@
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
 	"visionneuseOffice": "Preglednik za Office dokumente",
-	"votreNom": "Vaše ime"
+	"votreNom": "Vaše ime",
+	"transfertPropriete": "Prijenos vlasništva",
+	"parametreTransfertProprieteModifie": "Postavka prijenosa vlasništva promijenjena.",
+	"transfererProprietePad": "Prenesi vlasništvo nad ovim padom",
+	"texteTransfertPropriete": "Unesite korisničko ime računa na koji želite prenijeti ovaj pad. Ova radnja je nepovratna."
 }

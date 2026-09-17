@@ -494,7 +494,7 @@ export default {
 			if (this.padIdR !== '' && this.identifiantR !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/rattacher-pad', {
+				axios.post(this.hote + '/api/rattacher-pad-admin', {
 					admin: this.admin,
 					padId: this.padIdR,
 					identifiant: this.identifiantR
@@ -585,7 +585,7 @@ export default {
 			if (this.identifiantN !== '' && this.padIdN !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/transferer-pad', {
+				axios.post(this.hote + '/api/transferer-pad-admin', {
 					admin: this.admin,
 					nouvelIdentifiant: this.identifiantN,
 					padId: this.padIdN
@@ -620,7 +620,7 @@ export default {
 			if (this.identifiantO !== '' && this.identifiantT !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/transferer-compte', {
+				axios.post(this.hote + '/api/transferer-compte-admin', {
 					admin: this.admin,
 					identifiant: this.identifiantO,
 					nouvelIdentifiant: this.identifiantT

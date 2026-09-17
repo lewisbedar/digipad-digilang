@@ -141,6 +141,7 @@
 								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
 								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="transferer" :disabled="disabled" :title="$t('transfererProprietePad')" :aria-label="$t('transfererProprietePad')" @click="afficherModaleTransferer(pad.id)" v-if="onglet !== 'pads-corbeille' && pad.transfertPropriete === 'active'"><i class="material-icons" aria-hidden="true">swap_horiz</i></button>
 								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
@@ -172,6 +173,7 @@
 								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
 								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="transferer" :disabled="disabled" :title="$t('transfererProprietePad')" :aria-label="$t('transfererProprietePad')" @click="afficherModaleTransferer(pad.id)" v-if="onglet !== 'pads-corbeille' && pad.transfertPropriete === 'active'"><i class="material-icons" aria-hidden="true">swap_horiz</i></button>
 								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
@@ -213,6 +215,7 @@
 								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
 								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="transferer" :disabled="disabled" :title="$t('transfererProprietePad')" :aria-label="$t('transfererProprietePad')" @click="afficherModaleTransferer(pad.id)" v-if="onglet !== 'pads-corbeille' && pad.transfertPropriete === 'active'"><i class="material-icons" aria-hidden="true">swap_horiz</i></button>
 								<button type="button" class="restaurer" :disabled="disabled"  :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
@@ -244,6 +247,7 @@
 								<button type="button" class="deplacer" :disabled="disabled" :title="$t('ajouterDansDossier')" :aria-label="$t('ajouterDansDossier')" @click="afficherModaleDeplacerPad(pad.id)" :class="{'actif': verifierDossierPad(pad.id)}" v-if="dossiers.length > 0 && onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">drive_file_move</i></button>
 								<button type="button" class="dupliquer" :disabled="disabled" :title="$t('dupliquerPad')" :aria-label="$t('dupliquerPad')" @click="afficherModaleConfirmation($event, pad.id, 'dupliquer')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 								<button type="button" class="exporter" :disabled="disabled" :title="$t('exporterPad')" :aria-label="$t('exporterPad')" @click="afficherModaleConfirmation($event, pad.id, 'exporter')" v-if="onglet !== 'pads-corbeille'"><i class="material-icons" aria-hidden="true">get_app</i></button>
+								<button type="button" class="transferer" :disabled="disabled" :title="$t('transfererProprietePad')" :aria-label="$t('transfererProprietePad')" @click="afficherModaleTransferer(pad.id)" v-if="onglet !== 'pads-corbeille' && pad.transfertPropriete === 'active'"><i class="material-icons" aria-hidden="true">swap_horiz</i></button>
 								<button type="button" class="restaurer" :disabled="disabled" :title="$t('restaurer')" :aria-label="$t('restaurer')" @click="restaurerPad(pad)" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">restore_from_trash</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('supprimerPad')" :aria-label="$t('supprimerPad')" @click="afficherModaleConfirmation($event, pad.id, 'supprimer')" v-if="onglet === 'pads-corbeille'"><i class="material-icons" aria-hidden="true">delete</i></button>
 								<button type="button" class="supprimer" :disabled="disabled" :title="$t('mettreCorbeille')" :aria-label="$t('mettreCorbeille')" @click="mettrePadCorbeille(pad)" v-else><i class="material-icons" aria-hidden="true">delete</i></button>
@@ -345,6 +349,28 @@
 						</select>
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="deplacerPad">{{ $t('valider') }}</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="conteneur-modale" v-else-if="modale === 'transferer-pad'">
+			<div id="transfert-propriete" class="modale" role="dialog" aria-modal="true" :aria-label="$t('transfererProprietePad')">
+				<div class="en-tete">
+					<span class="titre">{{ $t('transfererProprietePad') }}</span>
+					<button type="button" class="fermer" :disabled="disabledModale || chargementModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleTransferer"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<div class="message" v-html="$t('texteTransfertPropriete')" />
+						<label for="champ-identifiant-destination">{{ $t('identifiantDestination') }}</label>
+						<input id="champ-identifiant-destination" type="text" :value="identifiantDestination" :disabled="disabledModale" @input="identifiantDestination = $event.target.value" @keydown.enter="transfererPad">
+						<div class="actions">
+							<button type="button" class="bouton" :disabled="disabledModale" @click="transfererPad" v-if="!chargementModale">{{ $t('valider') }}</button>
+							<div class="conteneur-chargement" v-else>
+								<div class="chargement" />
+							</div>
 						</div>
 					</div>
 				</div>
@@ -518,6 +544,7 @@ export default {
 			titre: '',
 			progressionImport: 0,
 			padId: '',
+			identifiantDestination: '',
 			lienAjouter: '',
 			motDePasseAjouter: '',
 			motDePasse: '',
@@ -843,7 +870,7 @@ export default {
 				return
 			}
 			this.chargementModale = true
-			axios.post(this.hote + '/api/rattacher-pad-compte', {
+			axios.post(this.hote + '/api/rattacher-pad', {
 				identifiant: this.identifiant,
 				padId: infosPad.padId,
 				token: infosPad.token,
@@ -1066,6 +1093,61 @@ export default {
 			this.padId = ''
 			this.dossierActuel = {}
 			this.gererFocus()
+		},
+		afficherModaleTransferer (padId) {
+			this.padId = padId
+			this.identifiantDestination = ''
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.modale = 'transferer-pad'
+			this.$nextTick(() => {
+				document.querySelector('.modale input')?.focus()
+			})
+		},
+		fermerModaleTransferer () {
+			this.modale = ''
+			this.padId = ''
+			this.identifiantDestination = ''
+			this.gererFocus()
+		},
+		transfererPad () {
+			const nouvelIdentifiant = this.identifiantDestination.trim()
+			if (nouvelIdentifiant !== '' && nouvelIdentifiant !== this.identifiant) {
+				this.chargementModale = true
+				const padId = this.padId
+				axios.post(this.hote + '/api/transferer-pad', {
+					padId: padId,
+					identifiant: this.identifiant,
+					nouvelIdentifiant: nouvelIdentifiant
+				}).then(() => {
+					this.chargementModale = false
+					this.padsCrees = this.padsCrees.filter((pad) => pad.id !== padId)
+					this.pads = this.pads.filter((pad) => pad.id !== padId)
+					this.resultats = this.resultats.filter((pad) => pad.id !== padId)
+					this.padsFavoris = this.padsFavoris.filter((pad) => pad.id !== padId)
+					this.favoris = this.favoris.filter((favori) => favori !== padId)
+					this.dossiers.forEach((dossier, indexDossier) => {
+						if (dossier.pads.includes(padId)) {
+							this.dossiers[indexDossier].pads = dossier.pads.filter((id) => id !== padId)
+						}
+					})
+					this.notification = this.$t('padTransfere')
+					this.fermerModaleTransferer()
+				}).catch((err) => {
+					this.chargementModale = false
+					this.fermerModaleTransferer()
+					if (err.response?.data === 'non_connecte') {
+						window.location.replace('/')
+					} else if (err.response?.data === 'utilisateur_inexistant') {
+						this.message = this.$t('utilisateurInexistant')
+					} else if (err.response?.data === 'pad_inexistant') {
+						this.message = this.$t('padInexistant')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
+			}
 		},
 		dupliquerPad () {
 			this.modaleConfirmation = ''
@@ -1665,6 +1747,8 @@ export default {
 				this.fermerModaleCreerPad()
 			} else if (this.modale === 'deplacer-pad') {
 				this.fermerModaleDeplacerPad()
+			} else if (this.modale === 'transferer-pad') {
+				this.fermerModaleTransferer()
 			} else if (this.modale === 'importer-pad') {
 				this.fermerModaleImporterPad()
 			} else if (this.modale === 'ajouter-pad') {

@@ -467,5 +467,9 @@
 	"visionneuse": "Collabora (LibreOffice)",
 	"visionneuseAlt": "Microsoft",
 	"visionneuseOffice": "Viewer für Office-Dokumente",
-	"votreNom": "Ihr Name"
+	"votreNom": "Ihr Name",
+	"transfertPropriete": "Eigentumsübertragung",
+	"parametreTransfertProprieteModifie": "Einstellung zur Eigentumsübertragung geändert.",
+	"transfererProprietePad": "Eigentum an diesem Pad übertragen",
+	"texteTransfertPropriete": "Geben Sie die Kennung des Kontos an, auf das dieses Pad übertragen werden soll. Diese Aktion ist unwiderruflich."
 }
