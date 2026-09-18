@@ -1,0 +1,573 @@
+import path from 'path'
+import fs from 'fs-extra'
+import v from 'voca'
+import AdmZip from 'adm-zip'
+import dayjs from 'dayjs'
+import 'dayjs/locale/es.js'
+import 'dayjs/locale/fr.js'
+import 'dayjs/locale/de.js'
+import 'dayjs/locale/hr.js'
+import 'dayjs/locale/it.js'
+import localizedFormat from 'dayjs/plugin/localizedFormat.js'
+import { promises as dnsPromises } from 'dns'
+import { URL } from 'url'
+import { createHash, timingSafeEqual } from 'crypto'
+
+dayjs.extend(localizedFormat)
+
+// Pour validation des chaînes dans ajouterbloc et modifierbloc
+const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250 }
+
+// Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
+const tailleLotTransaction = 10
+
+function obtenirCleEchecConnexion (identifiant, ip) {
+	if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return null
+	const adresse = typeof ip === 'string' && ip !== '' ? ip : 'inconnu'
+	return 'rl-connexion-id:' + identifiant + ':' + adresse
+}
+
+function definirBlocDiffuse (champsBase, visibilite, contenu, contributions) {
+	const contenuAMasquer = (visibilite === 'privee' || (visibilite === 'masquee' && contributions === 'moderees'))
+	const blocComplet = { ...champsBase, visibilite, texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette }
+	if (!contenuAMasquer) {
+		return { complet: blocComplet, reduit: blocComplet }
+	}
+	const blocReduit = { ...champsBase, visibilite }
+	delete blocReduit.titre
+	delete blocReduit.type
+	delete blocReduit.source
+	delete blocReduit.identifiant
+	delete blocReduit.nom
+	delete blocReduit.blocOrigine
+	delete blocReduit.activiteId
+	return { complet: blocComplet, reduit: blocReduit }
+}
+
+function verifierColonneMasquee (donneesPad, affichageColonnes, colonne) {
+	return (donneesPad.affichage === 'colonnes' && Array.isArray(affichageColonnes) && affichageColonnes[colonne] === false)
+}
+
+function verifierIdentifiantPad (pad) {
+	return (typeof pad === 'string' || typeof pad === 'number') && /^[0-9]{1,15}$/.test(String(pad))
+}
+
+function verifierIdentifiantBloc (bloc) {
+	return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{20,64}$/.test(bloc)
+}
+
+function verifierBlocVisible (bloc, contributions) {
+	return !((contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
+}
+
+function definirDonneesPadExport (pad) {
+	const champs = ['titre', 'affichage', 'ordre', 'largeur', 'colonnes', 'fond', 'fondRepete', 'commentaires', 'evaluations']
+	const donneesPadExport = {}
+	champs.forEach((champ) => {
+		if (pad.hasOwnProperty(champ)) donneesPadExport[champ] = pad[champ]
+	})
+	if (pad.visibiliteCommentaires === 'admin') donneesPadExport.commentaires = 'desactives'
+	if (pad.visibiliteEvaluations === 'admin') donneesPadExport.evaluations = 'desactivees'
+	return donneesPadExport
+}
+
+function definirBlocsExport (blocs, pad) {
+	const commentairesVisibles = pad.visibiliteCommentaires !== 'admin'
+	const evaluationsVisibles = pad.visibiliteEvaluations !== 'admin'
+	const champs = ['bloc', 'titre', 'texte', 'media', 'alt', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
+	return blocs.filter((bloc) => verifierBlocVisible(bloc, pad.contributions)).map((bloc) => {
+		const blocExport = {}
+		champs.forEach((champ) => {
+			if (bloc.hasOwnProperty(champ)) blocExport[champ] = bloc[champ]
+		})
+		const listeCommentaires = (commentairesVisibles && Array.isArray(bloc.listeCommentaires)) ? bloc.listeCommentaires.filter((commentaire) => commentaire.visibilite !== 'masquee') : []
+		blocExport.listeCommentaires = listeCommentaires
+		blocExport.commentaires = listeCommentaires.length
+		blocExport.listeEvaluations = (evaluationsVisibles && Array.isArray(bloc.listeEvaluations)) ? bloc.listeEvaluations : []
+		blocExport.evaluations = blocExport.listeEvaluations.length
+		return blocExport
+	})
+}
+
+function definirBlocsDeplaces (listeItems, blocs, contributions, identifiantLecteur) {
+	return listeItems.filter((item, index) => {
+		const bloc = blocs[index]
+		return verifierBlocVisible(bloc, contributions) || (identifiantLecteur && bloc.identifiant === identifiantLecteur)
+	})
+}
+
+function recupererNombreCommentaires (totalCommentaires, identifiantsMasques, admin, identifiant, commentairesVisibles = true) {
+	if (!admin && commentairesVisibles === false) return { commentaires: 0, commentairesEnAttente: 0 }
+	const commentairesMasques = identifiantsMasques.length
+	const commentairesMasquesAuteur = identifiantsMasques.filter(m => extraireIdentifiantMasque(m) === identifiant).length
+	return {
+		commentaires: admin ? totalCommentaires : (totalCommentaires - commentairesMasques + commentairesMasquesAuteur),
+		commentairesEnAttente: admin ? commentairesMasques : commentairesMasquesAuteur
+	}
+}
+
+function verifierActiviteVisible (entree, donneesPad, admin, identifiant, commentairesMasquesParBloc) {
+	if (entree.type === 'bloc-evalue') return (admin || donneesPad.visibiliteEvaluations !== 'admin')
+	if (entree.type !== 'bloc-commente' && entree.type !== 'commentaire-valide') return true
+	if (admin) return true
+	if (donneesPad.visibiliteCommentaires === 'admin') return false
+	if (entree.type === 'bloc-commente' && entree.hasOwnProperty('commentaire')) {
+		const identifiantsMasques = commentairesMasquesParBloc ? commentairesMasquesParBloc.get(entree.bloc) : null
+		if (identifiantsMasques && identifiantsMasques.some((masque) => extraireIdCommentaireMasque(masque) === String(entree.commentaire) && extraireIdentifiantMasque(masque) !== identifiant)) return false
+	}
+	return true
+}
+
+function definirModeration (donnees) {
+	const source = donnees || {}
+	const visibiliteCommentaires = (source.visibiliteCommentaires === 'admin') ? 'admin' : 'tous'
+	const accesCommentaires = (visibiliteCommentaires === 'admin' || source.accesCommentaires === 'admin') ? 'admin' : 'tous'
+	const commentairesModeration = (source.commentairesModeration === 'activee') ? 'activee' : 'desactivee'
+	const visibiliteEvaluations = (source.visibiliteEvaluations === 'admin') ? 'admin' : 'tous'
+	const accesEvaluations = (visibiliteEvaluations === 'admin' || source.accesEvaluations === 'admin') ? 'admin' : 'tous'
+	return { visibiliteCommentaires, accesCommentaires, commentairesModeration, visibiliteEvaluations, accesEvaluations }
+}
+
+function definirParametresModeration (donnees) {
+	return Object.entries(definirModeration(donnees)).flat()
+}
+
+function definirSalonUtilisateur (pad, identifiant) {
+	return 'pad-' + pad + '-u-' + identifiant
+}
+
+function definirSalonAdmin (pad) {
+	return 'pad-admin-' + pad
+}
+
+function extraireIdentifiantMasque (masque) {
+	return masque.substring(masque.indexOf(':') + 1)
+}
+
+function extraireIdCommentaireMasque (masque) {
+	return masque.substring(0, masque.indexOf(':'))
+}
+
+function sauvegarderSession (req) {
+	return new Promise((resolve, reject) => {
+		req.session.save((err) => {
+			if (err) reject(err)
+			else resolve()
+		})
+	})
+}
+
+const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage', 'colonnes']
+
+function filtrerChamps (objet, champs) {
+	const resultat = {}
+	if (!objet) return resultat
+	champs.forEach((champ) => {
+		if (objet.hasOwnProperty(champ)) resultat[champ] = objet[champ]
+	})
+	return resultat
+}
+
+function nettoyerPads (pads) {
+	return pads.filter(el => el && Object.keys(el).length > 0).map((el) => {
+		const pad = filtrerChamps(el, champsPadsClient)
+		pad.id = parseInt(el.id, 10)
+		return pad
+	})
+}
+
+function supprimerDoublons (pads) {
+	return pads.filter((valeur, index, self) =>
+		index === self.findIndex((t) => (
+			t.id === valeur.id && t.token === valeur.token
+		))
+	)
+}
+
+function definirAccesLecture (pad, donneesPad, admin, session) {
+	const accesCode = donneesPad.hasOwnProperty('code') && donneesPad.acces === 'code'
+	const accesPrive = donneesPad.acces === 'prive'
+	if (admin || (!accesCode && !accesPrive)) return true
+	if (!accesCode || !session || !session.hasOwnProperty('acces')) return false
+	return session.acces.some((e) => e.hasOwnProperty('pad') && parseInt(e.pad, 10) === parseInt(pad, 10) && e.code === donneesPad.code)
+}
+
+function supprimerSession (req) {
+	if (req.hasOwnProperty('session')) {
+		req.session.identifiant = ''
+		req.session.motdepasse = ''
+		req.session.nom = ''
+		req.session.email = ''
+		req.session.langue = ''
+		req.session.statut = ''
+		req.session.pads = []
+		req.session.destroy()
+	}
+}
+
+function genererPseudo () {
+	const caracteres = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	const nom = caracteres.charAt(Math.floor(Math.random() * caracteres.length)) + caracteres.charAt(Math.floor(Math.random() * caracteres.length)) + Math.floor(Math.random() * (9999 - 1000) + 1000)
+	return nom
+}
+
+function genererMotDePasse (longueur) {
+	function rand (max) {
+		return Math.floor(Math.random() * max)
+	}
+	function verifierMotDePasse (motdepasse, regex, caracteres) {
+		if (!regex.test(motdepasse)) {
+			const nouveauCaractere = caracteres.charAt(rand(caracteres.length))
+			const position = rand(motdepasse.length + 1)
+			motdepasse = motdepasse.slice(0, position) + nouveauCaractere + motdepasse.slice(position)
+		}
+		return motdepasse
+	}
+	const caracteres = '123456789abcdefghijklmnopqrstuvwxyz'.split('')
+	const caracteresSpeciaux = '!#$@*'
+	const specialRegex = /[!#\$@*]/
+	const majuscules = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+	const majusculesRegex = /[A-Z]/
+	let motdepasse = ''
+	let index
+	while (motdepasse.length < longueur) {
+		index = rand(caracteres.length)
+		motdepasse += caracteres[index]
+		caracteres.splice(index, 1)
+	}
+	motdepasse = verifierMotDePasse(motdepasse, specialRegex, caracteresSpeciaux)
+	motdepasse = verifierMotDePasse(motdepasse, majusculesRegex, majuscules)
+	return motdepasse  
+}
+
+function verifierEmail (email) {
+	const regexExp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/gi
+	return regexExp.test(email)
+}
+
+function verifierFormatEmail (email) {
+	if (typeof email !== 'string') return false
+	const adresse = email.trim()
+	if (adresse.length < 6 || adresse.length > 254) return false
+	if (adresse.indexOf(' ') !== -1) return false
+	const positionArobase = adresse.lastIndexOf('@')
+	if (positionArobase < 1) return false
+	const partieLocale = adresse.slice(0, positionArobase)
+	const domaine = adresse.slice(positionArobase + 1)
+	if (partieLocale.length > 64) return false
+	if (domaine.length > 253 || domaine.indexOf('.') === -1) return false
+	if (domaine.startsWith('.') || domaine.endsWith('.') || domaine.indexOf('..') !== -1) return false
+	const tld = domaine.slice(domaine.lastIndexOf('.') + 1)
+	// TLD alphabétique classique ou TLD internationalisé en punycode (xn--...)
+	if (!/^[a-zA-Z]{2,}$/.test(tld) && !/^xn--[a-z0-9-]{2,}$/i.test(tld)) return false
+	return verifierEmail(adresse)
+}
+
+const cacheMxDomaines = new Map()
+
+const dureeCacheMx = 3600000 // 1 heure pour un résultat positif
+
+const dureeCacheMxNegatif = 300000 // 5 minutes pour un résultat négatif
+
+const tailleMaxCacheMx = 5000
+
+const timeoutDnsMx = 3000
+
+function nettoyerCacheMx (maintenant) {
+	for (const [cle, valeur] of cacheMxDomaines) {
+		if (valeur.expiration <= maintenant) cacheMxDomaines.delete(cle)
+	}
+	while (cacheMxDomaines.size > tailleMaxCacheMx) {
+		cacheMxDomaines.delete(cacheMxDomaines.keys().next().value)
+	}
+}
+
+async function verifierDomaineEmail (domaine) {
+	const creerResolveur = () => new dnsPromises.Resolver({ timeout: timeoutDnsMx, tries: 1 })
+	const absenceEnregistrement = (err) => err && (err.code === 'ENOTFOUND' || err.code === 'ENODATA')
+	// Repli sur un enregistrement A/AAAA quand le domaine n'a pas de MX (RFC 5321)
+	const verifierEnregistrementA = async () => {
+		const resolveur = creerResolveur()
+		try {
+			await resolveur.resolve4(domaine)
+			return true
+		} catch (e4) {
+			if (!absenceEnregistrement(e4)) return null
+		}
+		try {
+			await resolveur.resolve6(domaine)
+			return true
+		} catch (e6) {
+			return absenceEnregistrement(e6) ? false : null
+		}
+	}
+	const hoteMxExploitable = (e) => {
+		if (!e || typeof e.exchange !== 'string') return false
+		return e.exchange.trim().replace(/\.$/, '') !== ''
+	}
+	const maintenant = Date.now()
+	const enCache = cacheMxDomaines.get(domaine)
+	if (enCache && enCache.expiration > maintenant) return enCache.domaineValide
+	let domaineValide
+	let resultatFiable = true
+	try {
+		const enregistrements = await creerResolveur().resolveMx(domaine)
+		const aMxExploitable = Array.isArray(enregistrements) && enregistrements.some(hoteMxExploitable)
+		const nullMxExplicite = Array.isArray(enregistrements) && enregistrements.length > 0 && !aMxExploitable
+		if (aMxExploitable) {
+			domaineValide = true
+		} else if (nullMxExplicite) {
+			// Domaine refusant explicitement le courrier -> rejet certain, pas de repli A/AAAA
+			domaineValide = false
+		} else {
+			const repliA = await verifierEnregistrementA()
+			domaineValide = repliA === null ? true : repliA
+			resultatFiable = repliA !== null
+		}
+	} catch (err) {
+		if (err && err.code === 'ENOTFOUND') {
+			// Domaine inexistant (NXDOMAIN)
+			domaineValide = false
+		} else if (err && err.code === 'ENODATA') {
+			// Aucun MX -> on tente le repli A/AAAA avant de rejeter
+			const repliA = await verifierEnregistrementA()
+			domaineValide = repliA === null ? true : repliA
+			resultatFiable = repliA !== null
+		} else {
+			// Incertitude réseau/DNS (timeout, SERVFAIL…) -> envoi pas bloqué
+			domaineValide = true
+			resultatFiable = false
+		}
+	}
+	if (resultatFiable) {
+		nettoyerCacheMx(maintenant)
+		const duree = domaineValide ? dureeCacheMx : dureeCacheMxNegatif
+		cacheMxDomaines.set(domaine, { domaineValide: domaineValide, expiration: maintenant + duree })
+	}
+	return domaineValide
+}
+
+function definirNomFichier (fichier) {
+	const info = path.parse(fichier)
+	const extension = info.ext.toLowerCase()
+	let nom = v.latinise(info.name.toLowerCase())
+	nom = nom.replace(/\ /gi, '-')
+	nom = nom.replace(/[^0-9a-z_\-]/gi, '')
+	if (nom.length > 100) {
+		nom = nom.substring(0, 100)
+	}
+	nom = nom + '_' + Math.random().toString(36).substring(2) + extension
+	return nom
+}
+
+function definirCheminFichiers () {
+	if (process.env.VITE_STORAGE && process.env.VITE_STORAGE === 's3' && process.env.VITE_S3_PUBLIC_LINK && process.env.VITE_S3_PUBLIC_LINK !== '') {
+		return process.env.VITE_S3_PUBLIC_LINK
+	} else {
+		return '/fichiers'
+	}
+}
+
+async function extraireArchive (source, dir) {
+	const zip = new AdmZip(source)
+	await new Promise((resolve, reject) => {
+		zip.extractAllToAsync(dir, true, false, (err) => {
+			if (err) return reject(err)
+			resolve()
+		})
+	})
+}
+
+async function supprimerArchives (source, cible) {
+	try {
+		await Promise.all([
+			fs.remove(source),
+			fs.remove(cible)
+		])
+	} catch {}
+}
+
+function verifierURL (s, protocoles) {
+	try {
+		const url = new URL(s)
+		const liste = (Array.isArray(protocoles) && protocoles.length > 0) ? protocoles : ['https', 'http']
+		return liste.map(x => `${x.toLowerCase()}:`).includes(url.protocol)
+	} catch {
+		return false
+	}
+}
+
+function assainirHTML (html) {
+	if (!html || typeof html !== 'string') return ''
+	const passesMaximum = 10
+	let passes = 0
+	let precedent
+	let assaini = html
+	do {
+		precedent = assaini
+		passes++
+		assaini = precedent.replace(/<\s*\/?\s*(script|style|iframe|frame|frameset|object|embed|applet|form|input|button|meta|link|base)(\s[^>]*)?\/?>/gi, '').replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '').replace(/(href|src|action)\s*=\s*(?:"(javascript|vbscript):[^"]*"|'(javascript|vbscript):[^']*'|(javascript|vbscript):[^\s>]*)/gi, '')
+	} while (assaini !== precedent && passes < passesMaximum)
+	if (assaini !== precedent) return assaini.replace(/[<>]/g, '')
+	return assaini
+}
+
+function assainirIframe (html) {
+	if (!html || typeof html !== 'string') return ''
+	return html.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '').replace(/src\s*=\s*(?:"(javascript|vbscript|data):[^"]*"|'(javascript|vbscript|data):[^']*'|(javascript|vbscript|data):[^\s>]*)/gi, '')
+}
+
+function assainirTexteAlternatif (alt) {
+	if (!alt || typeof alt !== 'string') return ''
+	return alt.replace(/[<>]/g, '').trim().substring(0, limitesTailleInput.alt)
+}
+
+async function executerTransactions (liste, traitement, taille = tailleLotTransaction) {
+	if (!Array.isArray(liste)) throw new TypeError('executerTransactions attend un tableau')
+	const resultats = []
+	for (let debut = 0; debut < liste.length; debut += taille) {
+		const lot = liste.slice(debut, debut + taille)
+		const resultatsLot = await Promise.all(lot.map((element, index) => traitement(element, debut + index)))
+		resultats.push(...resultatsLot)
+	}
+	return resultats
+}
+
+function parseJSON (str, fallback) {
+	try {
+		return JSON.parse(str)
+	} catch {
+		return fallback
+	}
+}
+
+function comparerHash (h1, h2) {
+	if (!h1 || !h2 || h1.length !== h2.length) return false
+	return timingSafeEqual(Buffer.from(h1), Buffer.from(h2))
+}
+
+function verifierMotDePasseAdmin (motdepasse) {
+	const motdepasseAdmin = process.env.ADMIN_PASSWORD
+	if (!motdepasse || typeof motdepasse !== 'string' || !motdepasseAdmin) return false
+	const empreinte = createHash('sha256').update(motdepasse).digest()
+	const empreinteAdmin = createHash('sha256').update(motdepasseAdmin).digest()
+	return timingSafeEqual(empreinte, empreinteAdmin)
+}
+
+function verifierContenuFichier (buffer, mimetype) {
+	if (!buffer || buffer.length < 4) return false
+	const b = buffer
+	const type = mimetype.split(';')[0].trim()
+	if (type === 'image/jpeg' || type === 'image/jpg') return b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF
+	if (type === 'image/png') return b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47
+	if (type === 'image/gif') {
+		const sig = b.slice(0, 6).toString('binary')
+		return sig === 'GIF87a' || sig === 'GIF89a'
+	}
+	if (type === 'image/webp') return b.slice(0, 4).toString('binary') === 'RIFF' && b.length >= 12 && b.slice(8, 12).toString('binary') === 'WEBP'
+	if (type === 'application/pdf') return b.slice(0, 4).toString('ascii') === '%PDF'
+	return true
+}
+
+function formaterDate (donnees, langue) {
+	let dateFormattee = ''
+	switch (langue) {
+	case 'fr':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Créée le ' + dayjs(new Date(donnees.date)).locale('fr').format('L') + ' à ' + dayjs(new Date(donnees.date)).locale('fr').format('LT') + ' par ' + donnees.nom + '. Modifiée le ' + dayjs(new Date(donnees.modifie)).locale('fr').format('L') + ' à ' + dayjs(new Date(donnees.modifie)).locale('fr').format('LT') + '.'
+		} else {
+			dateFormattee = 'Créée le ' + dayjs(new Date(donnees.date)).locale('fr').format('L') + ' à ' + dayjs(new Date(donnees.date)).locale('fr').format('LT') + ' par ' + donnees.nom + '.'
+		}
+		break
+	case 'es':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Creada el ' + dayjs(new Date(donnees.date)).locale('es').format('L') + ' a las ' + dayjs(new Date(donnees.date)).locale('es').format('LT') + ' por ' + donnees.nom + '. Modificada el ' + dayjs(new Date(donnees.modifie)).locale('es').format('L') + ' a las ' + dayjs(new Date(donnees.modifie)).locale('es').format('LT') + '.'
+		} else {
+			dateFormattee = 'Creada el ' + dayjs(new Date(donnees.date)).locale('es').format('L') + ' a las ' + dayjs(new Date(donnees.date)).locale('es').format('LT') + ' por ' + donnees.nom + '.'
+		}
+		break
+	case 'it':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Creazione attivata ' + dayjs(new Date(donnees.date)).locale('it').format('L') + ' alle ' + dayjs(new Date(donnees.date)).locale('it').format('LT') + ' di ' + donnees.nom + '. Modifica attivata ' + dayjs(new Date(donnees.modifie)).locale('it').format('L') + ' alle ' + dayjs(new Date(donnees.modifie)).locale('it').format('LT') + '.'
+		} else {
+			dateFormattee = 'Creazione attivata ' + dayjs(new Date(donnees.date)).locale('it').format('L') + ' alle ' + dayjs(new Date(donnees.date)).locale('it').format('LT') + ' di ' + donnees.nom + '.'
+		}
+		break
+	case 'de':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Erstellt am ' + dayjs(new Date(donnees.date)).locale('de').format('L') + ' um ' + dayjs(new Date(donnees.date)).locale('de').format('LT') + ' von ' + donnees.nom + '. Geändert am ' + dayjs(new Date(donnees.modifie)).locale('de').format('L') + ' um ' + dayjs(new Date(donnees.modifie)).locale('de').format('LT') + '.'
+		} else {
+			dateFormattee = 'Erstellt am ' + dayjs(new Date(donnees.date)).locale('de').format('L') + ' um ' + dayjs(new Date(donnees.date)).locale('de').format('LT') + ' von ' + donnees.nom + '.'
+		}
+		break
+	case 'en':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Created on ' + dayjs(new Date(donnees.date)).locale('en').format('L') + ' at ' + dayjs(new Date(donnees.date)).locale('en').format('LT') + ' by ' + donnees.nom + '. Modified on ' + dayjs(new Date(donnees.modifie)).locale('en').format('L') + ' at ' + dayjs(new Date(donnees.modifie)).locale('en').format('LT') + '.'
+		} else {
+			dateFormattee = 'Created on ' + dayjs(new Date(donnees.date)).locale('en').format('L') + ' at ' + dayjs(new Date(donnees.date)).locale('en').format('LT') + ' by ' + donnees.nom + '.'
+		}
+		break
+	case 'hr':
+		if (donnees.hasOwnProperty('modifie')) {
+			dateFormattee = 'Stvoreno na ' + dayjs(new Date(donnees.date)).locale('hr').format('L') + ' u ' + dayjs(new Date(donnees.date)).locale('hr').format('LT') + ' po ' + donnees.nom + '. Izmijenjeno na ' + dayjs(new Date(donnees.modifie)).locale('hr').format('L') + ' u ' + dayjs(new Date(donnees.modifie)).locale('hr').format('LT') + '.'
+		} else {
+			dateFormattee = 'Stvoreno na ' + dayjs(new Date(donnees.date)).locale('hr').format('L') + ' u ' + dayjs(new Date(donnees.date)).locale('hr').format('LT') + ' po ' + donnees.nom + '.'
+		}
+		break
+	}
+	return dateFormattee
+}
+
+export {
+	limitesTailleInput,
+	tailleLotTransaction,
+	obtenirCleEchecConnexion,
+	definirBlocDiffuse,
+	verifierColonneMasquee,
+	verifierIdentifiantPad,
+	verifierIdentifiantBloc,
+	verifierBlocVisible,
+	definirDonneesPadExport,
+	definirBlocsExport,
+	definirBlocsDeplaces,
+	recupererNombreCommentaires,
+	verifierActiviteVisible,
+	definirModeration,
+	definirParametresModeration,
+	definirSalonUtilisateur,
+	definirSalonAdmin,
+	extraireIdentifiantMasque,
+	extraireIdCommentaireMasque,
+	sauvegarderSession,
+	champsPadsClient,
+	filtrerChamps,
+	nettoyerPads,
+	supprimerDoublons,
+	definirAccesLecture,
+	supprimerSession,
+	genererPseudo,
+	genererMotDePasse,
+	verifierEmail,
+	verifierFormatEmail,
+	cacheMxDomaines,
+	dureeCacheMx,
+	dureeCacheMxNegatif,
+	tailleMaxCacheMx,
+	timeoutDnsMx,
+	nettoyerCacheMx,
+	verifierDomaineEmail,
+	definirNomFichier,
+	definirCheminFichiers,
+	extraireArchive,
+	supprimerArchives,
+	verifierURL,
+	assainirHTML,
+	assainirIframe,
+	assainirTexteAlternatif,
+	executerTransactions,
+	parseJSON,
+	comparerHash,
+	verifierMotDePasseAdmin,
+	verifierContenuFichier,
+	formaterDate
+}

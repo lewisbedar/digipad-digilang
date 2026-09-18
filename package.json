@@ -14,6 +14,7 @@
   "license": "GNU AGPLv3",
   "scripts": {
     "dev": "npm run server",
+    "test": "node --test tests/*.test.js",
     "prod": "npm run build && npm run server:prod",
     "build": "vike build",
     "server": "nodemon --watch server ./server/app.js",
