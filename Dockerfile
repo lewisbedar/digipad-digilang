@@ -5,7 +5,7 @@ FROM node:24-bookworm-slim AS build
 WORKDIR /app
 
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends python3 make g++ git ca-certificates \
+	&& apt-get install -y --no-install-recommends python3 make g++ git ca-certificates zlib1g-dev \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Force les dépendances Git comme lamejs en HTTPS anonyme
