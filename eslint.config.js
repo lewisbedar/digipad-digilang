@@ -82,6 +82,7 @@ const globalesExternes = {
 // Règles communes aux deux environnements
 const regles = {
 	'no-undef': 'error',
+	'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
 	'no-prototype-builtins': 'off',
 	'indent': ['error', 'tab'],
 	'no-tabs': 'off',
@@ -98,7 +99,7 @@ export default [
 	skipFormatting,
 	{
 		files: ['**/*.{js,mjs,vue}'],
-		ignores: ['server/**/*.js'],
+		ignores: ['server/**/*.js', 'tests/**/*.js'],
 		languageOptions: {
 			globals: {
 				...globalesNavigateur,
@@ -110,7 +111,7 @@ export default [
 		rules: regles
 	},
 	{
-		files: ['server/**/*.js'],
+		files: ['server/**/*.js', 'tests/**/*.js'],
 		languageOptions: {
 			globals: {
 				...globalesCommunes,
