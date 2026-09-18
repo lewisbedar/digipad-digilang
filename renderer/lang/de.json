@@ -52,6 +52,10 @@
 	"confirmationExporterPad": "Ein Pad zu exportieren kann dabei helfen, ein Archiv oder eine Vorlage zum Tauschen, usw. zu erstellen. Wollen Sie dieses Pad wirklich exportieren?",
 	"erreurCreationPad": "Fehler beim Erstellen des Pads.",
 	"erreurCommunicationServeur": "Fehler in der Serverkommunikation.",
+	"transfertExpire": "Das Zeitfenster für die Übertragung dieses Pads ist abgelaufen. Aktivieren Sie die Eigentumsübertragung in den Pad-Einstellungen erneut und versuchen Sie es dann noch einmal.",
+	"transfertIncomplet": "Die Übertragung konnte nicht vollständig durchgeführt werden: Einige Pads gehören weiterhin zum ursprünglichen Konto. Laden Sie die Seite neu und versuchen Sie es erneut.",
+	"limiteCompteDestination": "Das Zielkonto kann nicht alle diese Pads aufnehmen: Die maximale Anzahl an Pads ({limite}) würde überschritten. Die Übertragung wurde nicht durchgeführt.",
+	"suppressionIncomplete": "Die Löschung konnte nicht abgeschlossen werden. Das Konto wurde beibehalten, damit Sie es erneut versuchen können.",
 	"erreurSuppressionPad": "Fehler beim Löschen des Pads.",
 	"erreurDuplicationPad": "Fehler beim Duplizieren des Pads.",
 	"erreurExportPad": "Fehler beim Exportieren des Pads.",
@@ -471,5 +475,8 @@
 	"transfertPropriete": "Eigentumsübertragung",
 	"parametreTransfertProprieteModifie": "Einstellung zur Eigentumsübertragung geändert.",
 	"transfererProprietePad": "Eigentum an diesem Pad übertragen",
-	"texteTransfertPropriete": "Geben Sie die Kennung des Kontos an, auf das dieses Pad übertragen werden soll. Diese Aktion ist unwiderruflich."
+	"texteTransfertPropriete": "Geben Sie die Kennung des Kontos an, auf das dieses Pad übertragen werden soll. Diese Aktion ist unwiderruflich.",
+	"transfererProprieteCompte": "Eigentum übertragen",
+	"texteTransfertProprieteCompte": "Geben Sie die Kennung des Kontos an, auf das alle von Ihnen erstellten Pads übertragen werden sollen. Diese Aktion ist unwiderruflich.",
+	"proprieteCompteTransferee": "Der Inhalt Ihres Kontos wurde übertragen."
 }

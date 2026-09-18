@@ -39,7 +39,7 @@ import session from 'express-session'
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis'
 import { EventEmitter } from 'events'
-import { randomBytes, timingSafeEqual } from 'crypto'
+import { createHash, randomBytes, timingSafeEqual } from 'crypto'
 import Rabbit from 'crypto-js/rabbit.js'
 import Utf8 from 'crypto-js/enc-utf8.js'
 import checkDiskSpace from 'check-disk-space'
@@ -219,6 +219,7 @@ async function demarrerServeur () {
 	const limiteRequetesInscriptionEmail = parseInt(process.env.RATE_LIMIT_SIGNUP_EMAIL) || 4
 	const limiteRequetesConnexion = parseInt(process.env.RATE_LIMIT_LOGIN) || 30
 	const limiteEchecsConnexionParIdentifiant = parseInt(process.env.RATE_LIMIT_LOGIN_USERNAME) || 10
+	const limiteRequetesActionsSensibles = parseInt(process.env.RATE_LIMIT_SENSITIVE) || 10
 	const fenetreEchecsConnexionParIdentifiant = 15 * 60
 
 	let trustProxy = process.env.TRUST_PROXY
@@ -243,7 +244,11 @@ async function demarrerServeur () {
 	// Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
 	const tailleLotTransaction = 10
 
+	const salonMaintenance = 'admin-maintenance'
+
 	const limiteTeleversement = (parseFloat(process.env.VITE_UPLOAD_LIMIT) || 20) * 1024 * 1000
+
+	const limitePadsParCompte = parseInt(process.env.VITE_PAD_LIMIT, 10) || 100
 
 	const limiteApi = rateLimit({
 		windowMs: 15 * 60 * 1000,
@@ -339,14 +344,33 @@ async function demarrerServeur () {
 			prefix: 'rl-admin:'
 		}),
 		skipSuccessfulRequests: true,
+		skip: (req) => !req.body?.admin || verifierMotDePasseAdmin(req.body.admin),
+		validate: { trustProxy: false }
+	})
+
+	const limiteActionsSensibles = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesActionsSensibles,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-actions-sensibles:'
+		}),
+		skipSuccessfulRequests: true,
+		skip: (req) => Boolean(req.body?.admin),
+		keyGenerator: (req) => {
+			const identifiant = typeof req.body?.identifiant === 'string' ? req.body.identifiant.trim().toLowerCase() : ''
+			return ipKeyGenerator(req.ip) + ':' + identifiant
+		},
 		validate: { trustProxy: false }
 	})
 
 	let scriptSrc
 	let domaineMatomo = null
 	let domaineUmami = null
-	if (process.env.MATOMO && process.env.MATOMO !== '') {
-		domaineMatomo = process.env.MATOMO
+	if (process.env.VITE_MATOMO && process.env.VITE_MATOMO !== '') {
+		domaineMatomo = process.env.VITE_MATOMO
 		scriptSrc = ["'self'", domaineMatomo]
 	} else if (process.env.UMAMI_SCRIPT_URL && process.env.UMAMI_SCRIPT_URL !== '') {
 		const umamiScriptUrl = new URL(process.env.UMAMI_SCRIPT_URL)
@@ -497,7 +521,7 @@ async function demarrerServeur () {
 				const padExiste = await db.EXISTS('pads:' + padId)
 				if (!padExiste || padExiste === 0) {
 					// Vérifier aussi le fichier JSON
-					if (isNaN(parseInt(padId, 10)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + padId + '.json'))) {
+					if (verifierIdentifiantPad(padId) && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + padId + '.json'))) {
 						return null
 					}
 					return padId
@@ -605,6 +629,7 @@ async function demarrerServeur () {
 			const token = req.params.token
 			let donneesPad
 			try {
+				if (!verifierIdentifiantPad(id)) return next()
 				const padExiste = await db.EXISTS('pads:' + id)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
 					await recupererDonneesPadJSON(id)
@@ -662,6 +687,7 @@ async function demarrerServeur () {
 			const identifiant = req.session.identifiant
 			const statut = req.session.statut
 			const pads = req.session.pads
+			if (!verifierIdentifiantPad(id)) return res.redirect(302, '/')
 			let donneesPad = {}
 			const padExiste = await db.EXISTS('pads:' + id)
 			if (padExiste === 1) {
@@ -1030,6 +1056,7 @@ async function demarrerServeur () {
 		const statut = req.session.statut || 'invite'
 		const pads = req.session.pads || []
 		try {
+			if (!verifierIdentifiantPad(id)) return res.status(404).send('pad_inexistant')
 			const padExiste = await db.EXISTS('pads:' + id)
 			if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
 				await recupererDonneesPadJSON(id)
@@ -1047,7 +1074,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/creer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1059,6 +1086,9 @@ async function demarrerServeur () {
 			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur_creation')
 			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
 			if (!motdepasseCorrect) return res.status(401).send('non_connecte')
+			const nombrePads = await db.SCARD('pads-crees:' + identifiant)
+			if (!Number.isInteger(nombrePads)) return res.status(500).send('erreur_creation')
+			if (nombrePads >= limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
 			const titre = req.body.titre
 			const token = Math.random().toString(16).slice(2)
 			const date = dayjs().format()
@@ -1066,7 +1096,7 @@ async function demarrerServeur () {
 			const id = await db.INCR('pad')
 			const donneesPad = await creerPad(id, token, titre, date, identifiant, destination, donneesUtilisateur)
 			if (!donneesPad) return res.status(500).send('erreur_creation')
-			res.status(200).json(donneesPad)
+			res.status(200).json(filtrerChamps(donneesPad, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_creation')
@@ -1074,10 +1104,10 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/creer-pad-sans-compte', limitePadSansCompte, async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		if (creationPadSansCompte !== 1) return res.status(401).send('non_connecte')
 		let identifiant, nom
-		if (!req.session.identifiant || (req.session.identifiant.length !== 13 && req.session.identifiant.substring(0, 1) !== 'u')) {
+		if (!req.session.identifiant || !/^u[0-9a-f]{8,13}$/.test(req.session.identifiant)) {
 			identifiant = 'u' + Math.random().toString(16).slice(3)
 			nom = genererPseudo()
 			req.session.identifiant = identifiant
@@ -1112,50 +1142,73 @@ async function demarrerServeur () {
 				req.session.pads.push(parseInt(id, 10))
 			}
 			req.session.cookie.expires = new Date(Date.now() + dureeSession)
-			res.status(200).json(donneesPad)
+			res.status(200).json(filtrerChamps(donneesPad, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_creation')
 		}
 	})
 
-	app.post('/api/rattacher-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
-		if (creationPadSansCompte !== 1) return res.status(401).send('non_autorise')
+	app.post('/api/rattacher-pad', limiteAuthAdmin, limiteActionsSensibles, async (req, res) => {
 		const identifiant = req.body.identifiant
-		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
+		const motdepasseAdmin = req.body.admin
+		const admin = verifierMotDePasseAdmin(motdepasseAdmin)
+		if (!admin && maintenance === true) return res.status(503).send('maintenance')
+		if (!admin && creationPadSansCompte !== 1) return res.status(401).send('non_autorise')
+		if ((req.session.identifiant && req.session.identifiant === identifiant && req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || admin) {
+			try {
+				const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
+				if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
+				if (utilisateurExiste !== 1) return res.status(500).send('erreur')
+				if (!admin) {
+					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+					if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
+					const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
+					if (!motdepasseCorrect) return res.status(401).send('non_connecte')
+					const nombrePads = await db.SCARD('pads-crees:' + identifiant)
+					if (!Number.isInteger(nombrePads)) return res.status(500).send('erreur')
+					if (nombrePads >= limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
+				}
+				const pad = req.body.padId
+				if (!verifierIdentifiantPad(pad)) return res.status(404).send('pad_inexistant')
+				let donneesPad = {}
+				const padExiste = await db.EXISTS('pads:' + pad)
+				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
+					donneesPad = await recupererDonneesPadJSON(pad)
+				} else if (padExiste === 1) {
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
+				} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
+				if (Object.keys(donneesPad).length === 0) return res.status(404).send('pad_inexistant')
+				if (!admin) {
+					const token = req.body.token
+					if (typeof token !== 'string' || token === '' || !donneesPad.hasOwnProperty('token') || donneesPad.token !== token) return res.status(404).send('pad_inexistant')
+				}
+				if (!donneesPad.hasOwnProperty('motdepasse') || donneesPad.motdepasse.trim() === '') return res.status(409).send('pad_cree_avec_compte')
+				if (!admin) {
+					const motdepasse = req.body.motdepasse
+					const motdepassePadCorrect = (typeof motdepasse === 'string' && motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse))
+					if (!motdepassePadCorrect) return res.status(401).send('motdepasse_incorrect')
+				}
+				await db.multi()
+					.SADD('pads-crees:' + identifiant, pad.toString())
+					.SADD('utilisateurs-pads:' + pad, identifiant)
+					.HSET('pads:' + pad, 'identifiant', identifiant)
+					.HDEL('pads:' + pad, 'motdepasse')
+					.SREM('pads-rejoints:' + identifiant, pad.toString())
+					.SREM('pads-utilisateurs:' + identifiant, pad.toString())
+					.exec()
+				res.status(200).json({ id: parseInt(pad, 10), token: donneesPad.token })
+			} catch (err) {
+				console.error(err.stack)
+				res.status(500).send('erreur')
+			}
+		} else if (motdepasseAdmin) {
+			res.status(403).send('non_autorise')
+		} else {
 			supprimerSession(req)
-			return res.status(401).send('non_connecte')
-		}
-		try {
-			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
-			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
-			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
-			if (!motdepasseCorrect) return res.status(401).send('non_connecte')
-			const pad = req.body.padId
-			const token = req.body.token
-			const padExiste = await db.EXISTS('pads:' + pad)
-			if (padExiste !== 1) return res.status(404).send('pad_inexistant')
-			let donneesPad = await db.HGETALL('pads:' + pad)
-			donneesPad = donneesPad ? { ...donneesPad } : {}
-			if (typeof token !== 'string' || token === '' || !donneesPad.hasOwnProperty('token') || donneesPad.token !== token) return res.status(404).send('pad_inexistant')
-			if (!donneesPad.hasOwnProperty('motdepasse') || donneesPad.motdepasse.trim() === '') return res.status(409).send('pad_cree_avec_compte')
-			const motdepasse = req.body.motdepasse
-			const motdepassePadCorrect = (typeof motdepasse === 'string' && motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse))
-			if (!motdepassePadCorrect) return res.status(401).send('motdepasse_incorrect')
-			await db.multi()
-				.SADD('pads-crees:' + identifiant, pad.toString())
-				.SADD('utilisateurs-pads:' + pad, identifiant)
-				.HSET('pads:' + pad, 'identifiant', identifiant)
-				.HDEL('pads:' + pad, 'motdepasse')
-				.SREM('pads-rejoints:' + identifiant, pad.toString())
-				.SREM('pads-utilisateurs:' + identifiant, pad.toString())
-				.exec()
-			res.status(200).json({ id: parseInt(pad, 10), token: donneesPad.token })
-		} catch (err) {
-			console.error(err.stack)
-			res.status(500).send('erreur')
+			res.status(401).send('non_connecte')
 		}
 	})
 
@@ -1172,7 +1225,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-mot-de-passe-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant) return res.status(401).send('non_connecte')
 		try {
@@ -1198,7 +1251,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/ajouter-pad-favoris', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1220,7 +1273,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/supprimer-pad-favoris', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1242,7 +1295,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/deplacer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1273,7 +1326,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/dupliquer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1282,8 +1335,12 @@ async function demarrerServeur () {
 		const padSource = req.body.padId
 		const dossierDestination = req.body.dossier || ''
 		try {
+			if (!verifierIdentifiantPad(padSource)) return res.status(500).send('erreur_duplication')
 			const admin = await verifierAdminUtilisateur(padSource, identifiant, req.session.motdepasse)
 			if (!admin) return res.status(401).send('non_connecte')
+			const nombrePads = await db.SCARD('pads-crees:' + identifiant)
+			if (!Number.isInteger(nombrePads)) return res.status(500).send('erreur_duplication')
+			if (nombrePads >= limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
 			if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
 			// Récupération des données source (Redis ou JSON)
 			let donneesPadSource = {}
@@ -1379,20 +1436,21 @@ async function demarrerServeur () {
 					}
 				}
 			}
-			return res.status(200).json({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) })
+			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_duplication')
 		}
 	})
 
-	app.post('/api/exporter-pad', async (req, res) => {
+	app.post('/api/exporter-pad', limiteAuthAdmin, async (req, res) => {
 		const identifiant = req.body.identifiant
 		const motdepasseAdmin = req.body.admin
 		let admin = verifierMotDePasseAdmin(motdepasseAdmin)
 		if ((req.session.identifiant && req.session.identifiant === identifiant && ((req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || req.session.statut === 'auteur')) || admin) {
 			try {
 				const id = req.body.padId
+				if (!verifierIdentifiantPad(id)) return res.status(404).send('pad_inexistant')
 				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + id)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
@@ -1408,6 +1466,8 @@ async function demarrerServeur () {
 				console.error(err.stack)
 				res.status(500).send('erreur_export')
 			}
+		} else if (motdepasseAdmin) {
+			res.status(403).send('non_autorise')
 		} else {
 			supprimerSession(req)
 			res.status(401).send('non_connecte')
@@ -1415,7 +1475,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/importer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const identifiant = req.session.identifiant
 			if (!req.session.identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
@@ -1425,6 +1485,9 @@ async function demarrerServeur () {
 			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 			if (!donneesUtilisateur.hasOwnProperty('motdepasse') || !comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)) return res.status(401).send('non_connecte')
+			const nombrePads = await db.SCARD('pads-crees:' + identifiant)
+			if (!Number.isInteger(nombrePads)) return res.status(500).send('erreur_import')
+			if (nombrePads >= limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
 			televerserTemp(req, res, async (err) => {
 				if (err) return res.status(500).send('erreur_import')
 				if (!req.file) return res.status(500).send('erreur_import')
@@ -1538,7 +1601,7 @@ async function demarrerServeur () {
 						await pipelineActivite.exec()
 					}
 					await supprimerArchives(source, dossierTemporaire)
-					res.status(200).json({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) })
+					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
 				} catch (err) {
 					console.error(err.stack)
 					// Nettoyage en cas d'erreur pendant le traitement
@@ -1559,11 +1622,12 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/mettre-pad-corbeille', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(401).send('non_connecte')
 		try {
 			const padId = req.body.padId
+			if (!verifierIdentifiantPad(padId)) return res.status(403).send('non_autorise')
 			const admin = await verifierAdminUtilisateur(padId, identifiant, req.session.motdepasse)
 			if (!admin) return res.status(403).send('non_autorise')
 			await db.multi()
@@ -1578,11 +1642,12 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/restaurer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(401).send('non_connecte')
 		try {
 			const padId = req.body.padId
+			if (!verifierIdentifiantPad(padId)) return res.status(403).send('non_autorise')
 			const admin = await verifierAdminUtilisateur(padId, identifiant, req.session.motdepasse)
 			if (!admin) return res.status(403).send('non_autorise')
 			await db.multi()
@@ -1596,50 +1661,95 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/transferer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+	app.post('/api/transferer-pad', limiteAuthAdmin, async (req, res) => {
 		const identifiant = req.body.identifiant
-		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(401).send('non_connecte')
-		try {
-			const padId = req.body.padId
-			const nouvelIdentifiant = typeof req.body.nouvelIdentifiant === 'string' ? req.body.nouvelIdentifiant.trim() : ''
-			if (nouvelIdentifiant === '' || nouvelIdentifiant === identifiant) return res.status(403).send('non_autorise')
-			let donneesPad = await db.HGETALL('pads:' + padId)
-			donneesPad = donneesPad ? { ...donneesPad } : {}
-			if (!donneesPad.hasOwnProperty('identifiant')) return res.status(404).send('pad_inexistant')
-			const transfertExpire = Number(donneesPad.transfertProprieteExpire) || 0
-			if (donneesPad.identifiant !== identifiant || donneesPad.transfertPropriete !== 'active' || transfertExpire <= Date.now()) return res.status(403).send('non_autorise')
-			const admin = await verifierAdminUtilisateur(padId, identifiant, req.session.motdepasse)
-			if (!admin) return res.status(403).send('non_autorise')
-			const utilisateurExiste = await db.EXISTS('utilisateurs:' + nouvelIdentifiant)
-			if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
-			await db.multi()
-				.SADD('pads-crees:' + nouvelIdentifiant, padId.toString())
-				.SREM('pads-crees:' + identifiant, padId.toString())
-				.SREM('pads-supprimes:' + identifiant, padId.toString())
-				.SADD('utilisateurs-pads:' + padId, nouvelIdentifiant)
-				.SREM('utilisateurs-pads:' + padId, identifiant)
-				.HSET('pads:' + padId, ['identifiant', nouvelIdentifiant, 'transfertPropriete', 'desactive'])
-				.HDEL('pads:' + padId, 'transfertProprieteExpire')
-				.SREM('pads-admins:' + nouvelIdentifiant, padId.toString())
-				.SREM('pads-rejoints:' + nouvelIdentifiant, padId.toString())
-				.SREM('pads-utilisateurs:' + nouvelIdentifiant, padId.toString())
-				.exec()
-			res.status(200).send('propriete_pad_transferee')
-		} catch (err) {
-			console.error(err.stack)
-			res.status(500).send('erreur')
+		const motdepasseAdmin = req.body.admin
+		const padId = req.body.padId
+		const nouvelIdentifiant = typeof req.body.nouvelIdentifiant === 'string' ? req.body.nouvelIdentifiant.trim() : ''
+		const admin = verifierMotDePasseAdmin(motdepasseAdmin)
+		if (!admin && maintenance === true) return res.status(503).send('maintenance')
+		if ((req.session.identifiant && req.session.identifiant === identifiant && req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || admin) {
+			try {
+				if (nouvelIdentifiant === '') return res.status(403).send('non_autorise')
+				if (!verifierIdentifiantPad(padId)) return res.status(404).send('pad_inexistant')
+				let donneesPad = {}
+				const padExiste = await db.EXISTS('pads:' + padId)
+				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + padId + '.json'))) {
+					donneesPad = await recupererDonneesPadJSON(padId)
+				} else if (padExiste === 1) {
+					donneesPad = await db.HGETALL('pads:' + padId)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
+				} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
+				if (!donneesPad.hasOwnProperty('identifiant')) return res.status(404).send('pad_inexistant')
+				const proprietaire = donneesPad.identifiant
+				if (nouvelIdentifiant === proprietaire) return res.status(403).send('non_autorise')
+				if (!admin) {
+					if (proprietaire !== identifiant) return res.status(403).send('non_autorise')
+					const transfertExpire = Number(donneesPad.transfertProprieteExpire) || 0
+					if (donneesPad.transfertPropriete !== 'active') return res.status(403).send('non_autorise')
+					if (transfertExpire <= Date.now()) return res.status(403).send('transfert_expire')
+					const adminPad = await verifierAdminUtilisateur(padId, identifiant, req.session.motdepasse)
+					if (!adminPad) return res.status(403).send('non_autorise')
+				}
+				const utilisateurExiste = await db.EXISTS('utilisateurs:' + nouvelIdentifiant)
+				if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
+				if (utilisateurExiste !== 1) return res.status(500).send('erreur')
+				if (!admin) {
+					const padsDestination = await db.SCARD('pads-crees:' + nouvelIdentifiant)
+					if (!Number.isInteger(padsDestination)) return res.status(500).send('erreur')
+					if (padsDestination + 1 > limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
+				}
+				await db.multi()
+					.SADD('pads-crees:' + nouvelIdentifiant, padId.toString())
+					.SREM('pads-crees:' + proprietaire, padId.toString())
+					.SREM('pads-supprimes:' + proprietaire, padId.toString())
+					.SREM('pads-favoris:' + proprietaire, padId.toString())
+					.SADD('utilisateurs-pads:' + padId, nouvelIdentifiant)
+					.SREM('utilisateurs-pads:' + padId, proprietaire)
+					.HSET('pads:' + padId, ['identifiant', nouvelIdentifiant, 'transfertPropriete', 'desactive'])
+					.HDEL('pads:' + padId, 'transfertProprieteExpire')
+					.SREM('pads-admins:' + nouvelIdentifiant, padId.toString())
+					.SREM('pads-rejoints:' + nouvelIdentifiant, padId.toString())
+					.SREM('pads-utilisateurs:' + nouvelIdentifiant, padId.toString())
+					.exec()
+				// Purge de l'id du pad dans les dossiers du compte source
+				const donneesUtilisateurSource = await db.HGET('utilisateurs:' + proprietaire, 'dossiers')
+				if (donneesUtilisateurSource) {
+					const dossiers = parseJSON(donneesUtilisateurSource, [])
+					let dossiersModifies = false
+					dossiers.forEach((dossier) => {
+						const indexPad = (dossier.pads || []).indexOf(parseInt(padId, 10))
+						if (indexPad !== -1) {
+							dossier.pads.splice(indexPad, 1)
+							dossiersModifies = true
+						}
+					})
+					if (dossiersModifies) {
+						await db.HSET('utilisateurs:' + proprietaire, 'dossiers', JSON.stringify(dossiers))
+					}
+				}
+				res.status(200).send('pad_transfere')
+			} catch (err) {
+				console.error(err.stack)
+				res.status(500).send('erreur')
+			}
+		} else if (motdepasseAdmin) {
+			res.status(403).send('non_autorise')
+		} else {
+			supprimerSession(req)
+			res.status(401).send('non_connecte')
 		}
 	})
 
 	app.post('/api/vider-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		const pad = req.body.padId
 		const suppressionColonnes = req.body.suppressionColonnes === true
 		const titreColonne = req.body.titreColonne
 		if (req.session.identifiant && req.session.identifiant === identifiant && ((req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || req.session.statut === 'auteur')) {
 			try {
+				if (!verifierIdentifiantPad(pad)) return res.status(500).send('erreur_vidage')
 				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + pad)
 				if (padExiste === 1) {
@@ -1710,8 +1820,7 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/supprimer-pad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+	app.post('/api/supprimer-pad', limiteAuthAdmin, async (req, res) => {
 		const identifiant = req.body.identifiant
 		const motdepasseAdmin = req.body.admin
 		const pad = req.body.padId
@@ -1721,8 +1830,10 @@ async function demarrerServeur () {
 			suppressionFichiers = req.body.suppressionFichiers
 		}
 		let admin = verifierMotDePasseAdmin(motdepasseAdmin)
+		if (!admin && maintenance === true) return res.status(503).send('maintenance')
 		if ((req.session.identifiant && req.session.identifiant === identifiant && ((req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || req.session.statut === 'auteur')) || admin) {
 			try {
+				if (!verifierIdentifiantPad(pad)) return res.status(500).send('erreur_suppression')
 				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + pad)
 				if (padExiste === 1) {
@@ -1776,6 +1887,8 @@ async function demarrerServeur () {
 				console.error(err.stack)
 				res.status(500).send('erreur_suppression')
 			}
+		} else if (motdepasseAdmin) {
+			res.status(403).send('non_autorise')
 		} else {
 			supprimerSession(req)
 			res.status(401).send('non_connecte')
@@ -1783,7 +1896,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/vider-corbeille', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		const pads = req.body.pads
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(401).send('non_connecte')
@@ -1806,7 +1919,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-informations', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -1853,7 +1966,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-mot-de-passe', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur') return res.status(401).send('non_connecte')
 		try {
@@ -1883,6 +1996,13 @@ async function demarrerServeur () {
 		} else {
 			res.status(401).send('acces_invalide')
 		}
+	})
+
+	app.post('/api/gerer-maintenance', limiteAuthAdmin, (req, res) => {
+		const admin = req.body.admin
+		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
+		definirMaintenance(req.body.maintenance === true, true)
+		res.status(200).json({ maintenance })
 	})
 
 	app.post('/api/modifier-mot-de-passe-admin', limiteAuthAdmin, async (req, res) => {
@@ -1981,6 +2101,7 @@ async function demarrerServeur () {
 		const admin = req.body.admin
 		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
 		try {
+			if (!verifierIdentifiantPad(pad)) return res.status(404).send('pad_inexistant')
 			let donneesPad = {}
 			const padExiste = await db.EXISTS('pads:' + pad)
 			if (padExiste === 1) {
@@ -2006,6 +2127,7 @@ async function demarrerServeur () {
 			const valeur = req.body.valeur
 			const champsAutorises = ['code', 'motdepasse']
 			if (!champsAutorises.includes(champ)) return res.status(500).send('erreur')
+			if (!verifierIdentifiantPad(pad)) return res.status(404).send('pad_inexistant')
 			const padExiste = await db.EXISTS('pads:' + pad)
 			if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
 				await recupererDonneesPadJSON(pad)
@@ -2023,129 +2145,117 @@ async function demarrerServeur () {
 		}
 	})
 
-	app.post('/api/rattacher-pad-admin', limiteAuthAdmin, async (req, res) => {
-		const pad = req.body.padId
+	app.post('/api/transferer-compte', limiteAuthAdmin, limiteActionsSensibles, async (req, res) => {
 		const identifiant = req.body.identifiant
-		const admin = req.body.admin
-		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
-		try {
-			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
-			if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
-			if (utilisateurExiste !== 1) return res.status(500).send('erreur')
-			let donneesPad = {}
-			const padExiste = await db.EXISTS('pads:' + pad)
-			if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
-				donneesPad = await recupererDonneesPadJSON(pad)
-			} else if (padExiste === 1) {
-				donneesPad = await db.HGETALL('pads:' + pad)
-				donneesPad = donneesPad ? { ...donneesPad } : {}
-			} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
-			if (donneesPad.hasOwnProperty('motdepasse')) {
-				await db.multi()
-					.SADD('pads-crees:' + identifiant, pad.toString())
-					.SADD('utilisateurs-pads:' + pad, identifiant)
-					.HSET('pads:' + pad, 'identifiant', identifiant)
-					.HDEL('pads:' + pad, 'motdepasse')
-					.SREM('pads-rejoints:' + identifiant, pad.toString())
-					.SREM('pads-utilisateurs:' + identifiant, pad.toString())
-					.exec()
-				res.status(200).send('pad_transfere')
-			} else {
-				res.status(200).send('pad_cree_avec_compte')
-			}
-		} catch (err) {
-			console.error(err.stack)
-			res.status(500).send('erreur')
-		}
-	})
-
-	app.post('/api/transferer-pad-admin', limiteAuthAdmin, async (req, res) => {
-		const nouvelIdentifiant = req.body.nouvelIdentifiant
-		const pad = req.body.padId
-		const admin = req.body.admin
-		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
-		try {
-			const utilisateurExiste = await db.EXISTS('utilisateurs:' + nouvelIdentifiant)
-			if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
-			if (utilisateurExiste !== 1) return res.status(500).send('erreur')
-			let donneesPad = {}
-			const padExiste = await db.EXISTS('pads:' + pad)
-			if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
-				donneesPad = await recupererDonneesPadJSON(pad)
-			} else if (padExiste === 1) {
-				donneesPad = await db.HGETALL('pads:' + pad)
-				donneesPad = donneesPad ? { ...donneesPad } : {}
-			} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
-			if (!donneesPad.hasOwnProperty('identifiant')) return res.status(500).send('erreur')
-			const identifiant = donneesPad.identifiant
-			await db.multi()
-				.SADD('pads-crees:' + nouvelIdentifiant, pad.toString())
-				.SREM('pads-crees:' + identifiant, pad.toString())
-				.SREM('pads-supprimes:' + identifiant, pad.toString())
-				.SADD('utilisateurs-pads:' + pad, nouvelIdentifiant)
-				.SREM('utilisateurs-pads:' + pad, identifiant)
-				.HSET('pads:' + pad, ['identifiant', nouvelIdentifiant, 'transfertPropriete', 'desactive'])
-				.HDEL('pads:' + pad, 'transfertProprieteExpire')
-				.SREM('pads-admins:' + nouvelIdentifiant, pad.toString())
-				.SREM('pads-rejoints:' + nouvelIdentifiant, pad.toString())
-				.SREM('pads-utilisateurs:' + nouvelIdentifiant, pad.toString())
-				.exec()
-			res.status(200).send('pad_transfere')
-		} catch (err) {
-			console.error(err.stack)
-			res.status(500).send('erreur')
-		}
-	})
-
-	app.post('/api/transferer-compte-admin', limiteAuthAdmin, async (req, res) => {
-		const identifiant = req.body.identifiant
-		const nouvelIdentifiant = req.body.nouvelIdentifiant
-		const admin = req.body.admin
-		if (!verifierMotDePasseAdmin(admin)) return res.status(403).send('non_autorise')
-		try {
-			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
-			if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
-			if (utilisateurExiste !== 1) return res.status(500).send('erreur')
-			const nouvelUtilisateurExiste = await db.EXISTS('utilisateurs:' + nouvelIdentifiant)
-			if (nouvelUtilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
-			if (nouvelUtilisateurExiste !== 1) return res.status(500).send('erreur')
-			const pads = await db.SMEMBERS('pads-crees:' + identifiant)
-			if (!pads) return res.status(500).send('erreur')
-			await Promise.all(pads.map(async (pad) => {
-				const padExiste = await db.EXISTS('pads:' + pad)
-				if (!padExiste) return { statut: 'inexistant', pad }
-				try {
-					if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
-						await recupererDonneesPadJSON(pad)
-					}
-					await db.multi()
-						.SADD('pads-crees:' + nouvelIdentifiant, pad.toString())
-						.SREM('pads-crees:' + identifiant, pad.toString())
-						.SREM('pads-supprimes:' + identifiant, pad.toString())
-						.SADD('utilisateurs-pads:' + pad, nouvelIdentifiant)
-						.SREM('utilisateurs-pads:' + pad, identifiant)
-						.HSET('pads:' + pad, 'identifiant', nouvelIdentifiant)
-						.SREM('pads-admins:' + nouvelIdentifiant, pad.toString())
-						.SREM('pads-rejoints:' + nouvelIdentifiant, pad.toString())
-						.SREM('pads-utilisateurs:' + nouvelIdentifiant, pad.toString())
-						.exec()
-					return { statut: 'transfere', pad }
-				} catch {
-					return { statut: 'erreur', pad }
+		const motdepasseAdmin = req.body.admin
+		const nouvelIdentifiant = typeof req.body.nouvelIdentifiant === 'string' ? req.body.nouvelIdentifiant.trim() : ''
+		const admin = verifierMotDePasseAdmin(motdepasseAdmin)
+		if (!admin && maintenance === true) return res.status(503).send('maintenance')
+		if ((req.session.identifiant && req.session.identifiant === identifiant && req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || admin) {
+			try {
+				if (nouvelIdentifiant === '' || nouvelIdentifiant === identifiant) return res.status(403).send('non_autorise')
+				const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
+				if (utilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
+				if (utilisateurExiste !== 1) return res.status(500).send('erreur')
+				if (!admin) {
+					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+					if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
+					const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
+					if (!motdepasseCorrect) return res.status(401).send('non_connecte')
+					const motdepasse = req.body.motdepasse
+					if (typeof motdepasse !== 'string' || motdepasse.trim() === '' || donneesUtilisateur.motdepasse.trim() === '' || !await bcrypt.compare(motdepasse.trim(), donneesUtilisateur.motdepasse)) return res.status(401).send('motdepasse_incorrect')
 				}
-			}))
-			res.status(200).send('compte_transfere')
-		} catch (err) {
-			console.error(err.stack)
-			res.status(500).send('erreur')
+				const nouvelUtilisateurExiste = await db.EXISTS('utilisateurs:' + nouvelIdentifiant)
+				if (nouvelUtilisateurExiste === 0) return res.status(404).send('utilisateur_inexistant')
+				if (nouvelUtilisateurExiste !== 1) return res.status(500).send('erreur')
+				const pads = await db.SMEMBERS('pads-crees:' + identifiant)
+				if (!pads) return res.status(500).send('erreur')
+				// Les pads en corbeille sont également transférés (dans la corbeille du compte destinataire)
+				const padsCorbeille = await db.SMEMBERS('pads-supprimes:' + identifiant)
+				if (!padsCorbeille) return res.status(500).send('erreur')
+				if (!admin) {
+					const padsDestination = await db.SCARD('pads-crees:' + nouvelIdentifiant)
+					if (!Number.isInteger(padsDestination)) return res.status(500).send('erreur')
+					if (padsDestination + pads.length > limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
+				}
+				const padsATransferer = pads.map((pad) => ({ pad: pad, corbeille: false }))
+					.concat(padsCorbeille.filter((pad) => !pads.includes(pad)).map((pad) => ({ pad: pad, corbeille: true })))
+				const padsTransferes = []
+				const resultats = await executerTransactions(padsATransferer, async ({ pad, corbeille }) => {
+					try {
+						if (!verifierIdentifiantPad(pad)) return null
+						const padExiste = await db.EXISTS('pads:' + pad)
+						if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
+							await recupererDonneesPadJSON(pad)
+						} else if (padExiste === 0) {
+							await db.multi()
+								.SREM('pads-crees:' + identifiant, pad.toString())
+								.SREM('pads-supprimes:' + identifiant, pad.toString())
+								.exec()
+							return null
+						}
+						const cleDestination = corbeille ? 'pads-supprimes:' : 'pads-crees:'
+						await db.multi()
+							.SADD(cleDestination + nouvelIdentifiant, pad.toString())
+							.SREM('pads-crees:' + identifiant, pad.toString())
+							.SREM('pads-supprimes:' + identifiant, pad.toString())
+							.SREM('pads-favoris:' + identifiant, pad.toString())
+							.SADD('utilisateurs-pads:' + pad, nouvelIdentifiant)
+							.SREM('utilisateurs-pads:' + pad, identifiant)
+							.HSET('pads:' + pad, ['identifiant', nouvelIdentifiant, 'transfertPropriete', 'desactive'])
+							.HDEL('pads:' + pad, 'transfertProprieteExpire')
+							.SREM('pads-admins:' + nouvelIdentifiant, pad.toString())
+							.SREM('pads-rejoints:' + nouvelIdentifiant, pad.toString())
+							.SREM('pads-utilisateurs:' + nouvelIdentifiant, pad.toString())
+							.exec()
+						padsTransferes.push(pad)
+						return null
+					} catch (err) {
+						console.error(err.stack)
+						return pad
+					}
+				})
+				// Purge des ids transférés dans les dossiers du compte source
+				if (padsTransferes.length > 0) {
+					const donneesUtilisateurSource = await db.HGET('utilisateurs:' + identifiant, 'dossiers')
+					if (donneesUtilisateurSource) {
+						const dossiers = parseJSON(donneesUtilisateurSource, [])
+						const idsTransferes = new Set(padsTransferes.map((pad) => parseInt(pad, 10)))
+						let dossiersModifies = false
+						dossiers.forEach((dossier) => {
+							const longueurInitiale = (dossier.pads || []).length
+							dossier.pads = (dossier.pads || []).filter((id) => !idsTransferes.has(parseInt(id, 10)))
+							if (dossier.pads.length !== longueurInitiale) dossiersModifies = true
+						})
+						if (dossiersModifies) {
+							await db.HSET('utilisateurs:' + identifiant, 'dossiers', JSON.stringify(dossiers))
+						}
+					}
+				}
+				const padsEnEchec = resultats.filter((pad) => pad !== null)
+				if (padsEnEchec.length > 0) {
+					console.error('Transfert de compte incomplet (' + identifiant + ' vers ' + nouvelIdentifiant + ') : ' + padsEnEchec.join(', '))
+					return res.status(500).send('transfert_incomplet')
+				}
+				res.status(200).send('compte_transfere')
+			} catch (err) {
+				console.error(err.stack)
+				res.status(500).send('erreur')
+			}
+		} else if (motdepasseAdmin) {
+			res.status(403).send('non_autorise')
+		} else {
+			supprimerSession(req)
+			res.status(401).send('non_connecte')
 		}
 	})
 
 	app.post('/api/supprimer-compte', limiteAuthAdmin, async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
 		const identifiant = req.body.identifiant
 		const motdepasseAdmin = req.body.admin
 		let admin = verifierMotDePasseAdmin(motdepasseAdmin)
+		if (!admin && maintenance === true) return res.status(503).send('maintenance')
 		if (!((req.session.identifiant && req.session.identifiant === identifiant && req.session.statut === 'utilisateur' && req.session.hasOwnProperty('motdepasse') && req.session.motdepasse !== '') || admin)) return res.status(403).send('non_autorise')
 		try {
 			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
@@ -2160,7 +2270,7 @@ async function demarrerServeur () {
 			const listePadsCrees = await db.SMEMBERS('pads-crees:' + identifiant)
 			if (listePadsCrees === null) return res.status(500).send('erreur')
 			// Traitement par lots de la suppression de chaque pad créé
-			await executerTransactions(listePadsCrees, async (pad) => {
+			const resultatsPadsCrees = await executerTransactions(listePadsCrees, async (pad) => {
 				try {
 					const padExiste = await db.EXISTS('pads:' + pad)
 					if (padExiste === 1) {
@@ -2183,13 +2293,13 @@ async function demarrerServeur () {
 							.UNLINK('activite:' + pad)
 							.UNLINK('dates-pads:' + pad)
 							.exec()
-					} else if (padExiste === 0 && isNaN(parseInt(pad, 10)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+					} else if (padExiste === 0 && verifierIdentifiantPad(pad) && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
 						await Promise.all([
 							fs.remove(path.join(__dirname, '..', '/static/pads/' + pad + '.json')),
 							fs.remove(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
 						])
 					} else {
-						return
+						return null
 					}
 					const utilisateursPad = await db.SMEMBERS('utilisateurs-pads:' + pad)
 					if (utilisateursPad && utilisateursPad.length > 0) {
@@ -2204,11 +2314,10 @@ async function demarrerServeur () {
 						await pipelineUtilisateurs.exec()
 					}
 					await db.UNLINK('utilisateurs-pads:' + pad)
-					// Suppression des fichiers
-					if (stockage === 'fs') {
-						await fs.remove(path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad))
-					} else if (stockage === 's3') {
-						try {
+					try {
+						if (stockage === 'fs') {
+							await fs.remove(path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad))
+						} else if (stockage === 's3') {
 							let jetonPagination
 							do {
 								const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
@@ -2217,32 +2326,39 @@ async function demarrerServeur () {
 								}
 								jetonPagination = listeObjets && listeObjets.IsTruncated ? listeObjets.NextContinuationToken : undefined
 							} while (jetonPagination)
-						} catch (err) {
-							console.error(err.stack)
 						}
+					} catch (err) {
+						console.error('Suppression des fichiers du pad ' + pad + ' : ' + err.stack)
 					}
+					return null
 				} catch (err) {
 					console.error(err.stack)
+					return pad
 				}
 			}, tailleLotTransaction)
+			const padsEnEchec = resultatsPadsCrees.filter((pad) => pad !== null)
+			if (padsEnEchec.length > 0) {
+				console.error('Suppression de compte interrompue (' + identifiant + ') : pads non supprimés : ' + padsEnEchec.join(', '))
+				return res.status(500).send('suppression_incomplete')
+			}
 			// Nettoyage des contributions dans les pads rejoints
 			const listePadsRejoints = await db.SMEMBERS('pads-utilisateurs:' + identifiant)
 			if (listePadsRejoints && listePadsRejoints.length > 0) {
-				await executerTransactions(listePadsRejoints, async (pad) => {
+				const resultatsPadsRejoints = await executerTransactions(listePadsRejoints, async (pad) => {
 					try {
 						const padExiste = await db.EXISTS('pads:' + pad)
-						if (padExiste !== 1) return
+						if (padExiste !== 1) return null
 						const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
-						if (blocs === null) return
+						if (blocs === null) return null
 						for (const blocId of blocs) {
 							let bloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 							bloc = bloc ? { ...bloc } : {}
 							if (bloc.hasOwnProperty('identifiant') && bloc.identifiant === identifiant) {
 								if (bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
-									await supprimerFichier(pad, bloc.media)
+									await supprimerFichierSansEchec(pad, bloc.media)
 								}
 								if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
-									await supprimerFichier(pad, path.basename(bloc.vignette))
+									await supprimerFichierSansEchec(pad, path.basename(bloc.vignette))
 								}
 								await supprimerEtherpad([bloc.iframe, bloc.media])
 								await db.multi()
@@ -2289,10 +2405,17 @@ async function demarrerServeur () {
 								}
 							}
 						}
+						return null
 					} catch (err) {
 						console.error(err.stack)
+						return pad
 					}
 				}, tailleLotTransaction)
+				const padsRejointsEnEchec = resultatsPadsRejoints.filter((pad) => pad !== null)
+				if (padsRejointsEnEchec.length > 0) {
+					console.error('Suppression de compte interrompue (' + identifiant + ') : contributions non supprimées dans : ' + padsRejointsEnEchec.join(', '))
+					return res.status(500).send('suppression_incomplete')
+				}
 			}
 			const pipelineFinal = db.multi()
 				.UNLINK('pads-crees:' + identifiant)
@@ -2323,8 +2446,8 @@ async function demarrerServeur () {
 							const sessionId = session.substring(9)
 							const donneesSessionStr = await db.GET('sessions:' + sessionId)
 							if (donneesSessionStr) {
-								const donneesSession = JSON.parse(donneesSessionStr)
-								if (donneesSession.hasOwnProperty('identifiant') && donneesSession.identifiant === identifiant) {
+								const donneesSession = parseJSON(donneesSessionStr, null)
+								if (donneesSession && donneesSession.hasOwnProperty('identifiant') && donneesSession.identifiant === identifiant) {
 									await db.UNLINK('sessions:' + sessionId)
 								}
 							}
@@ -2342,7 +2465,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/verifier-identifiant', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const identifiant = req.body.identifiant
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
@@ -2356,7 +2479,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/verifier-mot-de-passe', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const pad = req.body.pad
 			let donneesPad = await db.HGETALL('pads:' + pad)
@@ -2414,7 +2537,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/verifier-code-acces', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const pad = req.body.pad
 			const identifiant = req.body.identifiant
@@ -2475,7 +2598,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-affichage', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -2497,7 +2620,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-classement', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -2520,7 +2643,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/ajouter-dossier', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -2548,7 +2671,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/modifier-dossier', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -2577,7 +2700,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/supprimer-dossier', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.body.identifiant
 		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') {
 			supprimerSession(req)
@@ -2600,7 +2723,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/televerser-fichier', (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.session.identifiant
 		if (!identifiant) return res.status(401).send('non_connecte')
 		const buffers = []
@@ -2778,7 +2901,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/televerser-audio', (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.session.identifiant
 		if (!identifiant) return res.status(401).send('non_connecte')
 		const buffersAudio = []
@@ -2830,7 +2953,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/televerser-vignette', (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.session.identifiant
 		if (!identifiant) return res.status(401).send('non_connecte')
 		const buffersImage = []
@@ -2898,7 +3021,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/televerser-fond', (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.session.identifiant
 		if (!identifiant) return res.status(401).send('non_connecte')
 		const buffersImage = []
@@ -2972,7 +3095,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/recuperer-icone', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		const identifiant = req.session.identifiant
 		if (!identifiant) return res.status(500).send('erreur')
 		let favicon = ''
@@ -3029,7 +3152,7 @@ async function demarrerServeur () {
 	})
 
 	app.post('/api/supprimer-etherpad', async (req, res) => {
-		if (maintenance === true) return res.redirect(302, '/maintenance')
+		if (maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const padID = req.body.padID
 			const pad = req.body.pad
@@ -3070,6 +3193,7 @@ async function demarrerServeur () {
 			const statutExterne = reponseExterne.data
 			if (statutExterne === 'non_autorise' || statutExterne === 'erreur') return res.status(401).send('erreur_token')
 			if (statutExterne !== 'token_autorise') return res.status(500).send('erreur')
+			if (actionRequise !== 'creer' && !verifierIdentifiantPad(req.body.id)) return res.status(404).send('contenu_inexistant')
 			// ACTION : CRÉER
 			if (actionRequise === 'creer') {
 				const identifiant = req.body.identifiant
@@ -3511,6 +3635,9 @@ async function demarrerServeur () {
 			}
 		}
 	}
+	io.on('maintenance', (valeur) => {
+		definirMaintenance(valeur, false)
+	})
 	const wrap = middleware => (socket, next) => middleware(socket.request, {}, next)
 	io.use(wrap(sessionMiddleware))
 	// Rate limit pour les sockets : 100 actions par seconde par worker
@@ -3801,7 +3928,7 @@ async function demarrerServeur () {
 				const mediaModifie = (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== media)
 				// Suppression de l'ancien media si modifié
 				if (mediaModifie && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
-					await supprimerFichier(pad, donneesBloc.media)
+					await supprimerFichierSansEchec(pad, donneesBloc.media)
 				}
 				// Ajout du nouveau media si modifié
 				if (mediaModifie && media !== '' && type !== 'embed' && type !== 'lien') {
@@ -3809,7 +3936,7 @@ async function demarrerServeur () {
 				}
 				const ancienneVignettePersonnalisee = (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true)
 				if (vignetteModifiee && ancienneVignettePersonnalisee) {
-					await supprimerFichier(pad, path.basename(donneesBloc.vignette))
+					await supprimerFichierSansEchec(pad, path.basename(donneesBloc.vignette))
 				}
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad)
@@ -3903,6 +4030,7 @@ async function demarrerServeur () {
 				const admin = (listeAdmins.includes(identifiant) || donneesPad.identifiant === identifiant)
 				const autorisation = (donneesPad.id === pad && donneesPad.token === token && admin)
 				if (!autorisation) return socket.emit('nonautorise')
+				if (String(padOrigine) !== String(pad) && !await verifierAccesLecturePad(padOrigine, req.session)) return socket.emit('nonautorise')
 				const blocId = parseInt(donneesPad.bloc, 10) + 1
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
@@ -4078,10 +4206,10 @@ async function demarrerServeur () {
 				if (!autorisation) return socket.emit('nonautorise')
 				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== bloc) return socket.emit('erreur')
 				if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
-					await supprimerFichier(pad, donneesBloc.media)
+					await supprimerFichierSansEchec(pad, donneesBloc.media)
 				}
 				if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
-					await supprimerFichier(pad, path.basename(donneesBloc.vignette))
+					await supprimerFichierSansEchec(pad, path.basename(donneesBloc.vignette))
 				}
 				await supprimerEtherpad([donneesBloc.iframe, donneesBloc.media])
 				const date = dayjs().format()
@@ -4679,7 +4807,7 @@ async function demarrerServeur () {
 				await db.HSET('pads:' + pad, ['fond', fond, 'fondRepete', 'desactive'])
 				io.to('pad-' + pad).emit('modifierfond', fond, identifiant)
 				if (typeof fondPrecedent === 'string' && fondPrecedent !== fond && fondPrecedent !== '' && !fondPrecedent.includes('/img/') && fondPrecedent.substring(0, 1) !== '#') {
-					await supprimerFichier(pad, path.basename(fondPrecedent))
+					await supprimerFichierSansEchec(pad, path.basename(fondPrecedent))
 				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -4701,7 +4829,7 @@ async function demarrerServeur () {
 				await db.HSET('pads:' + pad, ['fond', fond, 'fondRepete', 'desactive'])
 				io.to('pad-' + pad).emit('modifiercouleurfond', fond, identifiant)
 				if (typeof fondPrecedent === 'string' && fondPrecedent !== fond && fondPrecedent !== '' && !fondPrecedent.includes('/img/') && fondPrecedent.substring(0, 1) !== '#') {
-					await supprimerFichier(pad, path.basename(fondPrecedent))
+					await supprimerFichierSansEchec(pad, path.basename(fondPrecedent))
 				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -5155,12 +5283,12 @@ async function demarrerServeur () {
 					const colonneActuelle = item.hasOwnProperty('colonne') ? parseInt(item.colonne, 10) : 0
 					return colonneActuelle >= parseInt(indexColonne, 10)
 				})
-				await Promise.all(blocsADecaler.map(async (bloc) => {
+				const transaction = db.multi()
+				blocsADecaler.forEach((bloc) => {
 					const colonneActuelle = bloc.hasOwnProperty('colonne') ? parseInt(bloc.colonne, 10) : 0
-					const nouvelleColonne = colonneActuelle + 1
-					await db.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', nouvelleColonne)
-				}))
-				await db.multi()
+					transaction.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', colonneActuelle + 1)
+				})
+				await transaction
 					.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
 					.HINCRBY('pads:' + pad, 'activite', 1)
 					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, identifiant: identifiant, titre: titre, date: date, type: 'colonne-ajoutee' }) }])
@@ -5336,13 +5464,7 @@ async function demarrerServeur () {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
-				const accesCode = donneesPad.hasOwnProperty('code') && donneesPad.acces === 'code'
-				const accesPrive = donneesPad.acces === 'prive'
-				let accesLecture = admin || (!accesCode && !accesPrive)
-				if (!accesLecture && accesCode && req.session.hasOwnProperty('acces')) {
-					accesLecture = req.session.acces.some((e) => e.hasOwnProperty('pad') && parseInt(e.pad, 10) === parseInt(pad, 10) && e.code === donneesPad.code)
-				}
-				if (!accesLecture) return socket.emit('nonautorise')
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, admin)
 				if (donneesPadProtege === 'erreur') return socket.emit('erreur')
 				socket.emit('verifierblocscolonnes', donneesPadProtege.blocs)
@@ -5428,17 +5550,15 @@ async function demarrerServeur () {
 						blocsADecaler.push(item)
 					}
 				})
-				const [blocsSupprimes] = await Promise.all([
-					supprimerBlocs(pad, blocsASupprimer),
-					Promise.all(blocsADecaler.map(async (bloc) => {
-						const nouvelleColonne = parseInt(bloc.colonne, 10) - 1
-						await db.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', nouvelleColonne)
-					}))
-				])
-				if (blocsSupprimes.length !== blocsASupprimer.length) return socket.emit('erreur')
+				const blocsTraites = await supprimerBlocs(pad, blocsASupprimer)
+				if (blocsTraites.length !== blocsASupprimer.length) return socket.emit('erreur')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
-				await db.multi()
+				const transaction = db.multi()
+				blocsADecaler.forEach((bloc) => {
+					transaction.HSET('pad-' + pad + ':' + bloc.bloc, 'colonne', parseInt(bloc.colonne, 10) - 1)
+				})
+				await transaction
 					.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
 					.HINCRBY('pads:' + pad, 'activite', 1)
 					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, identifiant: identifiant, titre: titre, date: date, type: 'colonne-supprimee' }) }])
@@ -5485,7 +5605,8 @@ async function demarrerServeur () {
 					const bloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 					return bloc ? { ...bloc } : null
 				}))
-				// Identification et mise à jour des blocs impactés
+				// Identification des blocs impactés
+				const misesAJour = []
 				await Promise.all(donneesBlocs.map(async (item) => {
 					if (!item || !item.hasOwnProperty('bloc')) return
 					const blocId = item.bloc
@@ -5505,17 +5626,17 @@ async function demarrerServeur () {
 							nouvelleColonne = indexColonne
 						}
 					}
-					// Exécution de la mise à jour seulement si la colonne change
-					if (nouvelleColonne !== null) {
-						const blocExiste = await db.EXISTS('pad-' + pad + ':' + blocId)
-						if (blocExiste === 1) {
-							await db.HSET('pad-' + pad + ':' + blocId, 'colonne', nouvelleColonne)
-						}
-					}
+					if (nouvelleColonne === null) return
+					const blocExiste = await db.EXISTS('pad-' + pad + ':' + blocId)
+					if (blocExiste === 1) misesAJour.push({ blocId: blocId, nouvelleColonne: nouvelleColonne })
 				}))
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
-				await db.multi()
+				const transaction = db.multi()
+				misesAJour.forEach((miseAJour) => {
+					transaction.HSET('pad-' + pad + ':' + miseAJour.blocId, 'colonne', miseAJour.nouvelleColonne)
+				})
+				await transaction
 					.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
 					.HINCRBY('pads:' + pad, 'activite', 1)
 					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, identifiant: identifiant, titre: titre, date: date, type: 'colonne-deplacee' }) }])
@@ -5605,21 +5726,8 @@ async function demarrerServeur () {
 		})
 
 		socket.on('verifiermaintenance', () => {
+			socket.join(salonMaintenance)
 			socket.emit('verifiermaintenance', maintenance)
-		})
-
-		socket.on('activermaintenance', (admin) => {
-			if (verifierMotDePasseAdmin(admin)) {
-				maintenance = true
-				socket.emit('verifiermaintenance', true)
-			}
-		})
-
-		socket.on('desactivermaintenance', (admin) => {
-			if (verifierMotDePasseAdmin(admin)) {
-				maintenance = false
-				socket.emit('verifiermaintenance', false)
-			}
 		})
 	})
 
@@ -5800,7 +5908,7 @@ async function demarrerServeur () {
 					if (!donneesPad) return null
 					donneesPad = { ...donneesPad }
 					if (!donneesPad.hasOwnProperty('identifiant')) return null
-				} else if (padExiste === 0 && isNaN(parseInt(padId, 10)) === false && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + padId + '.json'))) {
+				} else if (padExiste === 0 && verifierIdentifiantPad(padId) && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + padId + '.json'))) {
 					donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + padId + '.json'))
 					if (typeof donneesPad !== 'object' || !donneesPad || !donneesPad.hasOwnProperty('identifiant')) return null
 				}
@@ -5838,7 +5946,7 @@ async function demarrerServeur () {
 				if (padExiste === 1) {
 					donneesPad = await db.HGETALL('pads:' + pad)
 					return donneesPad ? { ...donneesPad } : null
-				} else if (padExiste === 0 && !isNaN(parseInt(pad, 10)) && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
+				} else if (padExiste === 0 && verifierIdentifiantPad(pad) && await fs.pathExists(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))) {
 					donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
 					if (donneesPad && typeof donneesPad === 'object') {
 						return donneesPad
@@ -6208,6 +6316,10 @@ async function demarrerServeur () {
 		return (donneesPad.affichage === 'colonnes' && Array.isArray(affichageColonnes) && affichageColonnes[colonne] === false)
 	}
 
+	function verifierIdentifiantPad (pad) {
+		return (typeof pad === 'string' || typeof pad === 'number') && /^[0-9]{1,15}$/.test(String(pad))
+	}
+
 	function verifierIdentifiantBloc (bloc) {
 		return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{20,64}$/.test(bloc)
 	}
@@ -6371,7 +6483,7 @@ async function demarrerServeur () {
 	}
 
 	async function recupererDonneesPadJSON (pad) {
-		if (!pad || pad === '' || isNaN(parseInt(pad, 10)) === true) return {}
+		if (!verifierIdentifiantPad(pad)) return {}
 		const donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))
 		if (typeof donneesPad !== 'object' || !donneesPad || !donneesPad.hasOwnProperty('pad') || !donneesPad.hasOwnProperty('blocs') || !donneesPad.hasOwnProperty('activite')) return {}
 		await ajouterPadDansDb(pad, donneesPad)
@@ -6657,8 +6769,23 @@ async function demarrerServeur () {
 		})
 	}
 
+	const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage', 'colonnes']
+
+	function filtrerChamps (objet, champs) {
+		const resultat = {}
+		if (!objet) return resultat
+		champs.forEach((champ) => {
+			if (objet.hasOwnProperty(champ)) resultat[champ] = objet[champ]
+		})
+		return resultat
+	}
+
 	function nettoyerPads (pads) {
-		return pads.filter(el => el && Object.keys(el).length > 0).map(el => ({ ...el, id: parseInt(el.id, 10) }))
+		return pads.filter(el => el && Object.keys(el).length > 0).map((el) => {
+			const pad = filtrerChamps(el, champsPadsClient)
+			pad.id = parseInt(el.id, 10)
+			return pad
+		})
 	}
 
 	function supprimerDoublons (pads) {
@@ -6690,6 +6817,23 @@ async function demarrerServeur () {
 		} else {
 			return false
 		}
+	}
+
+	function definirAccesLecture (pad, donneesPad, admin, session) {
+		const accesCode = donneesPad.hasOwnProperty('code') && donneesPad.acces === 'code'
+		const accesPrive = donneesPad.acces === 'prive'
+		if (admin || (!accesCode && !accesPrive)) return true
+		if (!accesCode || !session || !session.hasOwnProperty('acces')) return false
+		return session.acces.some((e) => e.hasOwnProperty('pad') && parseInt(e.pad, 10) === parseInt(pad, 10) && e.code === donneesPad.code)
+	}
+
+	async function verifierAccesLecturePad (pad, session) {
+		if (!verifierIdentifiantPad(pad)) return false
+		let donneesPad = await db.HGETALL('pads:' + pad)
+		donneesPad = donneesPad ? { ...donneesPad } : {}
+		if (!donneesPad.hasOwnProperty('identifiant')) return false
+		const admin = await verifierAdmin(pad, donneesPad, session)
+		return definirAccesLecture(pad, donneesPad, admin, session)
 	}
 
 	async function verifierAdminUtilisateur (pad, identifiant, motdepasse) {
@@ -6967,6 +7111,14 @@ async function demarrerServeur () {
 		})
 	}
 
+	async function supprimerFichierSansEchec (pad, fichier) {
+		try {
+			await supprimerFichier(pad, fichier)
+		} catch (err) {
+			console.error('Suppression du fichier ' + fichier + ' du pad ' + pad + ' : ' + err.stack)
+		}
+	}
+
 	async function supprimerFichier (pad, fichier) {
 		if (!fichier || typeof fichier !== 'string' || fichier === '' || /[/\\]/.test(fichier) || fichier.includes('..')) return
 		if (stockage === 'fs') {
@@ -7014,12 +7166,12 @@ async function demarrerServeur () {
 			try {
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + blocId)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
-				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== blocId) return null // Bloc déjà supprimé ou inexistant
+				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== blocId) return blocId // Bloc déjà supprimé ou inexistant : rien à faire, pas un échec
 				if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
-					await supprimerFichier(pad, donneesBloc.media)
+					await supprimerFichierSansEchec(pad, donneesBloc.media)
 				}
 				if (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true) {
-					await supprimerFichier(pad, path.basename(donneesBloc.vignette))
+					await supprimerFichierSansEchec(pad, path.basename(donneesBloc.vignette))
 				}
 				await supprimerEtherpad([donneesBloc.iframe, donneesBloc.media])
 				await db.multi()
@@ -7035,6 +7187,7 @@ async function demarrerServeur () {
 				return null
 			}
 		}, tailleLotTransaction)
+		// Blocs traités (supprimés ou déjà absents), les échecs sont écartés
 		return resultats.filter(blocId => blocId !== null)
 	}
 
@@ -7084,6 +7237,8 @@ async function demarrerServeur () {
 		if (typeFichier === 'vignette') {
 			if (String(nomFichier).includes('/img/') || verifierURL(nomFichier, ['https', 'http'])) return
 		}
+		if (!verifierIdentifiantPad(padOrigine) || !verifierIdentifiantPad(pad)) return
+		if (typeof nomFichier !== 'string' || /[/\\]/.test(nomFichier) || nomFichier.includes('..')) return
 		if (stockage === 'fs') {
 			const source = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padOrigine + '/' + nomFichier)
 			const destination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad + '/' + nomFichier)
@@ -7388,9 +7543,22 @@ async function demarrerServeur () {
 	}
 
 	function verifierMotDePasseAdmin (motdepasse) {
-		const adminPassword = process.env.ADMIN_PASSWORD
-		if (!motdepasse || !adminPassword || motdepasse.length !== adminPassword.length) return false
-		return timingSafeEqual(Buffer.from(motdepasse), Buffer.from(adminPassword))
+		const motdepasseAdmin = process.env.ADMIN_PASSWORD
+		if (!motdepasse || typeof motdepasse !== 'string' || !motdepasseAdmin) return false
+		const empreinte = createHash('sha256').update(motdepasse).digest()
+		const empreinteAdmin = createHash('sha256').update(motdepasseAdmin).digest()
+		return timingSafeEqual(empreinte, empreinteAdmin)
+	}
+
+	function definirMaintenance (valeur, propager) {
+		maintenance = valeur === true
+		io.local.to(salonMaintenance).emit('verifiermaintenance', maintenance)
+		if (propager !== true || cluster !== true) return
+		try {
+			io.serverSideEmit('maintenance', maintenance)
+		} catch (err) {
+			console.error('Propagation de la maintenance impossible : ' + err.message)
+		}
 	}
 
 	function verifierContenuFichier (buffer, mimetype) {

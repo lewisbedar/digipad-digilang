@@ -341,10 +341,20 @@ export default {
 			document.querySelector('#' + id)?.click()
 		},
 		activerMaintenance () {
-			this.$socket.emit('activermaintenance', this.admin)
+			this.gererMaintenance(true)
 		},
 		desactiverMaintenance () {
-			this.$socket.emit('desactivermaintenance', this.admin)
+			this.gererMaintenance(false)
+		},
+		gererMaintenance (valeur) {
+			axios.post(this.hote + '/api/gerer-maintenance', {
+				admin: this.admin,
+				maintenance: valeur
+			}).then((reponse) => {
+				this.maintenance = reponse.data.maintenance
+			}).catch(() => {
+				this.$socket.emit('verifiermaintenance')
+			})
 		},
 		modifierMotDePasse () {
 			if (this.motdepasse.trim() !== '' && (this.identifiant !== '' || this.email !== '')) {
@@ -494,7 +504,7 @@ export default {
 			if (this.padIdR !== '' && this.identifiantR !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/rattacher-pad-admin', {
+				axios.post(this.hote + '/api/rattacher-pad', {
 					admin: this.admin,
 					padId: this.padIdR,
 					identifiant: this.identifiantR
@@ -585,7 +595,7 @@ export default {
 			if (this.identifiantN !== '' && this.padIdN !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/transferer-pad-admin', {
+				axios.post(this.hote + '/api/transferer-pad', {
 					admin: this.admin,
 					nouvelIdentifiant: this.identifiantN,
 					padId: this.padIdN
@@ -620,7 +630,7 @@ export default {
 			if (this.identifiantO !== '' && this.identifiantT !== '') {
 				this.modale = ''
 				this.chargement = true
-				axios.post(this.hote + '/api/transferer-compte-admin', {
+				axios.post(this.hote + '/api/transferer-compte', {
 					admin: this.admin,
 					identifiant: this.identifiantO,
 					nouvelIdentifiant: this.identifiantT
@@ -636,6 +646,8 @@ export default {
 						this.message = this.$t('utilisateursInexistants')
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data === 'transfert_incomplet') {
+						this.message = this.$t('transfertIncomplet')
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}
@@ -665,6 +677,8 @@ export default {
 					this.chargement = false
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data === 'suppression_incomplete') {
+						this.message = this.$t('suppressionIncomplete')
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}

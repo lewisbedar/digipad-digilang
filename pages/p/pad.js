@@ -592,8 +592,11 @@ export default {
 			this.utilisateurs = utilisateurs
 		},
 		definirNom (donnees) {
-			if (donnees.nom === '') {
-				return (donnees.identifiant || '').slice(0, 8).toUpperCase()
+			const identifiant = donnees.identifiant || ''
+			if ((!donnees.hasOwnProperty('nom') || donnees.nom === '') && /^u[0-9a-f]{8,13}$/.test(identifiant)) {
+				return identifiant.slice(0, 8).toUpperCase()
+			} else if (!donnees.hasOwnProperty('nom') || donnees.nom === '') {
+				return identifiant.toUpperCase()
 			} else {
 				return donnees.nom
 			}
@@ -4504,7 +4507,7 @@ export default {
 				if (this.modaleDiaporama && this.donneesBloc.bloc === donnees.bloc) {
 					verifierBloc(this.donneesBloc)
 				}
-				if (this.modale === 'bloc' && this.mode === 'edition' && this.bloc === donnees.bloc) {
+				if (this.modale === 'bloc' && this.mode === 'edition' && this.bloc === donnees.bloc && this.texte === undefined) {
 					if (!this.texte) {
 						this.texte = donnees.texte
 						const contenuEditeur = document.querySelector('#texte .contenu-editeur')

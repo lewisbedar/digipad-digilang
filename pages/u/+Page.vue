@@ -47,6 +47,9 @@
 				<div class="conteneur conteneur-bouton">
 					<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleMotDePasse">{{ $t('modifierMotDePasse') }}</button>
 				</div>
+				<div class="conteneur conteneur-bouton" v-if="padsCrees.length > 0 || padsCorbeille.length > 0">
+					<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleTransfererCompte">{{ $t('transfererProprieteCompte') }}</button>
+				</div>
 				<div class="conteneur conteneur-bouton">
 					<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherModaleConfirmation($event, '', 'supprimer-compte')">{{ $t('supprimerCompte') }}</button>
 				</div>
@@ -124,7 +127,9 @@
 				<div class="pads" aria-live="polite" v-if="pads.length > 0 && requete === ''">
 					<template v-for="pad in pads" :key="'pad_' + pad.id">
 						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
-							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" />
+							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)">
+								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
+							</a>
 							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />
 								<span class="titre">{{ pad.titre }}</span>
@@ -158,6 +163,7 @@
 
 						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
 							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
+								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
 									<span class="date">{{ $t('creeLe') }} {{ $formaterDate(pad.date, langue) }}</span>
@@ -198,7 +204,9 @@
 				<div class="pads" v-else-if="resultats.length > 0 && requete !== ''">
 					<template v-for="pad in resultats" :key="'resultats_' + pad.id">
 						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
-							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" />
+							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)">
+								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
+							</a>
 							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />
 								<span class="titre">{{ pad.titre }}</span>
@@ -232,6 +240,7 @@
 
 						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
 							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
+								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
 									<span class="date">{{ $t('creeLe') }} {{ $formaterDate(pad.date, langue) }}</span>
@@ -368,6 +377,30 @@
 						<input id="champ-identifiant-destination" type="text" :value="identifiantDestination" :disabled="disabledModale" @input="identifiantDestination = $event.target.value" @keydown.enter="transfererPad">
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="transfererPad" v-if="!chargementModale">{{ $t('valider') }}</button>
+							<div class="conteneur-chargement" v-else>
+								<div class="chargement" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="conteneur-modale" v-else-if="modale === 'transferer-compte'">
+			<div id="transfert-propriete-compte" class="modale" role="dialog" aria-modal="true" :aria-label="$t('transfererProprieteCompte')">
+				<div class="en-tete">
+					<span class="titre">{{ $t('transfererProprieteCompte') }}</span>
+					<button type="button" class="fermer" :disabled="disabledModale || chargementModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleTransfererCompte"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<div class="message" v-html="$t('texteTransfertProprieteCompte')" />
+						<label for="champ-identifiant-destination-compte">{{ $t('identifiantDestination') }}</label>
+						<input id="champ-identifiant-destination-compte" type="text" :value="identifiantDestinationCompte" :disabled="disabledModale" @input="identifiantDestinationCompte = $event.target.value" @keydown.enter="transfererCompte">
+						<label for="champ-motdepasse-transfert-compte">{{ $t('motDePasseActuel') }}</label>
+						<input id="champ-motdepasse-transfert-compte" type="password" maxlength="48" :value="motDePasseCompte" :disabled="disabledModale" @input="motDePasseCompte = $event.target.value" @keydown.enter="transfererCompte">
+						<div class="actions">
+							<button type="button" class="bouton" :disabled="disabledModale" @click="transfererCompte" v-if="!chargementModale">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
 								<div class="chargement" />
 							</div>
@@ -545,6 +578,8 @@ export default {
 			progressionImport: 0,
 			padId: '',
 			identifiantDestination: '',
+			identifiantDestinationCompte: '',
+			motDePasseCompte: '',
 			lienAjouter: '',
 			motDePasseAjouter: '',
 			motDePasse: '',
@@ -661,8 +696,8 @@ export default {
 
 		this.classer(this.classement)
 
-		if (import.meta.env.VITE_WALL_LIMIT && import.meta.env.VITE_WALL_LIMIT !== '') {
-			this.limite = parseInt(import.meta.env.VITE_WALL_LIMIT)
+		if (import.meta.env.VITE_PAD_LIMIT && import.meta.env.VITE_PAD_LIMIT !== '') {
+			this.limite = parseInt(import.meta.env.VITE_PAD_LIMIT)
 		}
 
 		if (import.meta.env.VITE_PAD_WITHOUT_ACCOUNT && import.meta.env.VITE_PAD_WITHOUT_ACCOUNT !== '') {
@@ -759,6 +794,8 @@ export default {
 						window.location.replace('/')
 					} else if (err.response?.data === 'erreur_creation') {
 						this.message = this.$t('erreurCreationPad')
+					} else if (err.response?.data?.message === 'limite_atteinte') {
+						this.message = this.$t('limitePad', { limite: err.response.data.limite })
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}
@@ -820,6 +857,8 @@ export default {
 						window.location.replace('/')
 					} else if (err.response?.data === 'erreur_import') {
 						this.message = this.$t('erreurImportPad')
+					} else if (err.response?.data?.message === 'limite_atteinte') {
+						this.message = this.$t('limitePad', { limite: err.response.data.limite })
 					} else if (err.response?.data === 'donnees_corrompues') {
 						this.message = this.$t('donneesCorrompuesImportPad')
 					} else if (err.response?.data === 'erreur_espace_disque') {
@@ -888,6 +927,8 @@ export default {
 					this.message = this.$t('padInexistant')
 				} else if (err.response?.data === 'pad_cree_avec_compte') {
 					this.message = this.$t('padCreeAvecCompte')
+				} else if (err.response?.data?.message === 'limite_atteinte') {
+					this.message = this.$t('limitePad', { limite: err.response.data.limite })
 				} else if (err.response?.data === 'motdepasse_incorrect') {
 					this.message = this.$t('motDePassePasCorrect')
 				} else {
@@ -1141,8 +1182,72 @@ export default {
 						this.message = this.$t('utilisateurInexistant')
 					} else if (err.response?.data === 'pad_inexistant') {
 						this.message = this.$t('padInexistant')
+					} else if (err.response?.data === 'transfert_expire') {
+						this.message = this.$t('transfertExpire')
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data?.message === 'limite_atteinte') {
+						this.message = this.$t('limiteCompteDestination', { limite: err.response.data.limite })
+					} else {
+						this.message = this.$t('erreurCommunicationServeur')
+					}
+				})
+			}
+		},
+		afficherModaleTransfererCompte () {
+			this.menu = false
+			this.identifiantDestinationCompte = ''
+			this.motDePasseCompte = ''
+			this.elementPrecedent = (document.activeElement || document.body)
+			this.modale = 'transferer-compte'
+			this.$nextTick(() => {
+				document.querySelector('.modale input')?.focus()
+			})
+		},
+		fermerModaleTransfererCompte () {
+			this.modale = ''
+			this.identifiantDestinationCompte = ''
+			this.motDePasseCompte = ''
+			this.gererFocus()
+		},
+		transfererCompte () {
+			const nouvelIdentifiant = this.identifiantDestinationCompte.trim()
+			const motdepasse = this.motDePasseCompte.trim()
+			if (nouvelIdentifiant !== '' && nouvelIdentifiant !== this.identifiant && motdepasse !== '') {
+				this.chargementModale = true
+				axios.post(this.hote + '/api/transferer-compte', {
+					identifiant: this.identifiant,
+					nouvelIdentifiant: nouvelIdentifiant,
+					motdepasse: motdepasse
+				}).then(() => {
+					this.chargementModale = false
+					const idsTransferes = this.padsCrees.concat(this.padsCorbeille).map((pad) => pad.id)
+					this.padsCrees = []
+					this.padsCorbeille = []
+					this.pads = this.pads.filter((pad) => !idsTransferes.includes(pad.id))
+					this.resultats = this.resultats.filter((pad) => !idsTransferes.includes(pad.id))
+					this.padsFavoris = this.padsFavoris.filter((pad) => !idsTransferes.includes(pad.id))
+					this.favoris = this.favoris.filter((favori) => !idsTransferes.includes(favori))
+					this.dossiers.forEach((dossier, indexDossier) => {
+						this.dossiers[indexDossier].pads = dossier.pads.filter((id) => !idsTransferes.includes(id))
+					})
+					this.notification = this.$t('proprieteCompteTransferee')
+					this.fermerModaleTransfererCompte()
+				}).catch((err) => {
+					this.chargementModale = false
+					this.fermerModaleTransfererCompte()
+					if (err.response?.data === 'non_connecte') {
+						window.location.replace('/')
+					} else if (err.response?.data === 'utilisateur_inexistant') {
+						this.message = this.$t('utilisateurInexistant')
+					} else if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data === 'transfert_incomplet') {
+						this.message = this.$t('transfertIncomplet')
+					} else if (err.response?.data === 'motdepasse_incorrect') {
+						this.message = this.$t('motDePasseActuelPasCorrect')
+					} else if (err.response?.data?.message === 'limite_atteinte') {
+						this.message = this.$t('limiteCompteDestination', { limite: err.response.data.limite })
 					} else {
 						this.message = this.$t('erreurCommunicationServeur')
 					}
@@ -1196,6 +1301,8 @@ export default {
 					window.location.replace('/')
 				} else if (err.response?.data === 'erreur_duplication') {
 					this.message = this.$t('erreurDuplicationPad')
+				} else if (err.response?.data?.message === 'limite_atteinte') {
+					this.message = this.$t('limitePad', { limite: err.response.data.limite })
 				} else if (err.response?.data === 'erreur_espace_disque') {
 					this.message = this.$t('erreurEspaceDisque')
 				} else {
@@ -1724,6 +1831,8 @@ export default {
 				this.chargement = false
 				if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
+				} else if (err.response?.data === 'suppression_incomplete') {
+					this.message = this.$t('suppressionIncomplete')
 				} else {
 					this.message = this.$t('erreurCommunicationServeur')
 				}
@@ -1749,6 +1858,8 @@ export default {
 				this.fermerModaleDeplacerPad()
 			} else if (this.modale === 'transferer-pad') {
 				this.fermerModaleTransferer()
+			} else if (this.modale === 'transferer-compte') {
+				this.fermerModaleTransfererCompte()
 			} else if (this.modale === 'importer-pad') {
 				this.fermerModaleImporterPad()
 			} else if (this.modale === 'ajouter-pad') {
@@ -2188,6 +2299,39 @@ export default {
 	background-repeat: no-repeat;
 	margin-right: 2rem;
 	flex-shrink: 0;
+	position: relative;
+}
+
+.pad .prive {
+	position: absolute;
+	top: -0.2rem;
+	right: -0.2rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.5);
+	z-index: 1;
+}
+
+.pad .prive i {
+	color: #fff;
+	font-size: 18px;
+}
+
+.pad.mosaique .prive {
+	top: 0;
+	right: 0;
+	width: 28px;
+	height: 28px;
+	border-radius: 0;
+	border-bottom-left-radius: 1rem;
+}
+
+.pad.mosaique .prive i {
+	font-size: 20px;
 }
 
 .pad.liste .meta {
@@ -2426,6 +2570,11 @@ export default {
 
 #modale-email .actions {
 	font-size: 0;
+}
+
+#transfert-propriete .message,
+#transfert-propriete-compte .message {
+	margin-bottom: 20px;
 }
 
 @media screen and (max-width: 479px) {

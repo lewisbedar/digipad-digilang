@@ -52,6 +52,10 @@
 	"confirmationExporterPad": "Izvoz podloge je koristan za stvaranje arhive, predloška za dijeljenje itd. Želite li izvesti ovu podlogu?",
 	"erreurCreationPad": "Pogreška pri izradi podloge.",
 	"erreurCommunicationServeur": "Pogreška tijekom komunikacije s poslužiteljem.",
+	"transfertExpire": "Razdoblje za prijenos ovog pada je isteklo. Ponovno aktivirajte prijenos vlasništva u postavkama pada, a zatim pokušajte ponovno.",
+	"transfertIncomplet": "Prijenos nije u potpunosti dovršen: neki padovi i dalje pripadaju izvornom računu. Ponovno učitajte stranicu i pokušajte ponovno.",
+	"limiteCompteDestination": "Odredišni račun ne može primiti sve te padove: najveći dopušteni broj padova ({limite}) bio bi premašen. Prijenos nije izvršen.",
+	"suppressionIncomplete": "Brisanje nije dovršeno. Račun je sačuvan kako biste mogli pokušati ponovno.",
 	"erreurSuppressionPad": "Pogreška prilikom brisanja podloge.",
 	"erreurDuplicationPad": "Pogreška prilikom dupliciranja podloge",
 	"erreurExportPad": "Pogreška prilikom izvoza podloge.",
@@ -471,5 +475,8 @@
 	"transfertPropriete": "Prijenos vlasništva",
 	"parametreTransfertProprieteModifie": "Postavka prijenosa vlasništva promijenjena.",
 	"transfererProprietePad": "Prenesi vlasništvo nad ovim padom",
-	"texteTransfertPropriete": "Unesite korisničko ime računa na koji želite prenijeti ovaj pad. Ova radnja je nepovratna."
+	"texteTransfertPropriete": "Unesite korisničko ime računa na koji želite prenijeti ovaj pad. Ova radnja je nepovratna.",
+	"transfererProprieteCompte": "Prenesi vlasništvo",
+	"texteTransfertProprieteCompte": "Unesite korisničko ime računa na koji želite prenijeti sve padove koje ste izradili. Ova radnja je nepovratna.",
+	"proprieteCompteTransferee": "Sadržaj vašeg računa je prenesen."
 }

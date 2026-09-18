@@ -52,6 +52,10 @@
 	"confirmationExporterPad": "Exporting a pad is useful for creating an archive, a template to share, etc. Do you really want to export this pad?",
 	"erreurCreationPad": "Error while creating the pad.",
 	"erreurCommunicationServeur": "Error while communicating with the server.",
+	"transfertExpire": "The transfer window for this pad has expired. Re-enable ownership transfer in the pad settings, then try again.",
+	"transfertIncomplet": "The transfer could not be completed: some pads still belong to the original account. Reload the page and try again.",
+	"limiteCompteDestination": "The destination account cannot receive all these pads: the maximum number of pads ({limite}) would be exceeded. The transfer was not carried out.",
+	"suppressionIncomplete": "The deletion could not be completed. The account has been kept so that you can try again.",
 	"erreurSuppressionPad": "Error while deleting the pad.",
 	"erreurDuplicationPad": "Error while duplicating the pad.",
 	"erreurExportPad": "Error while exporting the pad.",
@@ -471,5 +475,8 @@
 	"transfertPropriete": "Ownership transfer",
 	"parametreTransfertProprieteModifie": "Ownership transfer setting changed.",
 	"transfererProprietePad": "Transfer ownership of this pad",
-	"texteTransfertPropriete": "Enter the username of the account to transfer this pad to. This action is irreversible."
+	"texteTransfertPropriete": "Enter the username of the account to transfer this pad to. This action is irreversible.",
+	"transfererProprieteCompte": "Transfer ownership",
+	"texteTransfertProprieteCompte": "Enter the username of the account to transfer all the pads you have created to. This action is irreversible.",
+	"proprieteCompteTransferee": "Your account's content has been transferred."
 }

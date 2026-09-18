@@ -52,6 +52,10 @@
 	"confirmationExporterPad": "L'export d'un pad est utile pour créer une archive, un modèle à partager, etc.<br>Souhaitez-vous vraiment exporter ce pad&nbsp;?",
 	"erreurCreationPad": "Erreur lors de la création du pad.",
 	"erreurCommunicationServeur": "Erreur lors de la communication avec le serveur.",
+	"transfertExpire": "La fenêtre de transfert de ce pad a expiré. Réactivez le transfert de propriété depuis les paramètres du pad, puis réessayez.",
+	"transfertIncomplet": "Le transfert n'a pas pu être effectué en totalité : certains pads appartiennent toujours au compte d'origine. Rechargez la page et réessayez.",
+	"limiteCompteDestination": "Le compte destinataire ne peut pas recevoir ce contenu : le nombre maximum de pads ({limite}) serait dépassé. Le transfert n'a pas été effectué.",
+	"suppressionIncomplete": "La suppression n'a pas pu être menée à son terme. Le compte a été conservé pour vous permettre de réessayer.",
 	"erreurSuppressionPad": "Erreur lors de la suppression du pad.",
 	"erreurDuplicationPad": "Erreur lors de la duplication du pad.",
 	"erreurExportPad": "Erreur lors de l'export du pad.",
@@ -471,5 +475,8 @@
 	"transfertPropriete": "Transfert de propriété",
 	"parametreTransfertProprieteModifie": "Paramètre de transfert de propriété modifié.",
 	"transfererProprietePad": "Transférer la propriété de ce pad",
-	"texteTransfertPropriete": "Indiquez l'identifiant du compte vers lequel transférer ce pad. Cette action est irréversible."
+	"texteTransfertPropriete": "Indiquez l'identifiant du compte vers lequel transférer ce pad. Cette action est irréversible.",
+	"transfererProprieteCompte": "Transférer la propriété",
+	"texteTransfertProprieteCompte": "Indiquez l'identifiant du compte vers lequel transférer tous les pads que vous avez créés. Cette action est irréversible.",
+	"proprieteCompteTransferee": "Le contenu de votre compte a été transféré."
 }

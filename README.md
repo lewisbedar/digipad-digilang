@@ -36,7 +36,7 @@ ETHERPAD_API_KEY (clé API Etherpad)
 VITE_PIXABAY_API_KEY (clé API Pixabay)
 VITE_UPLOAD_LIMIT (taille maximale de téléversement des fichiers en Mo / 20 Mo par défaut)
 VITE_UPLOAD_FILE_TYPES (types de fichiers autorisés pour le téléversement / par défaut : .jpg,.jpeg,.png,.gif,.mp4,.m4v,.mp3,.m4a,.ogg,.wav,.pdf,.ppt,.pptx,.odp,.doc,.docx,.odt,.ods,.odg,.xls,.xlsx)
-VITE_PAD_LIMIT (nombre maximum de pads par compte utilisateur)
+VITE_PAD_LIMIT (nombre maximum de pads par compte utilisateur / 100 par défaut)
 VITE_PAD_WITHOUT_ACCOUNT (0 ou 1 / pour autoriser la création de pads sans compte)
 VITE_CREATE_ACCOUNT (0 ou 1 / pour autoriser la création de comptes)
 VITE_DEFAULT_LANGUAGE (de, en, es, fr, hr ou it / fr par défaut)
@@ -74,6 +74,7 @@ RATE_LIMIT_SIGNUP (nombre max de requêtes en échec par IP sur 15 min, appliqu�
 RATE_LIMIT_SIGNUP_EMAIL (nombre max de tentatives d'inscription par adresse e-mail sur 15 min / 4 par défaut)
 RATE_LIMIT_LOGIN (nombre max d'échecs d'authentification par IP sur 15 min pour la connexion / 30 par défaut)
 RATE_LIMIT_LOGIN_USERNAME (nombre max d'échecs de connexion sur 15 min pour un couple identifiant + IP, fenêtre fixe non prolongée / 10 par défaut)
+RATE_LIMIT_SENSITIVE (nombre max de tentatives en échec sur 15 min pour un couple identifiant + IP, pour le rattachement d'un pad et le transfert des pads d'un compte / 10 par défaut)
 TRUST_PROXY (configuration Express « trust proxy » : true, false, un entier = nombre de proxies de confiance ou une liste d'IP / sous-réseaux / 1 par défaut)
 ```
 

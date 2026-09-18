@@ -52,6 +52,10 @@
 	"confirmationExporterPad": "Exportar un pad es útil para crear un archivo, una plantilla para compartir, etc. ¿Realmente quieres exportar este pad?",
 	"erreurCreationPad": "Error en la creación del pad.",
 	"erreurCommunicationServeur": "Error de comunicación con el servidor.",
+	"transfertExpire": "La ventana de transferencia de este pad ha caducado. Vuelve a activar la transferencia de propiedad en los ajustes del pad e inténtalo de nuevo.",
+	"transfertIncomplet": "La transferencia no se ha podido completar: algunos pads siguen perteneciendo a la cuenta de origen. Vuelve a cargar la página e inténtalo de nuevo.",
+	"limiteCompteDestination": "La cuenta de destino no puede recibir todos estos pads: se superaría el número máximo de pads ({limite}). La transferencia no se ha realizado.",
+	"suppressionIncomplete": "La eliminación no se ha podido completar. La cuenta se ha conservado para que puedas volver a intentarlo.",
 	"erreurSuppressionPad": "Error en la supresión del pad.",
 	"erreurDuplicationPad": "Erreur en la duplicación del pad.",
 	"erreurExportPad": "Error al exportar el pad.",
@@ -471,5 +475,8 @@
 	"transfertPropriete": "Transferencia de propiedad",
 	"parametreTransfertProprieteModifie": "Parámetro de transferencia de propiedad modificado.",
 	"transfererProprietePad": "Transferir la propiedad de este pad",
-	"texteTransfertPropriete": "Indique el identificador de la cuenta a la que desea transferir este pad. Esta acción es irreversible."
+	"texteTransfertPropriete": "Indique el identificador de la cuenta a la que desea transferir este pad. Esta acción es irreversible.",
+	"transfererProprieteCompte": "Transferir la propiedad",
+	"texteTransfertProprieteCompte": "Indique el identificador de la cuenta a la que desea transferir todos los pads que ha creado. Esta acción es irreversible.",
+	"proprieteCompteTransferee": "El contenido de su cuenta ha sido transferido."
 }

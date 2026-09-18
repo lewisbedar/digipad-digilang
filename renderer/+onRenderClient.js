@@ -1,6 +1,15 @@
 export { render as onRenderClient }
 
 import { createPageApp } from './app'
+import axios from 'axios'
+
+axios.interceptors.response.use(null, (err) => {
+	if (err.response?.status === 503 && err.response?.data === 'maintenance') {
+		window.location.href = '/maintenance'
+		return new Promise(() => {})
+	}
+	return Promise.reject(err)
+})
 
 function render (pageContext) {
 	if (pageContext.pageProps.hasOwnProperty('redirection')) {
@@ -23,7 +32,13 @@ if (process.env.NODE_ENV === 'production' && import.meta.env.VITE_MATOMO && impo
 	if (import.meta.env.VITE_MATOMO_SITE_ID && import.meta.env.VITE_MATOMO_SITE_ID !== '') {
 		matomoSiteId = import.meta.env.VITE_MATOMO_SITE_ID
 	}
+	const paq = window._paq = window._paq || []
+	paq.push(['trackPageView'])
+	paq.push(['enableLinkTracking'])
+	paq.push(['setTrackerUrl', matomo + 'matomo.php'])
+	paq.push(['setSiteId', String(matomoSiteId)])
 	const script = document.createElement('script')
-	script.innerHTML = "var _paq = window._paq = window._paq || []; _paq.push(['trackPageView']); _paq.push(['enableLinkTracking']); (function () { var u='" + matomo + "'; _paq.push(['setTrackerUrl', u+'matomo.php']); _paq.push(['setSiteId', '" + matomoSiteId + "']); var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0]; g.crossOrigin='anonymous'; g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s); })();"
+	script.async = true
+	script.src = matomo + 'matomo.js'
 	document.head.appendChild(script)
 }
