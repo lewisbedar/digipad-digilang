@@ -2,16 +2,14 @@
 # Déploiement en production avec Traefik
 set -eu
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")"
 
 if [ ! -f .env ]; then
 	echo "Fichier .env introuvable à la racine du projet." >&2
 	exit 1
 fi
 
-set -a
-. ./.env
-set +a
+DOMAIN=$(sed -n 's/\r$//; s/^[[:space:]]*DOMAIN=//p' .env | head -n 1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/")
 
 if [ -z "${DOMAIN:-}" ]; then
 	echo "DOMAIN n'est pas défini dans .env." >&2
