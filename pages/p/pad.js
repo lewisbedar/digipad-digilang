@@ -39,6 +39,7 @@ export default {
 			chargementPage: true,
 			chargement: false,
 			message: '',
+			messagesEnAttente: [],
 			notification: '',
 			modale: '',
 			titreModale: '',
@@ -127,6 +128,12 @@ export default {
 			padDestination: '',
 			colonneDestination: '',
 			integration: false,
+			derniersRenouvellements: {},
+			delaiEntreRenouvellements: 10000,
+			tentativesMaxRenouvellement: 3,
+			delaiOubliRenouvellements: 900000,
+			visionneusesEnCours: [],
+			urlVisionneuseDocument: '',
 			elementPrecedent: null,
 			hote: this.$pageContext.pageProps.hote,
 			hoteTeleversement: this.$pageContext.pageProps.hoteTeleversement,
@@ -574,6 +581,10 @@ export default {
 				return { backgroundColor: fond }
 			} else if (fond.includes('/img/')) {
 				return { backgroundImage: 'url(' + fond + ')' }
+			} else if (this.pad.fondUrl) {
+				return { backgroundImage: 'url(' + this.pad.fondUrl + ')' }
+			} else if (Object.hasOwn(this.pad, 'fondUrl')) {
+				return {}
 			} else {
 				return { backgroundImage: 'url(' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + fond + ')' }
 			}
@@ -641,10 +652,10 @@ export default {
 			if (item.hasOwnProperty('vignetteGeneree')) {
 				vignetteGeneree = item.vignetteGeneree
 			}
-			if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string' && (item.vignette.substring(0, 5) === '/img/' || (this.verifierURL(item.vignette) === true && !item.vignette.includes(this.lienPublicS3)))) {
+			if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string' && (item.vignette.substring(0, 5) === '/img/' || (this.verifierURL(item.vignette) === true && !this.verifierLienPublicS3(item.vignette)))) {
 				vignette = item.vignette
 			} else if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string') {
-				vignette = this.definirCheminFichiers() + '/' + this.pad.id + '/' + this.definirNomLienFichier(item.vignette)
+				vignette = item.vignetteUrl || (this.definirCheminFichiers() + '/' + this.pad.id + '/' + this.definirNomLienFichier(item.vignette))
 			} else if (vignetteGeneree === true && this.modale === 'bloc') {
 				vignette = item.fichier.replace(/\.[^/.]+$/, '') + '.jpg'
 			} else if (vignetteGeneree === true) {
@@ -1035,6 +1046,7 @@ export default {
 		},
 		ouvrirModaleBloc (mode, item, colonne) {
 			this.mode = mode
+			this.urlVisionneuseDocument = ''
 			if (mode === 'creation') {
 				this.titreModale = this.$t('ajouterCapsule')
 			} else {
@@ -1049,6 +1061,8 @@ export default {
 				this.iframe = item.iframe
 				this.type = item.type
 				this.source = item.source
+				this.rafraichirMedia(item)
+				this.preparerVisionneuse(item)
 				if (!item.hasOwnProperty('texte')) {
 					this.recupererBloc(item.bloc)
 				}
@@ -1232,7 +1246,7 @@ export default {
 				champ.click()
 			}
 		},
-		ajouterFichier (champ) {
+		async ajouterFichier (champ) {
 			const fichiersAutorises = this.fichiersAutorises.split(',').map((e) => { return e.trim().substring(1) })
 			if (champ.files && champ.files[0]) {
 				const extension = champ.files[0].name.substring(champ.files[0].name.lastIndexOf('.') + 1).toLowerCase()
@@ -1241,7 +1255,17 @@ export default {
 					const formulaire = new FormData()
 					formulaire.append('pad', this.pad.id)
 					formulaire.append('fichier', fichier)
+					let jeton
+					try {
+						jeton = await this.recupererJetonTeleversement('fichier', this.pad.id)
+					} catch (err) {
+						if (champ instanceof HTMLInputElement) { champ.value = '' }
+						this.progressionFichier = 0
+						this.message = this.definirMessageErreur(err)
+						return
+					}
 					axios.post(this.hoteTeleversement + '/api/televerser-fichier', formulaire, {
+						headers: { 'x-jeton-televersement': jeton },
 						onUploadProgress: (progression) => {
 							const pourcentage = parseInt(Math.round((progression.loaded * 100) / progression.total))
 							this.progressionFichier = pourcentage
@@ -1320,7 +1344,7 @@ export default {
 						} else if (err.response?.data === 'fichier_trop_volumineux') {
 							this.message = this.$t('tailleMaximale', { taille: this.limite })
 						} else {
-							this.message = this.$t('erreurCommunicationServeur')
+							this.message = this.definirMessageErreur(err)
 						}
 					})
 				} else {
@@ -1372,7 +1396,17 @@ export default {
 			const formulaire = new FormData()
 			formulaire.append('pad', this.pad.id)
 			formulaire.append('fichier', blob, 'enregistrement.mp3')
+			let jeton
+			try {
+				jeton = await this.recupererJetonTeleversement('audio', this.pad.id)
+			} catch (err) {
+				this.transcodage = false
+				this.progressionEnregistrement = false
+				this.message = this.definirMessageErreur(err)
+				return
+			}
 			axios.post(this.hoteTeleversement + '/api/televerser-audio', formulaire, {
+				headers: { 'x-jeton-televersement': jeton },
 				onUploadProgress: () => {
 					this.progressionEnregistrement = true
 				}
@@ -1397,8 +1431,10 @@ export default {
 					this.message = this.$t('erreurEspaceDisque')
 				} else if (err.response?.data === 'fichier_trop_volumineux') {
 					this.message = this.$t('tailleMaximale', { taille: this.limite })
+				} else if (err.response?.data === 'non_autorise') {
+					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1448,11 +1484,11 @@ export default {
 					})
 				} else if (this.verifierURL(this.lien) && !this.lien.match(/\.(jpeg|jpg|gif|png)$/)) {
 					this.chargementLien = true
-					axios.get('https://noembed.com/embed?url=' + encodeURIComponent(this.lien)).then((reponse) => {
+					axios.get('https://noembed.com/embed?url=' + encodeURIComponent(this.lien)).then(async (reponse) => {
 						let donnees = reponse.data
 						if (donnees.hasOwnProperty('error')) {
 							this.iframe = this.lien
-							this.$nextTick(() => {
+							this.$nextTick(async () => {
 								this.media = this.lien
 								this.source = 'web'
 								if (this.lien.includes('ladigitale.dev/digiquiz/')) {
@@ -1471,9 +1507,22 @@ export default {
 									const url = new URL(this.lien)
 									const domaine = url.hostname
 									const protocole = url.protocol
+									const utiliserVignetteParDefaut = () => {
+										this.vignette = this.definirVignette(donnees)
+										this.vignetteDefaut = this.definirVignette(donnees)
+										this.chargementVignette = false
+									}
+									let jeton
+									try {
+										jeton = await this.recupererJetonTeleversement('icone')
+									} catch {
+										return utiliserVignetteParDefaut()
+									}
 									axios.post(this.hoteTeleversement + '/api/recuperer-icone', {
 										domaine: domaine,
 										protocole: protocole
+									}, {
+										headers: { 'x-jeton-televersement': jeton }
 									}).then(async (reponse) => {
 										this.chargementVignette = false
 										if (reponse.data === '') {
@@ -1496,9 +1545,7 @@ export default {
 											}
 										}
 									}).catch(() => {
-										this.vignette = this.definirVignette(donnees)
-										this.vignetteDefaut = this.definirVignette(donnees)
-										this.chargementVignette = false
+										utiliserVignetteParDefaut()
 									})
 								} else if (this.vignette === '' && this.vignetteDefaut === '') {
 									this.vignette = this.definirVignette(donnees)
@@ -1664,7 +1711,7 @@ export default {
 				this.chargementLien = false
 			})
 		},
-		ajouterVignette () {
+		async ajouterVignette () {
 			const champ = document.querySelector('#televerser-vignette')
 			const formats = ['jpg', 'jpeg', 'png', 'gif']
 			if (champ.files && champ.files[0]) {
@@ -1674,7 +1721,15 @@ export default {
 					const formulaire = new FormData()
 					formulaire.append('pad', this.pad.id)
 					formulaire.append('fichier', fichier)
+					let jeton
+					try {
+						jeton = await this.recupererJetonTeleversement('vignette', this.pad.id)
+					} catch (err) {
+						this.message = this.definirMessageErreur(err)
+						return
+					}
 					axios.post(this.hoteTeleversement + '/api/televerser-vignette', formulaire, {
+						headers: { 'x-jeton-televersement': jeton },
 						onUploadProgress: (progression) => {
 							const pourcentage = parseInt(Math.round((progression.loaded * 100) / progression.total))
 							this.progressionVignette = pourcentage
@@ -1706,7 +1761,7 @@ export default {
 						} else if (err.response?.data === 'fichier_trop_volumineux') {
 							this.message = this.$t('tailleMaximale', { taille: 3 })
 						} else {
-							this.message = this.$t('erreurCommunicationServeur')
+							this.message = this.definirMessageErreur(err)
 						}
 					})
 				} else {
@@ -1895,7 +1950,7 @@ export default {
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}	
 					return
 				}
@@ -2002,265 +2057,286 @@ export default {
 			this.colonneDestination = ''
 			this.gererFocus()
 		},
-		afficherVisionneuse (item) {
-			if (!this.panneaux.map((e) => { return e.id }).includes('panneau_' + item.bloc)) {
-				this.elementPrecedent = (document.activeElement || document.body)
+		retirerVisionneuseEnCours (bloc) {
+			this.visionneusesEnCours = this.visionneusesEnCours.filter((e) => e !== bloc)
+		},
+		async afficherVisionneuse (item) {
+			if (!this.panneaux.map((e) => { return e.id }).includes('panneau_' + item.bloc) && !this.visionneusesEnCours.includes(item.bloc)) {
+				this.visionneusesEnCours.push(item.bloc)
 				const imageId = 'image-' + Date.now()
 				let html = ''
-				switch (item.type) {
-				case 'image':
-					html = '<span id="' + imageId + '" class="image"><img src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
-					break
-				case 'lien-image':
-					html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
-					break
-				case 'audio':
-					html = '<audio controls preload="metadata" src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '"></audio>'
-					break
-				case 'video':
-					html = '<video controls playsinline crossOrigin="anonymous" src="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '"></video>'
-					break
-				case 'pdf':
-					html = '<iframe src="/pdfjs/web/viewer.html?file=' + this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" allowfullscreen></iframe>'
-					break
-				case 'document':
-				case 'office':
-					html = '<iframe src="' + this.visionneuse + this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" allowfullscreen></iframe>'
-					break
-				case 'embed':
-					if (item.source === 'etherpad') {
-						html = '<iframe src="' + escapeHtml(item.media) + '?userName=' + encodeURIComponent(this.nom) + '" allowfullscreen></iframe>'
-					} else if (this.verifierURL(item.iframe)) {
-						html = '<iframe src="' + escapeHtml(item.iframe) + '" allow="autoplay; fullscreen"></iframe>'
-					} else {
-						html = '<div class="html">' + DOMPurify.sanitize(item.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] }) + '</div>'
+				let urlMedia = ''
+				let urlMediaHote = ''
+				try {
+					this.elementPrecedent = (document.activeElement || document.body)
+					await this.rafraichirMedia(item)
+					urlMedia = this.stockage === 's3' && item.mediaUrl ? item.mediaUrl : this.definirCheminFichiers() + '/' + this.pad.id + '/' + item.media
+					urlMediaHote = this.stockage === 's3' && item.mediaUrl ? item.mediaUrl : this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + item.media
+					if (item.type === 'document' || item.type === 'office') {
+						urlMediaHote = await this.definirLienFichierVisionneuse(item) || urlMediaHote
 					}
-					break
+					switch (item.type) {
+					case 'image':
+						html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(urlMedia) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
+						break
+					case 'lien-image':
+						html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
+						break
+					case 'audio':
+						html = '<audio controls preload="metadata" src="' + escapeHtml(urlMedia) + '"></audio>'
+						break
+					case 'video':
+						html = '<video controls playsinline crossOrigin="anonymous" src="' + escapeHtml(urlMedia) + '"></video>'
+						break
+					case 'pdf':
+						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse('/pdfjs/web/viewer.html?file=', urlMediaHote)) + '" allowfullscreen></iframe>'
+						break
+					case 'document':
+					case 'office':
+						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse(this.visionneuse, urlMediaHote)) + '" allowfullscreen></iframe>'
+						break
+					case 'embed':
+						if (item.source === 'etherpad') {
+							html = '<iframe src="' + escapeHtml(item.media) + '?userName=' + encodeURIComponent(this.nom) + '" allowfullscreen></iframe>'
+						} else if (this.verifierURL(item.iframe)) {
+							html = '<iframe src="' + escapeHtml(item.iframe) + '" allow="autoplay; fullscreen"></iframe>'
+						} else {
+							html = '<div class="html">' + DOMPurify.sanitize(item.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] }) + '</div>'
+						}
+						break
+					}
+				} catch (err) {
+					this.retirerVisionneuseEnCours(item.bloc)
+					throw err
 				}
 				this.$nextTick(() => {
-					let clipboardVisionneuse = null
-					let panzoomInstance = null
-					let panzoomTarget = null
-					let largeurPanneau = '320px'
-					let hauteurPanneau = '312px'
-					let position = 'center'
-					if (document.querySelector('#page').offsetWidth > 1023) {
-						largeurPanneau = '948px'
-						hauteurPanneau = '940px'
-						position = { my: 'center', at: 'center', offsetX: this.convertirRem(2), offsetY: this.convertirRem(2) }
-					} else if (document.querySelector('#page').offsetWidth < 1024 && document.querySelector('#page').offsetWidth > 359) {
-						largeurPanneau = document.querySelector('#page').offsetWidth - this.convertirRem(7) + 'px'
-						hauteurPanneau = '500px'
-						if (parseInt(largeurPanneau, 10) < 328) {
-							largeurPanneau = '328px'
+					try {
+						let clipboardVisionneuse = null
+						let panzoomInstance = null
+						let panzoomTarget = null
+						let largeurPanneau = '320px'
+						let hauteurPanneau = '312px'
+						let position = 'center'
+						if (document.querySelector('#page').offsetWidth > 1023) {
+							largeurPanneau = '948px'
+							hauteurPanneau = '940px'
+							position = { my: 'center', at: 'center', offsetX: this.convertirRem(2), offsetY: this.convertirRem(2) }
+						} else if (document.querySelector('#page').offsetWidth < 1024 && document.querySelector('#page').offsetWidth > 359) {
+							largeurPanneau = document.querySelector('#page').offsetWidth - this.convertirRem(7) + 'px'
+							hauteurPanneau = '500px'
+							if (parseInt(largeurPanneau, 10) < 328) {
+								largeurPanneau = '328px'
+							}
+							position = { my: 'center', at: 'center', offsetX: this.convertirRem(2), offsetY: this.convertirRem(2) }
 						}
-						position = { my: 'center', at: 'center', offsetX: this.convertirRem(2), offsetY: this.convertirRem(2) }
-					}
-					if (parseInt(hauteurPanneau, 10) > (document.querySelector('#page').offsetHeight - this.convertirRem(7))) {
-						hauteurPanneau = document.querySelector('#page').offsetHeight - this.convertirRem(7) + 'px'
-					}
-					const snapOptions = this.definirOptionsSnap()
-					const panneau = jsPanel.create({
-						id: 'panneau_' + item.bloc,
-						animateIn: 'jsPanelFadeIn',
-						animateOut: 'jsPanelFadeOut',
-						iconfont: 'material-icons',
-						closeOnEscape: true,
-						border: '4px solid ' + item.couleur,
-						headerTitle: item.titre,
-						position: position,
-						maximizedMargin: 0,
-						syncMargins: true,
-						resizeit: {
-							minWidth: 200,
-							minHeight: 150
-						},
-						panelSize: {
-							width: largeurPanneau,
-							height: hauteurPanneau
-						},
-						content: html,
-						callback: (panel) => {
-							panel.setControlStatus('normalize', 'hide')
-							panel.setControlStatus('minimize', 'remove')
-							document.querySelector('#masque').classList.add('ouvert')
-							if (item.type === 'image' || item.type === 'lien-image') {
-								document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
-								const image = document.querySelector('#' + imageId)
-								const panzoom = Panzoom(image, {
-									maxScale: 10,
-									minScale: 0.5,
-									panOnlyWhenZoomed: true
-								})
-								image.parentElement.addEventListener('wheel', panzoom.zoomWithWheel)
-								panzoomInstance = panzoom
-								panzoomTarget = image.parentElement
-								panel.addControl({
-									html: '<span class="material-icons">adjust</span>',
-									name: 'dezoom',
-									ariaLabel: this.$t('recentrer'),
-									handler: () => {
-										document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
-										panzoom.reset()
-									},
-									afterInsert: (control) => {
-										control.title = this.$t('recentrer')
-									}
-								})
-								panel.querySelector('.jsPanel-btn-dezoom').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
-										panzoom.reset()
-									}
-								})
-							} else if (item.type === 'audio') {
-								panel.resize({
-									width: largeurPanneau,
-									height: '150px'
-								}).reposition()
-								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
-									name: 'telecharger',
-									handler: () => {}
-								})
-							} else if (item.type === 'embed') {
-								panel.addControl({
-									html: '<span class="material-icons">link</span>',
-									name: 'copier-lien',
-									ariaLabel: this.$t('copierLien'),
-									handler: () => {},
-									afterInsert: (control) => {
-										control.title = this.$t('copierLien')
-										let lien
-										if (item.source === 'etherpad') {
-											lien = item.media
-										} else if (this.verifierURL(item.iframe)) {
-											lien = item.iframe
-										} else {
-											lien = (item.iframe.match(/<iframe [^>]*src="[^"]*"[^>]*>/g) || []).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0] || ''
+						if (parseInt(hauteurPanneau, 10) > (document.querySelector('#page').offsetHeight - this.convertirRem(7))) {
+							hauteurPanneau = document.querySelector('#page').offsetHeight - this.convertirRem(7) + 'px'
+						}
+						const snapOptions = this.definirOptionsSnap()
+						const panneau = jsPanel.create({
+							id: 'panneau_' + item.bloc,
+							animateIn: 'jsPanelFadeIn',
+							animateOut: 'jsPanelFadeOut',
+							iconfont: 'material-icons',
+							closeOnEscape: true,
+							border: '4px solid ' + item.couleur,
+							headerTitle: item.titre,
+							position: position,
+							maximizedMargin: 0,
+							syncMargins: true,
+							resizeit: {
+								minWidth: 200,
+								minHeight: 150
+							},
+							panelSize: {
+								width: largeurPanneau,
+								height: hauteurPanneau
+							},
+							content: html,
+							callback: (panel) => {
+								panel.setControlStatus('normalize', 'hide')
+								panel.setControlStatus('minimize', 'remove')
+								document.querySelector('#masque').classList.add('ouvert')
+								if (item.type === 'image' || item.type === 'lien-image') {
+									document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
+									const image = document.querySelector('#' + imageId)
+									const panzoom = Panzoom(image, {
+										maxScale: 10,
+										minScale: 0.5,
+										panOnlyWhenZoomed: true
+									})
+									image.parentElement.addEventListener('wheel', panzoom.zoomWithWheel)
+									panzoomInstance = panzoom
+									panzoomTarget = image.parentElement
+									panel.addControl({
+										html: '<span class="material-icons">adjust</span>',
+										name: 'dezoom',
+										ariaLabel: this.$t('recentrer'),
+										handler: () => {
+											document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
+											panzoom.reset()
+										},
+										afterInsert: (control) => {
+											control.title = this.$t('recentrer')
 										}
-										clipboardVisionneuse = new ClipboardJS(panel.querySelector('.jsPanel-btn-copier-lien'), {
-											text: () => {
-												return lien
+									})
+									panel.querySelector('.jsPanel-btn-dezoom').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
+											panzoom.reset()
+										}
+									})
+								} else if (item.type === 'audio') {
+									panel.resize({
+										width: largeurPanneau,
+										height: '150px'
+									}).reposition()
+									panel.addControl({
+										html: '<a class="material-icons telecharger" download href="' + escapeHtml(urlMedia) + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
+										name: 'telecharger',
+										handler: () => {}
+									})
+								} else if (item.type === 'embed') {
+									panel.addControl({
+										html: '<span class="material-icons">link</span>',
+										name: 'copier-lien',
+										ariaLabel: this.$t('copierLien'),
+										handler: () => {},
+										afterInsert: (control) => {
+											control.title = this.$t('copierLien')
+											let lien
+											if (item.source === 'etherpad') {
+												lien = item.media
+											} else if (this.verifierURL(item.iframe)) {
+												lien = item.iframe
+											} else {
+												lien = (item.iframe.match(/<iframe [^>]*src="[^"]*"[^>]*>/g) || []).map(x => x.replace(/.*src="([^"]*)".*/, '$1'))[0] || ''
 											}
-										})
-										clipboardVisionneuse.on('success', () => {
-											panel.querySelector('.jsPanel-btn-copier-lien')?.focus()
-											this.notification = this.$t('lienCopie')
-										})
-									}
-								})
-								panel.querySelector('.jsPanel-btn-copier-lien').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										e.target.click()
-									}
-								})
-							} else if (item.type === 'pdf' || item.type === 'document' || item.type === 'office') {
-								panel.addControl({
-									html: '<a class="material-icons telecharger" download href="' + this.definirCheminFichiers() + '/' + this.pad.id + '/' + escapeHtml(item.media) + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
-									name: 'telecharger',
-									handler: () => {}
-								})
-							}
-							if (panel.querySelector('.jsPanel-btn-smallify')) {
-								panel.querySelector('.jsPanel-btn-smallify').title = this.$t('plier')
-								panel.querySelector('.jsPanel-btn-smallify').ariaLabel = this.$t('plier')
-								panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										if (panel.status === 'smallified') {
-											panel.unsmallify()
-										} else {
-											panel.smallify()
+											clipboardVisionneuse = new ClipboardJS(panel.querySelector('.jsPanel-btn-copier-lien'), {
+												text: () => {
+													return lien
+												}
+											})
+											clipboardVisionneuse.on('success', () => {
+												panel.querySelector('.jsPanel-btn-copier-lien')?.focus()
+												this.notification = this.$t('lienCopie')
+											})
 										}
-									}
-								})
+									})
+									panel.querySelector('.jsPanel-btn-copier-lien').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											e.target.click()
+										}
+									})
+								} else if (item.type === 'pdf' || item.type === 'document' || item.type === 'office') {
+									panel.addControl({
+										html: '<a class="material-icons telecharger" download href="' + escapeHtml(urlMedia) + '" target="_blank" title="' + this.$t('telecharger') + '" aria-label="' + this.$t('telecharger') + '">file_download</a>',
+										name: 'telecharger',
+										handler: () => {}
+									})
+								}
+								if (panel.querySelector('.jsPanel-btn-smallify')) {
+									panel.querySelector('.jsPanel-btn-smallify').title = this.$t('plier')
+									panel.querySelector('.jsPanel-btn-smallify').ariaLabel = this.$t('plier')
+									panel.querySelector('.jsPanel-btn-smallify').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											if (panel.status === 'smallified') {
+												panel.unsmallify()
+											} else {
+												panel.smallify()
+											}
+										}
+									})
+								}
+								if (panel.querySelector('.jsPanel-btn-normalize')) {
+									panel.querySelector('.jsPanel-btn-normalize').title = this.$t('normaliser')
+									panel.querySelector('.jsPanel-btn-normalize').ariaLabel = this.$t('normaliser')
+									panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											panel.normalize()
+											panel.querySelector('.jsPanel-btn-maximize')?.focus()
+										}
+									})
+								}
+								if (panel.querySelector('.jsPanel-btn-maximize')) {
+									panel.querySelector('.jsPanel-btn-maximize').title = this.$t('maximiser')
+									panel.querySelector('.jsPanel-btn-maximize').ariaLabel = this.$t('maximiser')
+									panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											panel.maximize()
+											panel.querySelector('.jsPanel-btn-normalize')?.focus()
+										}
+									})
+								}
+								if (panel.querySelector('.jsPanel-btn-close')) {
+									panel.querySelector('.jsPanel-btn-close').title = this.$t('fermer')
+									panel.querySelector('.jsPanel-btn-close').ariaLabel = this.$t('fermer')
+									panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', (e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault()
+											e.stopPropagation()
+											panel.close()
+										}
+									})
+								}
+							},
+							onmaximized: (panel) => {
+								if (item.type === 'image' || item.type === 'lien-image') {
+									document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
+								}
+							},
+							onbeforeclose: (panel) => {
+								if (clipboardVisionneuse) {
+									clipboardVisionneuse.destroy()
+									clipboardVisionneuse = null
+								}
+								const panneaux = document.querySelectorAll('.jsPanel')
+								if (document.querySelector('#masque') && panneaux.length === 1) {
+									document.querySelector('#masque').classList.remove('ouvert')
+								}
+								const indexPanneau = this.panneaux.findIndex(panneau => panneau.id === panel.id)
+								if (indexPanneau !== -1) {
+									this.panneaux.splice(indexPanneau, 1)
+								}
+								if (panzoomTarget && panzoomInstance) {
+									panzoomTarget.removeEventListener('wheel', panzoomInstance.zoomWithWheel)
+									panzoomInstance = null
+									panzoomTarget = null
+								}
+								if (this.panneaux.length === 0) {
+									this.gererFocus()
+								} else {
+									this.$nextTick(() => {
+										const id = this.panneaux[this.panneaux.length - 1].id
+										if (id) {
+											this.elementPrecedent = document.querySelector('#' + id.replace('panneau_', '')) || document.body
+											document.querySelector('#' + id + ' .jsPanel-btn-close')?.focus()
+										}
+									})
+								}
+								return true
+							},
+							dragit: {
+								snap: snapOptions
 							}
-							if (panel.querySelector('.jsPanel-btn-normalize')) {
-								panel.querySelector('.jsPanel-btn-normalize').title = this.$t('normaliser')
-								panel.querySelector('.jsPanel-btn-normalize').ariaLabel = this.$t('normaliser')
-								panel.querySelector('.jsPanel-btn-normalize').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										panel.normalize()
-										panel.querySelector('.jsPanel-btn-maximize')?.focus()
-									}
-								})
-							}
-							if (panel.querySelector('.jsPanel-btn-maximize')) {
-								panel.querySelector('.jsPanel-btn-maximize').title = this.$t('maximiser')
-								panel.querySelector('.jsPanel-btn-maximize').ariaLabel = this.$t('maximiser')
-								panel.querySelector('.jsPanel-btn-maximize').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										panel.maximize()
-										panel.querySelector('.jsPanel-btn-normalize')?.focus()
-									}
-								})
-							}
-							if (panel.querySelector('.jsPanel-btn-close')) {
-								panel.querySelector('.jsPanel-btn-close').title = this.$t('fermer')
-								panel.querySelector('.jsPanel-btn-close').ariaLabel = this.$t('fermer')
-								panel.querySelector('.jsPanel-btn-close').addEventListener('keydown', (e) => {
-									if (e.key === 'Enter' || e.key === ' ') {
-										e.preventDefault()
-										e.stopPropagation()
-										panel.close()
-									}
-								})
-							}
-						},
-						onmaximized: (panel) => {
-							if (item.type === 'image' || item.type === 'lien-image') {
-								document.querySelector('#' + imageId + ' img').style.maxHeight = document.querySelector('#' + panel.id + ' .jsPanel-content').clientHeight + 'px'
-							}
-						},
-						onbeforeclose: (panel) => {
-							if (clipboardVisionneuse) {
-								clipboardVisionneuse.destroy()
-								clipboardVisionneuse = null
-							}
-							const panneaux = document.querySelectorAll('.jsPanel')
-							if (document.querySelector('#masque') && panneaux.length === 1) {
-								document.querySelector('#masque').classList.remove('ouvert')
-							}
-							const indexPanneau = this.panneaux.findIndex(panneau => panneau.id === panel.id)
-							if (indexPanneau !== -1) {
-								this.panneaux.splice(indexPanneau, 1)
-							}
-							if (panzoomTarget && panzoomInstance) {
-								panzoomTarget.removeEventListener('wheel', panzoomInstance.zoomWithWheel)
-								panzoomInstance = null
-								panzoomTarget = null
-							}
-							if (this.panneaux.length === 0) {
-								this.gererFocus()
-							} else {
-								this.$nextTick(() => {
-									const id = this.panneaux[this.panneaux.length - 1].id
-									if (id) {
-										this.elementPrecedent = document.querySelector('#' + id.replace('panneau_', '')) || document.body
-										document.querySelector('#' + id + ' .jsPanel-btn-close')?.focus()
-									}
-								})
-							}
-							return true
-						},
-						dragit: {
-							snap: snapOptions
-						}
-					})
-					this.panneaux.push(panneau)
-					this.$nextTick(() => {
-						document.querySelector('#panneau_' + item.bloc + ' .jsPanel-btn-close')?.focus()
-					})
+						})
+						this.panneaux.push(panneau)
+						this.$nextTick(() => {
+							document.querySelector('#panneau_' + item.bloc + ' .jsPanel-btn-close')?.focus()
+						})
+					} finally {
+						this.retirerVisionneuseEnCours(item.bloc)
+					}
 				})
 			}
 		},
@@ -2396,6 +2472,7 @@ export default {
 				this.menu = ''
 				this.elementPrecedent = (document.activeElement || document.body)
 				this.modaleDiaporama = true
+				this.rafraichirMediaDiaporama()
 				this.$nextTick(() => {
 					document.querySelector('#diapositive').addEventListener('keydown', this.activerClavierDiaporama)
 					document.querySelector('#diapositive').addEventListener('click', this.gererFocusCommentaires)
@@ -2462,6 +2539,7 @@ export default {
 				this.donneesBloc = this.colonnes[indexColonne][indexBloc]
 			}
 			this.definirBlocActif(this.donneesBloc.bloc)
+			this.rafraichirMediaDiaporama()
 			if (!this.donneesBloc.hasOwnProperty('texte')) {
 				this.recupererBloc(this.donneesBloc.bloc)
 			}
@@ -2521,6 +2599,7 @@ export default {
 				this.donneesBloc = this.colonnes[indexColonne][indexBloc]
 			}
 			this.definirBlocActif(this.donneesBloc.bloc)
+			this.rafraichirMediaDiaporama()
 			if (!this.donneesBloc.hasOwnProperty('texte')) {
 				this.recupererBloc(this.donneesBloc.bloc)
 			}
@@ -2678,7 +2757,7 @@ export default {
 					if (err.response?.data === 'identifiant_non_valide') {
 						this.message = this.$t('identifiantNonValide')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -3230,7 +3309,7 @@ export default {
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -3329,6 +3408,7 @@ export default {
 					this.pad.affichage = donnees.pad.affichage
 					this.pad.colonnes = donnees.pad.colonnes
 					this.pad.affichageColonnes = donnees.pad.affichageColonnes
+					this.pad.fondUrl = donnees.pad.fondUrl
 					if (this.pad.affichage === 'colonnes') {
 						this.definirColonnes(this.blocs)
 						if (!this.mobile) {
@@ -3345,7 +3425,7 @@ export default {
 					if (err.response?.data?.message === 'code_incorrect') {
 						this.message = this.$t('codePasCorrect')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -3394,7 +3474,7 @@ export default {
 				this.chargement = true
 			}
 		},
-		ajouterFond () {
+		async ajouterFond () {
 			const champ = document.querySelector('#televerser-fond')
 			const formats = ['jpg', 'jpeg', 'png', 'gif']
 			if (champ.files && champ.files[0]) {
@@ -3405,7 +3485,16 @@ export default {
 					const formulaire = new FormData()
 					formulaire.append('pad', this.pad.id)
 					formulaire.append('fichier', fichier)
+					let jeton
+					try {
+						jeton = await this.recupererJetonTeleversement('fond', this.pad.id)
+					} catch (err) {
+						this.chargement = false
+						this.message = this.definirMessageErreur(err)
+						return
+					}
 					axios.post(this.hoteTeleversement + '/api/televerser-fond', formulaire, {
+						headers: { 'x-jeton-televersement': jeton },
 						onUploadProgress: (progression) => {
 							const pourcentage = parseInt(Math.round((progression.loaded * 100) / progression.total))
 							this.progressionFond = pourcentage
@@ -3427,8 +3516,10 @@ export default {
 							this.message = this.$t('erreurEspaceDisque')
 						} else if (err.response?.data === 'fichier_trop_volumineux') {
 							this.message = this.$t('tailleMaximale', { taille: 3 })
+						} else if (err.response?.data === 'non_autorise') {
+							this.message = this.$t('actionNonAutorisee')
 						} else {
-							this.message = this.$t('erreurCommunicationServeur')
+							this.message = this.definirMessageErreur(err)
 						}
 					})
 				} else {
@@ -3658,8 +3749,8 @@ export default {
 			axios.post(this.hote + '/api/deconnexion').then(() => {
 				this.$socket.emit('deconnexion', identifiant)
 				window.location.replace('/')
-			}).catch(() => {
-				this.message = this.$t('erreurCommunicationServeur')
+			}).catch((err) => {
+				this.message = this.definirMessageErreur(err)
 			})
 		},
 		afficherModaleModifierMotDePasse () {
@@ -3691,7 +3782,7 @@ export default {
 					} else if (err.response?.data === 'motdepasse_incorrect') {
 						this.message = this.$t('motDePasseActuelPasCorrect')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else {
@@ -3757,7 +3848,7 @@ export default {
 				if (err.response?.data?.message === 'motdepasse_incorrect') {
 					this.message = this.$t('motDePassePasCorrect')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -3784,9 +3875,9 @@ export default {
 				identifiant: this.identifiant
 			}).then(() => {
 				window.location.reload()
-			}).catch(() => {
+			}).catch((err) => {
 				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
+				this.message = this.definirMessageErreur(err)
 			})
 		},
 		afficherExporterPad () {
@@ -3817,7 +3908,7 @@ export default {
 				} else if (err.response?.data === 'pad_inexistant') {
 					this.message = this.$t('padInexistant')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -3872,7 +3963,7 @@ export default {
 				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -3904,7 +3995,7 @@ export default {
 				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -3936,6 +4027,7 @@ export default {
 					return this.definirCheminFichiers() + '/temp/' + media
 				}
 			}
+			if (this.donneesBloc.mediaUrl) return this.donneesBloc.mediaUrl
 			return this.definirCheminFichiers() + '/' + id + '/' + media
 		},
 		definirLienFichierHote (id, media) {
@@ -3946,6 +4038,7 @@ export default {
 					return this.definirCheminFichiers() + '/temp/' + media
 				}
 			} else if (this.mode === 'edition' && this.donneesBloc.media === media) {
+				if (this.donneesBloc.mediaUrl) return this.donneesBloc.mediaUrl
 				if (this.stockage === 'fs') {
 					return this.hote + '/fichiers/' + id + '/' + media
 				} else {
@@ -3954,7 +4047,7 @@ export default {
 			}
 		},
 		definirLienVignette (id, vignette) {
-			if (vignette.substring(0, 5) === '/img/' || (this.verifierURL(vignette) && !vignette.includes(this.lienPublicS3))) {
+			if (vignette.substring(0, 5) === '/img/' || (this.verifierURL(vignette) && !this.verifierLienPublicS3(vignette))) {
 				return vignette
 			} else if ((this.mode === 'creation') || (this.mode === 'edition' && this.definirNomLienFichier(this.donneesBloc.vignette) !== this.definirNomLienFichier(vignette))) {
 				if (this.stockage === 'fs') {
@@ -3963,6 +4056,7 @@ export default {
 					return this.definirCheminFichiers() + '/temp/' + vignette
 				}
 			}
+			if (this.donneesBloc.vignetteUrl) return this.donneesBloc.vignetteUrl
 			return this.definirCheminFichiers() + '/' + id + '/' + vignette
 		},
 		definirCheminFichiers () {
@@ -3978,6 +4072,121 @@ export default {
 			} else {
 				return this.hote + '/fichiers'
 			}
+		},
+		definirLienVisionneuse (base, url) {
+			if (!url) return 'about:blank'
+			return base + encodeURIComponent(url)
+		},
+		async recupererLienFichier (idPad, fichier, telechargement = false, bloc = '', visionneuse = false) {
+			const reponse = await axios.post(this.hote + '/api/generer-lien-fichier', { pad: idPad, fichier, telechargement, bloc, visionneuse })
+			return reponse.data.url
+		},
+		async definirLienFichierVisionneuse (item) {
+			if (this.stockage !== 'fs' || this.pad.acces === 'public' || !item || !item.media) return null
+			try {
+				const url = await this.recupererLienFichier(this.pad.id, item.media, false, item.bloc, true)
+				return url ? this.hote + url : null
+			} catch {
+				return null
+			}
+		},
+		async preparerVisionneuse (item) {
+			this.urlVisionneuseDocument = ''
+			if (this.visionneuse === '' || !item || (item.type !== 'document' && item.type !== 'office')) return
+			const url = await this.definirLienFichierVisionneuse(item)
+			if (url && this.donneesBloc.bloc === item.bloc) this.urlVisionneuseDocument = url
+		},
+		definirLienDocumentVisionneuse () {
+			if (this.urlVisionneuseDocument !== '') return this.urlVisionneuseDocument
+			return this.stockage === 's3' && this.donneesBloc.mediaUrl ? this.donneesBloc.mediaUrl : this.definirCheminFichiersHote() + '/' + this.pad.id + '/' + this.donneesBloc.media
+		},
+		definirLienModaleVisionneuse () {
+			if (!this.verifierFichierTemporaire(this.media) && this.urlVisionneuseDocument !== '') return this.urlVisionneuseDocument
+			return this.definirLienFichierHote(this.pad.id, this.media)
+		},
+		async recupererJetonTeleversement (action, pad = '') {
+			const reponse = await axios.post(this.hote + '/api/generer-jeton-televersement', { action, pad })
+			return reponse.data.jeton
+		},
+		verifierLienPublicS3 (url) {
+			return typeof this.lienPublicS3 === 'string' && this.lienPublicS3 !== '' && url.startsWith(this.lienPublicS3)
+		},
+		verifierLienPermanent () {
+			return this.stockage !== 's3' || this.pad.acces === 'public'
+		},
+		verifierFichierDuMur (item, champ) {
+			if (champ === 'vignette') {
+				const vignette = item.vignette
+				if (!vignette || typeof vignette !== 'string') return false
+				return !(vignette.substring(0, 5) === '/img/' || (this.verifierURL(vignette) === true && !this.verifierLienPublicS3(vignette)))
+			}
+			return !['embed', 'lien', 'lien-image'].includes(item.type)
+		},
+		async rafraichirUrlFichier (item, champ) {
+			if (this.stockage !== 's3' || !item) return
+			const champUrl = champ === 'vignette' ? 'vignetteUrl' : 'mediaUrl'
+			const fichier = champ === 'vignette' ? this.definirNomLienFichier(item.vignette) : item.media
+			if (!fichier || !this.verifierFichierDuMur(item, champ)) return
+			if (this.verifierLienPermanent() && (!item[champUrl] || item[champUrl] === this.definirCheminFichiers() + '/' + this.pad.id + '/' + fichier)) return
+			const cle = fichier + ':' + champ
+			const maintenant = Date.now()
+			let suivi = this.derniersRenouvellements[cle]
+			if (suivi && maintenant - suivi.date > this.delaiOubliRenouvellements) suivi = null
+			if (suivi) {
+				if (maintenant - suivi.date < this.delaiEntreRenouvellements) return
+				if (suivi.tentatives >= this.tentativesMaxRenouvellement) return
+				suivi.date = maintenant
+				suivi.tentatives++
+			} else {
+				this.derniersRenouvellements[cle] = { date: maintenant, tentatives: 1 }
+			}
+			try {
+				const url = await this.recupererLienFichier(this.pad.id, fichier, false, item.bloc)
+				if (url) item[champUrl] = url
+			} catch {}
+		},
+		async rafraichirUrlFond () {
+			const fond = this.pad.fond
+			if (this.stockage !== 's3' || !fond || typeof fond !== 'string' || fond === '' || fond.includes('/img/') || fond.substring(0, 1) === '#') return
+			try {
+				this.pad.fondUrl = await this.recupererLienFichier(this.pad.id, this.definirNomLienFichier(fond))
+			} catch {}
+		},
+		definirLienTelechargement (idPad, item) {
+			if (this.stockage === 's3' && item.mediaUrl) return item.mediaUrl
+			return this.definirCheminFichiers() + '/' + idPad + '/' + item.media
+		},
+		async rafraichirMedia (item) {
+			if (this.verifierLienPermanent() || !item || !item.media) return
+			if (!this.verifierFichierDuMur(item, 'media')) return
+			try {
+				const url = await this.recupererLienFichier(this.pad.id, item.media, false, item.bloc)
+				if (url) item.mediaUrl = url
+			} catch {}
+		},
+		async rafraichirMediaDiaporama () {
+			if (!['pdf', 'office', 'document'].includes(this.donneesBloc.type)) return
+			await this.rafraichirMedia(this.donneesBloc)
+			await this.preparerVisionneuse(this.donneesBloc)
+		},
+		async envoyerTelechargement (evenement, idPad, media, bloc) {
+			evenement.preventDefault()
+			try {
+				window.location.href = await this.recupererLienFichier(idPad, media, true, bloc)
+			} catch (err) {
+				this.message = this.definirMessageErreur(err)
+			}
+		},
+		async telechargerFichier (evenement, idPad, item) {
+			if (this.verifierLienPermanent()) return
+			await this.envoyerTelechargement(evenement, idPad, item.media, item.bloc)
+		},
+		verifierFichierTemporaire (media) {
+			return this.mode === 'creation' || (this.mode === 'edition' && this.donneesBloc.media !== media)
+		},
+		async telechargerFichierModale (evenement, media) {
+			if (this.verifierLienPermanent() || this.verifierFichierTemporaire(media)) return
+			await this.envoyerTelechargement(evenement, this.pad.id, media, this.donneesBloc.bloc)
 		},
 		quitterPage () {
 			this.$socket.emit('sortie', this.pad.id, this.identifiant)
@@ -4073,7 +4282,20 @@ export default {
 			this.modale = ''
 			this.gererFocus()
 		},
+		empilerMessage (texte) {
+			if (texte === '' || texte === this.message || this.messagesEnAttente.includes(texte)) return
+			if (this.message === '') {
+				this.message = texte
+			} else {
+				this.messagesEnAttente.push(texte)
+			}
+		},
 		fermerMessage () {
+			const suivant = this.messagesEnAttente.shift()
+			if (suivant) {
+				this.message = suivant
+				return
+			}
 			this.message = ''
 			this.gererFocus()
 		},
@@ -4341,6 +4563,7 @@ export default {
 					this.activite = donnees.activite
 					this.pad.colonnes = donnees.pad.colonnes
 					this.pad.affichageColonnes = donnees.pad.affichageColonnes
+					this.pad.fondUrl = donnees.pad.fondUrl
 					if (this.pad.affichage === 'colonnes') {
 						this.definirColonnes(this.blocs)
 						if (!this.mobile) {
@@ -4465,7 +4688,7 @@ export default {
 							if (donnees.visibilite === 'privee' && !this.admin) {
 								this.colonnes[indexColonne].splice(indexBlocColonne, 1)
 							} else {
-								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
+								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
 							}
 						}
 					}
@@ -4476,7 +4699,7 @@ export default {
 						if (donnees.visibilite === 'privee' && !this.admin) {
 							this.blocs.splice(indexBloc, 1)
 						} else {
-							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
+							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
 						}
 					}
 					if (donnees.hasOwnProperty('activiteId')) {
@@ -4499,9 +4722,11 @@ export default {
 					item.titre = donnees.titre
 					item.texte = donnees.texte
 					item.media = donnees.media
+					item.mediaUrl = donnees.mediaUrl
 					item.alt = donnees.alt
 					item.iframe = donnees.iframe
 					item.vignette = donnees.vignette
+					item.vignetteUrl = donnees.vignetteUrl
 				}
 				this.mettreAJourBloc(donnees.bloc, verifierBloc)
 				if (this.modaleDiaporama && this.donneesBloc.bloc === donnees.bloc) {
@@ -4795,11 +5020,16 @@ export default {
 			})
 
 			this.$socket.on('modifiercodeacces', (code, identifiant) => {
-				this.pad.code = code
 				this.chargement = false
 				this.modificationCode = false
-				if (this.admin && this.identifiant === identifiant) {
-					this.notification = this.$t('codeAccesModifie')
+				if (this.admin) {
+					this.pad.code = code
+					if (this.identifiant === identifiant) {
+						this.notification = this.$t('codeAccesModifie')
+					}
+				} else if (this.pad.acces === 'code') {
+					this.$socket.emit('sortie', this.pad.id, this.identifiant)
+					window.location.reload()
 				}
 			})
 
@@ -4827,18 +5057,36 @@ export default {
 			this.$socket.on('modifieracces', (acces, code) => {
 				this.pad.acces = acces
 				this.chargement = false
+				this.rafraichirUrlFond()
 				if (this.admin) {
 					if (acces === 'code') {
 						this.pad.code = code
 						this.codeVisible = true
 					}
 					this.notification = this.$t('accesPadModifie')
-				} else {
+				} else if (acces !== 'public') {
+					this.$socket.emit('sortie', this.pad.id, this.identifiant)
 					if (acces === 'prive') {
-						this.$socket.emit('sortie', this.pad.id, this.identifiant)
 						window.location.replace('/')
+					} else {
+						window.location.reload()
 					}
 				}
+			})
+
+			this.$socket.on('erreurevacuation', () => {
+				this.chargement = false
+				this.empilerMessage(this.$t('erreurEvacuationVisiteurs'))
+			})
+
+			this.$socket.on('synchronisationfichiers', (acces) => {
+				this.chargement = false
+				this.empilerMessage(acces === 'public' ? this.$t('synchronisationFichiersEnCours') : this.$t('synchronisationFichiersFermetureEnCours'))
+			})
+
+			this.$socket.on('erreurfichiers', (nombre) => {
+				this.chargement = false
+				this.empilerMessage(nombre > 0 ? this.$t('erreurSynchronisationFichiers', { nombre }) : this.$t('erreurSynchronisationFichiersIncomplete'))
 			})
 
 			this.$socket.on('modifiercontributions', (contributions, contributionsPrecedentes, identifiant) => {
@@ -4904,8 +5152,9 @@ export default {
 				}
 			})
 
-			this.$socket.on('modifierfond', (fond, identifiant) => {
+			this.$socket.on('modifierfond', (fond, identifiant, fondUrl) => {
 				this.pad.fond = fond
+				this.pad.fondUrl = fondUrl
 				this.chargerImages('#pad', () => {
 					this.chargement = false
 					if (this.admin && this.identifiant === identifiant) {

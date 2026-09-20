@@ -8,7 +8,8 @@ import archiver from 'archiver'
 import checkDiskSpace from 'check-disk-space'
 import { randomBytes } from 'crypto'
 import { pipeline } from 'stream/promises'
-import { CopyObjectCommand, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { CopyObjectCommand, PutObjectCommand, PutObjectAclCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import genererHTML from './genererHTML.js'
 import { etat } from './etat.js'
 import {
@@ -34,8 +35,10 @@ import {
 	tailleLotTransaction,
 	verifierActiviteVisible,
 	verifierBlocVisible,
+	verifierColonneMasquee,
 	verifierDomaineEmail,
 	verifierFormatEmail,
+	verifierIdentifiantBlocExistant,
 	verifierIdentifiantPad,
 	verifierURL
 } from './fonctions.js'
@@ -63,6 +66,7 @@ export default function creerFonctions ({
 	langueParDefaut,
 	minimumEspaceDisque,
 	fenetreEchecsConnexionParIdentifiant,
+	limiteEchecsCodeAdresse,
 	salonMaintenance
 }) {
 	async function enregistrerTentativeConnexion (identifiant, ip) {
@@ -221,9 +225,32 @@ export default function creerFonctions ({
 		return 'pad_ajoute_dans_db'
 	}
 
-	async function recupererDonneesUtilisateur (identifiant) {
+	function definirAdministrateursPad (donneesPad) {
+		const administrateurs = []
+		if (donneesPad.identifiant) administrateurs.push(donneesPad.identifiant)
+		if (!donneesPad.hasOwnProperty('admins')) return administrateurs
+		try {
+			let admins = donneesPad.admins
+			if (typeof admins === 'string') admins = admins.substring(0, 2) === '"\\' ? [] : JSON.parse(admins)
+			if (typeof admins === 'string') admins = JSON.parse(admins)
+			if (Array.isArray(admins)) {
+				admins.forEach((admin) => {
+					if (typeof admin === 'string' && admin !== '' && !administrateurs.includes(admin)) administrateurs.push(admin)
+				})
+			}
+		} catch {}
+		return administrateurs
+	}
+
+	function verifierAdministrateurListe (identifiant, donneesPad) {
+		if (!identifiant) return false
+		return definirAdministrateursPad(donneesPad).includes(identifiant)
+	}
+
+	async function recupererDonneesUtilisateur (identifiant, session = null) {
 		const nomsUtilisateurs = new Map()
-		const recupererDonnees = async (cleRedis) => {
+		const fondsAResoudre = []
+		const recupererDonnees = async (cleRedis, masquerPrives = false) => {
 			const pads = await db.SMEMBERS(cleRedis)
 			if (!pads || pads.length === 0) return []
 			const donnees = await Promise.all(pads.map(async (padId) => {
@@ -243,6 +270,12 @@ export default function creerFonctions ({
 				if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 					donneesPad.fond = path.basename(donneesPad.fond)
 				}
+				const admin = verifierAdministrateurListe(identifiant, donneesPad)
+				if (masquerPrives && donneesPad.acces === 'prive' && !admin) return null
+				donneesPad.fondUrl = ''
+				if (definirAccesLecture(padId, donneesPad, admin, session)) {
+					fondsAResoudre.push({ padId, donneesPad })
+				}
 				if (donneesPad.transfertPropriete === 'active' && (Number(donneesPad.transfertProprieteExpire) || 0) <= Date.now()) {
 					donneesPad.transfertPropriete = 'desactive'
 				}
@@ -255,11 +288,25 @@ export default function creerFonctions ({
 		const [padsCrees, padsSupprimes, padsRejoints, padsAdmins, padsFavoris] = await Promise.all([
 			recupererDonnees('pads-crees:' + identifiant),
 			recupererDonnees('pads-supprimes:' + identifiant),
-			recupererDonnees('pads-rejoints:' + identifiant),
+			recupererDonnees('pads-rejoints:' + identifiant, true),
 			recupererDonnees('pads-admins:' + identifiant),
-			recupererDonnees('pads-favoris:' + identifiant)
+			recupererDonnees('pads-favoris:' + identifiant, true)
 		])
+		await resoudreFonds(fondsAResoudre)
 		return [padsCrees, padsSupprimes, padsRejoints, padsAdmins, padsFavoris]
+	}
+
+	async function resoudreFonds (entrees, options = {}) {
+		if (!Array.isArray(entrees) || entrees.length === 0) return
+		const cles = entrees.map((entree) => definirCleFond(entree.padId, entree.donneesPad.fond, entree.donneesPad.acces))
+		const urls = await prechargerUrlsCles(cles, options)
+		await Promise.all(entrees.map(async (entree, index) => {
+			if (cles[index] !== '' && !urls.has(cles[index])) {
+				entree.donneesPad.fondUrl = ''
+				return
+			}
+			entree.donneesPad.fondUrl = await definirUrlFond(entree.padId, entree.donneesPad.fond, entree.donneesPad.acces, { ...options, urls }).catch(() => '')
+		}))
 	}
 
 	async function recupererDonneesAuteur (identifiant) {
@@ -343,6 +390,7 @@ export default function creerFonctions ({
 		if (pad.hasOwnProperty('fond') && typeof pad.fond === 'string' && pad.fond !== '' && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#') {
 			pad.fond = path.basename(pad.fond)
 		}
+		pad.fondUrl = accesLecture ? await definirUrlFond(id, pad.fond, pad.acces) : ''
 		// Masquage des données sensibles
 		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
 		if (!admin) {
@@ -410,6 +458,7 @@ export default function creerFonctions ({
 					return bloc
 				}))
 				donneesBlocs = resultatsBlocs.filter(b => b !== null)
+				await appliquerUrlsFichiers(id, donneesBlocs, pad.acces, { differerMedia: true })
 			}
 		}
 		if (pad.ordre === 'decroissant') {
@@ -489,6 +538,7 @@ export default function creerFonctions ({
 		if (pad.hasOwnProperty('fond') && typeof pad.fond === 'string' && pad.fond !== '' && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#') {
 			pad.fond = path.basename(pad.fond)
 		}
+		pad.fondUrl = await definirUrlFond(id, pad.fond, pad.acces)
 		// Masquage des données sensibles
 		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
 		if (!admin && pad.hasOwnProperty('code')) pad.code = ''
@@ -550,6 +600,7 @@ export default function creerFonctions ({
 				return bloc
 			}))
 			donneesBlocs = resultatsBlocs.filter(b => b !== null)
+			await appliquerUrlsFichiers(id, donneesBlocs, pad.acces, { differerMedia: true })
 		}
 		if (pad.ordre === 'decroissant') {
 			donneesBlocs.reverse()
@@ -709,6 +760,10 @@ export default function creerFonctions ({
 					}
 					if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
 					bloc.nom = await recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
+					bloc.medias = parseJSON(bloc.medias, [])
+					if (!Array.isArray(bloc.medias)) bloc.medias = []
+					// Fonction uniquement pour le flux RSS (pas de vignettes pour pad en accès protégé ou privé)
+					if (pad.acces === 'public') await ajouterUrlsFichiers(id, bloc, pad.acces)
 					return bloc
 				}))
 				donneesBlocs = resultatsBlocs.filter(b => b !== null)
@@ -954,7 +1009,7 @@ export default function creerFonctions ({
 		return true
 	}
 
-	async function fetchSockets (salon) {
+	async function fetchSockets (salon, options = {}) {
 		for (let i = 0; i < 2; i++) {
 			try {
 				return await io.in(salon).timeout(2000).fetchSockets()
@@ -962,7 +1017,7 @@ export default function creerFonctions ({
 				if (i === 1) console.error('Erreur fetchSockets :', err.message)
 			}
 		}
-		return []
+		return options.strict === true ? null : []
 	}
 
 	async function verifierAdmin (pad, donnees, session) {
@@ -988,13 +1043,36 @@ export default function creerFonctions ({
 		}
 	}
 
+	async function verifierAccesLectureDonnees (pad, donneesPad, session) {
+		if (!donneesPad || !donneesPad.hasOwnProperty('identifiant')) return false
+		const admin = await verifierAdmin(pad, donneesPad, session)
+		return definirAccesLecture(pad, donneesPad, admin, session)
+	}
+
 	async function verifierAccesLecturePad (pad, session) {
 		if (!verifierIdentifiantPad(pad)) return false
 		let donneesPad = await db.HGETALL('pads:' + pad)
 		donneesPad = donneesPad ? { ...donneesPad } : {}
-		if (!donneesPad.hasOwnProperty('identifiant')) return false
-		const admin = await verifierAdmin(pad, donneesPad, session)
-		return definirAccesLecture(pad, donneesPad, admin, session)
+		return await verifierAccesLectureDonnees(pad, donneesPad, session)
+	}
+
+	const dureeLimiteEchecsCode = 15 * 60
+
+	function definirCleEchecsCode (adresse, pad) {
+		return 'rl-code-ip:' + adresse + ':' + parseInt(pad, 10)
+	}
+
+	async function verifierLimiteEchecsCode (adresse, pad) {
+		return Number(await db.GET(definirCleEchecsCode(adresse, pad))) >= limiteEchecsCodeAdresse
+	}
+
+	async function compterEchecsCode (adresse, pad) {
+		const cle = definirCleEchecsCode(adresse, pad)
+		await db.multi().INCR(cle).EXPIRE(cle, dureeLimiteEchecsCode, 'NX').exec()
+	}
+
+	async function oublierEchecsCode (adresse, pad) {
+		await db.UNLINK(definirCleEchecsCode(adresse, pad))
 	}
 
 	async function verifierAdminUtilisateur (pad, identifiant, motdepasse) {
@@ -1060,24 +1138,315 @@ export default function creerFonctions ({
 		})
 	}
 
-	function definirVignettePersonnalisee (vignette) {
-		if (vignette !== '' && typeof vignette === 'string' && !vignette.includes('/img/') && (!verifierURL(vignette, ['https', 'http']) || (verifierURL(vignette, ['https', 'http']) && vignette.includes(lienPublicS3)))) {
-			return true
-		} else {
-			return false
+	const dureeUrlAffichage = { validite: 3600, cache: 2400 }
+	const variationCacheUrl = 300
+	const typesSansFichier = ['embed', 'lien', 'lien-image']
+	const typesMediaDiffere = ['pdf', 'office', 'document']
+	const tailleLotSignature = 50
+
+	function definirCleCacheUrl (cle, { telechargement = false, duree = dureeUrlAffichage } = {}) {
+		return 'url-signee-s3:' + (telechargement ? 'telechargement:' : '') + duree.validite + ':' + cle
+	}
+
+	function definirExpirationCacheUrl (duree = dureeUrlAffichage) {
+		return Math.max(1, duree.cache - Math.floor(Math.random() * variationCacheUrl))
+	}
+
+	async function signerUrlS3 (cle, { telechargement = false, duree = dureeUrlAffichage } = {}) {
+		const parametres = { Bucket: bucket, Key: cle }
+		if (telechargement) parametres.ResponseContentDisposition = 'attachment; filename="' + path.basename(cle).replace(/[^\w.\-]/g, '_') + '"'
+		return getSignedUrl(s3Client, new GetObjectCommand(parametres), { expiresIn: duree.validite })
+	}
+
+	const signaturesEnCours = new Map()
+
+	function mutualiserSignature (cleCache, produire) {
+		const enCours = signaturesEnCours.get(cleCache)
+		if (enCours) return enCours
+		const promesse = produire().finally(() => signaturesEnCours.delete(cleCache))
+		signaturesEnCours.set(cleCache, promesse)
+		return promesse
+	}
+
+	async function obtenirUrlSigneeS3 (cle, options = {}) {
+		const { duree = dureeUrlAffichage, sansCache = false } = options
+		const cleCache = definirCleCacheUrl(cle, options)
+		if (!sansCache) {
+			const urlCachee = await db.GET(cleCache).catch(() => null)
+			if (urlCachee) return urlCachee
 		}
+		return mutualiserSignature(cleCache, async () => {
+			const url = await signerUrlS3(cle, options)
+			await db.SET(cleCache, url, { EX: definirExpirationCacheUrl(duree) }).catch(() => {})
+			return url
+		})
 	}
 
-	function definirParametresTeleverserS3 (cle, buffer) {
-		return { Bucket: bucket, Key: cle, Body: buffer, ACL: 'public-read' }
+	async function purgerCacheUrlsFichier (pad, fichier) {
+		if (stockage !== 's3') return
+		const cle = pad + '/' + fichier
+		await db.UNLINK(definirClesCacheUrl(cle)).catch(() => {})
 	}
 
-	function definirParametresCopierS3 (cle, source) {
-		return { Bucket: bucket, Key: cle, CopySource: source, ACL: 'public-read' }
+	function definirClesCacheUrl (cle) {
+		return [definirCleCacheUrl(cle), definirCleCacheUrl(cle, { telechargement: true })]
+	}
+
+	async function definirUrlFichier (pad, fichier, acces, options = {}) {
+		if (!fichier || typeof fichier !== 'string' || fichier === '') return ''
+		if (stockage === 'fs') {
+			return definirCheminFichiers() + '/' + pad + '/' + fichier
+		}
+		// Mur public -> liens permanents
+		if (acces === 'public') {
+			return lienPublicS3 + '/' + pad + '/' + fichier
+		}
+		const cle = pad + '/' + fichier
+		if (options.urls instanceof Map && options.urls.has(cle)) return options.urls.get(cle)
+		return obtenirUrlSigneeS3(cle, options)
+	}
+
+	function verifierMediaDiffere (bloc, options) {
+		return options.differerMedia === true && typesMediaDiffere.includes(bloc.type)
+	}
+
+	function definirFichiersBloc (bloc, options = {}) {
+		const fichiers = []
+		if (!bloc) return fichiers
+		if (bloc.hasOwnProperty('media') && bloc.media && !typesSansFichier.includes(bloc.type) && !verifierMediaDiffere(bloc, options)) {
+			fichiers.push(bloc.media)
+		}
+		if (bloc.hasOwnProperty('vignette') && bloc.vignette && definirVignettePersonnalisee(bloc.vignette) === true) {
+			fichiers.push(path.basename(bloc.vignette))
+		}
+		return fichiers
+	}
+
+	async function prechargerUrlsCles (cles, options = {}) {
+		const urls = new Map()
+		if (stockage !== 's3' || !Array.isArray(cles)) return urls
+		const liste = Array.from(new Set(cles.filter((cle) => typeof cle === 'string' && cle !== '')))
+		if (liste.length === 0) return urls
+		let clesASigner = liste
+		if (options.sansCache !== true) {
+			const valeurs = await db.MGET(liste.map((cle) => definirCleCacheUrl(cle))).catch(() => [])
+			clesASigner = []
+			liste.forEach((cle, index) => {
+				const url = valeurs[index]
+				if (url) urls.set(cle, url)
+				else clesASigner.push(cle)
+			})
+			if (clesASigner.length === 0) return urls
+		}
+		const clesSignees = await executerTransactions(clesASigner, (cle) => {
+			return mutualiserSignature(definirCleCacheUrl(cle), () => signerUrlS3(cle)).catch((err) => {
+				console.error('Signature de ' + cle + ' : ' + err.message)
+				return null
+			})
+		}, tailleLotSignature)
+		const ecritures = db.multi()
+		let compteurEcritures = 0
+		clesASigner.forEach((cle, index) => {
+			if (!clesSignees[index]) return
+			urls.set(cle, clesSignees[index])
+			ecritures.SET(definirCleCacheUrl(cle), clesSignees[index], { EX: definirExpirationCacheUrl() })
+			compteurEcritures++
+		})
+		if (compteurEcritures > 0) await ecritures.exec().catch(() => {})
+		return urls
+	}
+
+	async function prechargerUrlsFichiers (pad, blocs, acces, options = {}) {
+		if (stockage !== 's3' || acces === 'public' || !Array.isArray(blocs) || blocs.length === 0) return null
+		const cles = new Set()
+		blocs.forEach((bloc) => {
+			definirFichiersBloc(bloc, options).forEach((fichier) => cles.add(pad + '/' + fichier))
+		})
+		return prechargerUrlsCles(Array.from(cles))
+	}
+
+	function definirCleFond (pad, fond, acces) {
+		if (stockage !== 's3' || acces === 'public') return ''
+		if (!fond || typeof fond !== 'string' || fond === '' || fond.includes('/img/') || fond.substring(0, 1) === '#') return ''
+		return pad + '/' + path.basename(fond)
+	}
+
+	async function appliquerUrlsFichiers (pad, blocs, acces, options = {}) {
+		if (!Array.isArray(blocs) || blocs.length === 0) return
+		const urls = await prechargerUrlsFichiers(pad, blocs, acces, options)
+		await Promise.all(blocs.map((bloc) => ajouterUrlsFichiers(pad, bloc, acces, { ...options, urls })))
+	}
+
+	async function ajouterUrlsFichiers (pad, bloc, acces, options = {}) {
+		if (!bloc) return bloc
+		if (bloc.hasOwnProperty('media') && bloc.media && !typesSansFichier.includes(bloc.type) && !verifierMediaDiffere(bloc, options)) {
+			bloc.mediaUrl = await definirUrlFichier(pad, bloc.media, acces, options)
+		}
+		if (bloc.hasOwnProperty('vignette') && bloc.vignette && definirVignettePersonnalisee(bloc.vignette) === true) {
+			bloc.vignetteUrl = await definirUrlFichier(pad, path.basename(bloc.vignette), acces, options)
+		}
+		return bloc
+	}
+
+	async function verifierFichierAutorise (pad, donneesPad, bloc, fichier, session) {
+		if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && path.basename(donneesPad.fond) === fichier) return true
+		if (!verifierIdentifiantBlocExistant(bloc)) return false
+		let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
+		donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+		if (!donneesBloc.hasOwnProperty('bloc')) return false
+		const media = donneesBloc.media === fichier
+		const vignette = typeof donneesBloc.vignette === 'string' && donneesBloc.vignette !== '' && path.basename(donneesBloc.vignette) === fichier
+		if (!media && !vignette) return false
+		const blocVisible = verifierBlocVisible(donneesBloc, donneesPad.contributions)
+		const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), donneesBloc.colonne)
+		if (blocVisible && !colonneMasquee) return true
+		if (donneesBloc.identifiant && donneesBloc.identifiant === session.identifiant) return true
+		return await verifierAdmin(pad, donneesPad, session)
+	}
+
+	async function definirUrlFond (pad, fond, acces, options = {}) {
+		if (!fond || typeof fond !== 'string' || fond === '' || fond.includes('/img/') || fond.substring(0, 1) === '#') return ''
+		return definirUrlFichier(pad, path.basename(fond), acces, options)
+	}
+
+	function definirVignettePersonnalisee (vignette) {
+		if (typeof vignette !== 'string' || vignette === '' || vignette.includes('/img/')) return false
+		if (!verifierURL(vignette, ['https', 'http'])) return true
+		return typeof lienPublicS3 === 'string' && lienPublicS3 !== '' && vignette.startsWith(lienPublicS3)
+	}
+
+	// ACL posée à l'écriture : public-read pour les fichiers temp et pour les pads publics (privé pour les pads privés et en accès protégé)
+	function definirParametresTeleverserS3 (cle, buffer, acces) {
+		const parametres = { Bucket: bucket, Key: cle, Body: buffer }
+		if (cle.startsWith('temp/') || acces === 'public') parametres.ACL = 'public-read'
+		return parametres
+	}
+
+	function definirParametresCopierS3 (cle, source, acces) {
+		const parametres = { Bucket: bucket, Key: cle, CopySource: source }
+		if (acces === 'public') parametres.ACL = 'public-read'
+		return parametres
+	}
+
+	const tailleLotACL = 100
+
+	const cleFileACL = 'acl-a-resynchroniser'
+
+	// Repasse tous les fichiers d'un pad en public-read ou private après un changement d'accès (modifieracces)
+	async function modifierACLFichiers (pad, acces) {
+		if (stockage !== 's3') return { traites: 0, echecs: 0, interrompue: false }
+		const cible = acces === 'public' ? 'public-read' : 'private'
+		let jetonPagination
+		let traites = 0
+		let echecs = 0
+		const terminer = async (resultat) => {
+			if (resultat.echecs > 0 || resultat.interrompue === true) {
+				await db.SADD(cleFileACL, String(pad)).catch(() => {})
+			} else {
+				await db.SREM(cleFileACL, String(pad)).catch(() => {})
+			}
+			return resultat
+		}
+		do {
+			let page
+			try {
+				page = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: pad + '/', ContinuationToken: jetonPagination }))
+			} catch (err) {
+				console.error('Resynchronisation ACL du pad ' + pad + ' (listage) : ' + err.message)
+				return terminer({ traites, echecs, interrompue: true })
+			}
+			const objets = page.Contents || []
+			const resultats = await executerTransactions(objets, (objet) => {
+				return s3Client.send(new PutObjectAclCommand({ Bucket: bucket, Key: objet.Key, ACL: cible })).then(() => true).catch((err) => {
+					console.error('Resynchronisation ACL ' + objet.Key + ' : ' + err.message)
+					return false
+				})
+			}, tailleLotACL)
+			traites += resultats.filter((resultat) => resultat === true).length
+			echecs += resultats.filter((resultat) => resultat === false).length
+			const clesCache = objets.flatMap((objet) => definirClesCacheUrl(objet.Key))
+			if (clesCache.length > 0) await db.UNLINK(clesCache).catch(() => {})
+			jetonPagination = page.IsTruncated ? page.NextContinuationToken : undefined
+		} while (jetonPagination)
+		return terminer({ traites, echecs, interrompue: false })
+	}
+
+	async function resynchroniserACLEnAttente () {
+		if (stockage !== 's3') return { pads: 0, resolus: 0 }
+		const pads = await db.SMEMBERS(cleFileACL)
+		if (!pads || pads.length === 0) return { pads: 0, resolus: 0 }
+		let resolus = 0
+		for (const pad of pads) {
+			const acces = await db.HGET('pads:' + pad, 'acces')
+			if (!acces) {
+				await db.SREM(cleFileACL, pad).catch(() => {})
+				resolus++
+				continue
+			}
+			const resultat = await modifierACLFichiers(pad, acces)
+			if (resultat.echecs === 0 && resultat.interrompue !== true) resolus++
+		}
+		return { pads: pads.length, resolus }
 	}
 
 	function definirParametresSupprimerS3 (cle) {
 		return { Bucket: bucket, Key: cle }
+	}
+
+	const dureeMaxFichiersTemp = 6 * 60 * 60 * 1000
+
+	async function purgerFichiersTemporairesS3 () {
+		if (stockage !== 's3') return { supprimes: 0, echecs: 0 }
+		const limite = Date.now() - dureeMaxFichiersTemp
+		let jetonPagination
+		let supprimes = 0
+		let echecs = 0
+		do {
+			const page = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: 'temp/', ContinuationToken: jetonPagination }))
+			const objets = (page.Contents || []).filter((objet) => objet.LastModified && objet.LastModified.getTime() < limite)
+			const resultats = await executerTransactions(objets, (objet) => {
+				return s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(objet.Key))).then(() => true).catch((err) => {
+					console.error('Purge du fichier temporaire ' + objet.Key + ' : ' + err.message)
+					return false
+				})
+			}, tailleLotTransaction)
+			supprimes += resultats.filter((resultat) => resultat === true).length
+			echecs += resultats.filter((resultat) => resultat === false).length
+			jetonPagination = page.IsTruncated ? page.NextContinuationToken : undefined
+		} while (jetonPagination)
+		return { supprimes, echecs }
+	}
+
+	async function purgerFichiersTemporairesLocaux () {
+		const dossier = path.join(__dirname, '..', '/static/temp')
+		const limite = Date.now() - dureeMaxFichiersTemp
+		let entrees
+		try {
+			entrees = await fs.readdir(dossier)
+		} catch (err) {
+			if (err.code === 'ENOENT') return { supprimes: 0, echecs: 0 }
+			console.error('Purge du dossier temporaire local : ' + err.message)
+			return { supprimes: 0, echecs: 1 }
+		}
+		const etats = await executerTransactions(entrees.filter((entree) => entree !== '.gitignore'), (entree) => {
+			return fs.stat(path.join(dossier, entree)).then((infos) => infos.mtimeMs < limite ? entree : null).catch((err) => {
+				if (err.code === 'ENOENT') return null
+				console.error('Purge de l\'élément temporaire ' + entree + ' : ' + err.message)
+				return false
+			})
+		}, tailleLotTransaction)
+		const perimees = etats.filter((etat) => typeof etat === 'string')
+		const echecs = etats.filter((etat) => etat === false).length
+		const resultats = await executerTransactions(perimees, (entree) => {
+			return fs.remove(path.join(dossier, entree)).then(() => true).catch((err) => {
+				console.error('Purge de l\'élément temporaire ' + entree + ' : ' + err.message)
+				return false
+			})
+		}, tailleLotTransaction)
+		return {
+			supprimes: resultats.filter((resultat) => resultat === true).length,
+			echecs: echecs + resultats.filter((resultat) => resultat === false).length
+		}
 	}
 
 	async function telechargerFichierS3 (cle, fichier) {
@@ -1105,6 +1474,7 @@ export default function creerFonctions ({
 			await fs.remove(chemin)
 		} else if (stockage === 's3') {
 			await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3(pad + '/' + fichier)))
+			await purgerCacheUrlsFichier(pad, fichier)
 		}
 	}
 
@@ -1172,20 +1542,23 @@ export default function creerFonctions ({
 		return resultats.filter(blocId => blocId !== null)
 	}
 
-	async function televerserFichierArchive (dossierTemporaire, dossierDestination, nomFichier, pad) {
+	async function televerserFichierArchive (dossierTemporaire, dossierDestination, nomFichier, pad, acces) {
 		if (!nomFichier || nomFichier === '') return
+		if (typeof nomFichier !== 'string' || /[/\\]/.test(nomFichier) || nomFichier.includes('..')) return
 		const cheminSource = path.normalize(dossierTemporaire + '/fichiers/' + nomFichier)
 		if (!await fs.pathExists(cheminSource)) return
 		if (stockage === 'fs') {
 			await fs.copy(cheminSource, path.normalize(dossierDestination + '/' + nomFichier), { overwrite: true })
 		} else if (stockage === 's3') {
 			const buffer = await fs.readFile(cheminSource)
-			await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(pad + '/' + nomFichier, buffer)))
+			await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(pad + '/' + nomFichier, buffer, acces)))
 		}
 	}
 
-	async function televerserFichierTemp (nomFichier, pad) {
+	async function televerserFichierTemp (nomFichier, pad, acces) {
 		if (!nomFichier || nomFichier === '') return
+		if (!verifierIdentifiantPad(pad)) return
+		if (typeof nomFichier !== 'string' || /[/\\]/.test(nomFichier) || nomFichier.includes('..')) return
 		if (stockage === 'fs') {
 			const source = path.join(__dirname, '..', '/static/temp/' + nomFichier)
 			const destination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + pad + '/' + nomFichier)
@@ -1197,14 +1570,14 @@ export default function creerFonctions ({
 			try {
 				const meta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: 'temp/' + nomFichier }))
 				if (meta.hasOwnProperty('ContentLength')) {
-					await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + nomFichier, '/' + bucket + '/temp/' + nomFichier)))
+					await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + nomFichier, '/' + bucket + '/temp/' + nomFichier, acces)))
 					await s3Client.send(new DeleteObjectCommand(definirParametresSupprimerS3('temp/' + nomFichier)))
 				}
 			} catch {}
 		}
 	}
 
-	async function copierFichier (padOrigine, pad, nomFichier, typeFichier) {
+	async function copierFichier (padOrigine, pad, nomFichier, typeFichier, acces) {
 		if (!nomFichier || nomFichier === '') return
 		if (typeFichier === 'vignette') {
 			if (String(nomFichier).includes('/img/') || verifierURL(nomFichier, ['https', 'http'])) return
@@ -1223,9 +1596,32 @@ export default function creerFonctions ({
 				const cleDestination = pad + '/' + nomFichier
 				const meta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: cleSource }))
 				if (meta.hasOwnProperty('ContentLength')) {
-					await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(cleDestination, '/' + bucket + '/' + cleSource)))
+					await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(cleDestination, '/' + bucket + '/' + cleSource, acces)))
 				}
 			} catch {}
+		}
+	}
+
+	async function copierFichiersPad (padSource, padDestination, acces) {
+		if (!verifierIdentifiantPad(padSource) || !verifierIdentifiantPad(padDestination)) return
+		if (stockage === 'fs') {
+			const dossierSource = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padSource)
+			const dossierDestination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padDestination)
+			if (await fs.pathExists(dossierSource)) {
+				await fs.copy(dossierSource, dossierDestination)
+			}
+		} else if (stockage === 's3') {
+			const prefixe = padSource + '/'
+			let jetonPagination
+			do {
+				const page = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: prefixe, ContinuationToken: jetonPagination }))
+				const objets = (page.Contents || []).filter((objet) => objet.Key.length > prefixe.length)
+				await executerTransactions(objets, (objet) => {
+					const cleDestination = padDestination + '/' + objet.Key.substring(prefixe.length)
+					return s3Client.send(new CopyObjectCommand(definirParametresCopierS3(cleDestination, '/' + bucket + '/' + objet.Key, acces)))
+				}, tailleLotTransaction)
+				jetonPagination = page.IsTruncated ? page.NextContinuationToken : undefined
+			} while (jetonPagination)
 		}
 	}
 
@@ -1237,7 +1633,7 @@ export default function creerFonctions ({
 		return pourcentageLibre >= minimumEspaceDisque
 	}
 
-	async function dupliquerFichier (pad, nomFichier) {
+	async function dupliquerFichier (pad, nomFichier, acces) {
 		if (!nomFichier || typeof nomFichier !== 'string' || nomFichier === '' || /[/\\]/.test(nomFichier) || nomFichier.includes('..')) return nomFichier
 		const nouveauNom = definirNomFichier(nomFichier)
 		if (stockage === 'fs') {
@@ -1255,7 +1651,7 @@ export default function creerFonctions ({
 				const cleSource = pad + '/' + nomFichier
 				const meta = await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: cleSource }))
 				if (!meta.hasOwnProperty('ContentLength')) return ''
-				await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + nouveauNom, '/' + bucket + '/' + cleSource)))
+				await s3Client.send(new CopyObjectCommand(definirParametresCopierS3(pad + '/' + nouveauNom, '/' + bucket + '/' + cleSource, acces)))
 				return nouveauNom
 			} catch (err) {
 				if (err && (err.name === 'NotFound' || err.name === 'NoSuchKey' || (err.$metadata && err.$metadata.httpStatusCode === 404))) return ''
@@ -1333,12 +1729,12 @@ export default function creerFonctions ({
 		}
 	}
 
-	async function dupliquerBloc (pad, donneesBloc, contenusANettoyer) {
+	async function dupliquerBloc (pad, donneesBloc, contenusANettoyer, acces) {
 		const type = donneesBloc.type || ''
 		const contenu = { texte: donneesBloc.texte || '', media: donneesBloc.media || '', alt: donneesBloc.alt || '', iframe: donneesBloc.iframe || '', vignette: donneesBloc.vignette || '', echec: false, fichiersCrees: [], padCree: '' }
 		contenusANettoyer.push(contenu)
 		const dupliquerFichierSuivi = async (nomFichier) => {
-			const nouveauNom = await dupliquerFichier(pad, nomFichier)
+			const nouveauNom = await dupliquerFichier(pad, nomFichier, acces)
 			if (nouveauNom === null) {
 				contenu.echec = true
 				return nomFichier
@@ -1474,10 +1870,31 @@ export default function creerFonctions ({
 		fetchSockets,
 		verifierAdmin,
 		verifierAccesLecturePad,
+		verifierAccesLectureDonnees,
+		verifierLimiteEchecsCode,
+		compterEchecsCode,
+		oublierEchecsCode,
+		definirAdministrateursPad,
 		verifierAdminUtilisateur,
 		verifierAutorisationApi,
 		envoyerEmail,
 		definirVignettePersonnalisee,
+		obtenirUrlSigneeS3,
+		purgerCacheUrlsFichier,
+		definirUrlFichier,
+		ajouterUrlsFichiers,
+		prechargerUrlsFichiers,
+		prechargerUrlsCles,
+		appliquerUrlsFichiers,
+		definirCleFond,
+		resoudreFonds,
+		verifierFichierAutorise,
+		definirUrlFond,
+		modifierACLFichiers,
+		resynchroniserACLEnAttente,
+		purgerFichiersTemporairesS3,
+		purgerFichiersTemporairesLocaux,
+		copierFichiersPad,
 		definirParametresTeleverserS3,
 		definirParametresCopierS3,
 		definirParametresSupprimerS3,

@@ -21,11 +21,13 @@
     "server:prod": "cross-env NODE_ENV=production node server/app.js",
     "export": "cross-env NODE_ENV=production node server/exporter-pads-json.js",
     "cleandb": "cross-env NODE_ENV=production node server/nettoyer-db.js",
+    "migrate-acl": "cross-env NODE_ENV=production node server/migrer-acl-s3.js",
     "maintenance": "cross-env NODE_ENV=production node server/maintenance.js"
   },
   "type": "module",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.927.0",
+    "@aws-sdk/s3-request-presigner": "^3.1136.0",
     "@socket.io/cluster-adapter": "^0.3.0",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/compiler-sfc": "^3.5.24",
@@ -63,6 +65,7 @@
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "nodemailer": "^9.0.1",
+    "proxy-addr": "^2.0.7",
     "rate-limit-redis": "^5.0.0",
     "redis": "^5.9.0",
     "sharp": "^0.35.3",

@@ -3,17 +3,17 @@ import { convert } from 'html-to-text'
 import t from './lang.js'
 
 function echapperXML(str) {
-    if (typeof str !== 'string') {
-        str = String(str || '')
-    }
-    return str
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
-        .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/g, '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;')
+	if (typeof str !== 'string') {
+		str = String(str || '')
+	}
+	return str
+		.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+		.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/g, '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&apos;')
 }
 
 function verifierURL (s, protocoles) {
@@ -25,15 +25,7 @@ function verifierURL (s, protocoles) {
 	}
 }
 
-function definirCheminFichier (hote, id, fichier) {
-	if (process.env.VITE_STORAGE && process.env.VITE_STORAGE === 's3' && process.env.VITE_S3_PUBLIC_LINK && process.env.VITE_S3_PUBLIC_LINK !== '') {
-		return process.env.VITE_S3_PUBLIC_LINK + '/' + id + '/' + fichier
-	} else {
-		return hote + '/fichiers/' + id + '/' + fichier
-	}
-}
-
-function genererXML (hote, id, titre, lien, blocs, admin, langue) {
+function genererXML (hote, titre, lien, blocs, admin, langue) {
 	let rss = '<?xml version="1.0" encoding="UTF-8"?>\n'
 	rss += '<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">\n'
 	rss += '  <channel>\n'
@@ -65,20 +57,25 @@ function genererXML (hote, id, titre, lien, blocs, admin, langue) {
 				const texte = convert(blocs[i].texte, { wordwrap: 100 })
 				rss += '      <description>' + echapperXML(texte) + '</description>\n'
 			}
-			if (blocs[i].type === 'image' || blocs[i].type === 'lien-image' || blocs[i].vignette !== '') {
-				let image
-				if (blocs[i].type === 'image' || blocs[i].type === 'lien-image') {
-					image = blocs[i].media
-				} else if (blocs[i].vignette !== '') {
-					image = blocs[i].vignette
+			const vignette = typeof blocs[i].vignette === 'string' ? blocs[i].vignette : ''
+			if (blocs[i].type === 'image' || blocs[i].type === 'lien-image' || vignette !== '') {
+				let image = ''
+				if (blocs[i].type === 'image') {
+					image = blocs[i].mediaUrl || ''
+				} else if (blocs[i].type === 'lien-image') {
+					image = blocs[i].media || ''
+				} else if (verifierURL(vignette, ['https', 'http'])) {
+					image = vignette
+				} else if (vignette.substring(0, 5) === '/img/') {
+					image = hote + vignette
+				} else {
+					image = blocs[i].vignetteUrl || ''
 				}
-				if (!verifierURL(image, ['https', 'http']) && image.substring(0, 5) !== '/img/') {
-					image = definirCheminFichier(hote, id, image)
-				} else if (!verifierURL(image, ['https', 'http']) && image.substring(0, 5) === '/img/') {
-					image = hote + image
+				if (image !== '') {
+					if (!verifierURL(image, ['https', 'http'])) image = hote + image
+					rss += '      <media:thumbnail url="' + echapperXML(image) + '" />\n'
+					rss += '      <media:content url="' + echapperXML(image) + '" medium="image" />\n'
 				}
-				rss += '      <media:thumbnail url="' + echapperXML(image) + '" />\n'
-				rss += '      <media:content url="' + echapperXML(image) + '" medium="image" />\n'
 			}
 			try {
 				const date = new Date(blocs[i].date)

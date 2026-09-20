@@ -12,7 +12,8 @@ export default function creerGestionnairesChat ({
 	fonctions
 }) {
 	const {
-		verifierAdmin
+		verifierAdmin,
+		verifierAccesLecturePad
 	} = fonctions
 
 	return function enregistrer (socket, req) {
@@ -20,6 +21,7 @@ export default function creerGestionnairesChat ({
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
+				if (!await verifierAccesLecturePad(pad, req.session)) return socket.emit('nonautorise')
 				const date = dayjs().format()
 				io.to('pad-' + pad).emit('message', { texte: texte, identifiant: identifiant, nom: nom, date: date })
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)

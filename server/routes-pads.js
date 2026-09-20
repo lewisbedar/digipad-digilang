@@ -4,7 +4,7 @@ import axios from 'axios'
 import dayjs from 'dayjs'
 import bcrypt from 'bcrypt'
 import { randomBytes, timingSafeEqual } from 'crypto'
-import { CopyObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { fileURLToPath } from 'url'
 import { etat } from './etat.js'
 import {
@@ -57,12 +57,16 @@ export default function enregistrerRoutesPads ({
 		verifierAdmin,
 		verifierAdminUtilisateur,
 		definirVignettePersonnalisee,
-		definirParametresCopierS3,
+		definirUrlFond,
+		copierFichiersPad,
 		definirParametresSupprimerS3,
 		televerserFichierArchive,
 		verifierEspaceDisque,
 		extraireIdentifiantEtherpad,
-		supprimerEtherpadBlocs
+		supprimerEtherpadBlocs,
+		verifierLimiteEchecsCode,
+		compterEchecsCode,
+		oublierEchecsCode
 	} = fonctions
 
 	app.post('/api/recuperer-donnees-pad', async (req, res) => {
@@ -425,21 +429,7 @@ export default function enregistrerRoutesPads ({
 				.SADD('utilisateurs-pads:' + nId, identifiant)
 				.exec()
 			// Copie des fichiers
-			if (stockage === 'fs') {
-				const dossierSource = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padSource)
-				const dossierDestination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + nId)
-				if (await fs.pathExists(dossierSource)) {
-					await fs.copy(dossierSource, dossierDestination)
-				}
-			} else if (stockage === 's3') {
-				const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: padSource + '/' }))
-				if (listeObjets && listeObjets.Contents) {
-					await executerTransactions(listeObjets.Contents, (objet) => {
-						const nCle = objet.Key.replace(padSource + '/', nId + '/')
-						return s3Client.send(new CopyObjectCommand(definirParametresCopierS3(nCle, '/' + bucket + '/' + objet.Key)))
-					}, tailleLotTransaction)
-				}
-			}
+			await copierFichiersPad(padSource, nId, donneesPadSource.acces)
 			if (dossierDestination !== '') {
 				let infosUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 				infosUtilisateur = infosUtilisateur ? { ...infosUtilisateur } : {}
@@ -452,7 +442,7 @@ export default function enregistrerRoutesPads ({
 					}
 				}
 			}
-			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
+			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, fondUrl: await definirUrlFond(nId, donneesPadSource.fond, donneesPadSource.acces), acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_duplication')
@@ -559,10 +549,10 @@ export default function enregistrerRoutesPads ({
 						}
 						const promessesFichiers = []
 						if (bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
-							promessesFichiers.push(televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.media, id))
+							promessesFichiers.push(televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.media, id, donnees.pad.acces))
 						}
 						if (definirVignettePersonnalisee(bloc.vignette) === true) {
-							promessesFichiers.push(televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.vignette, id))
+							promessesFichiers.push(televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.vignette, id, donnees.pad.acces))
 						}
 						await Promise.all([pipelineBloc.exec(), ...promessesFichiers])
 						return { bloc: bloc.bloc, blocId: blocId }
@@ -588,7 +578,7 @@ export default function enregistrerRoutesPads ({
 					const activiteId = (parametres.activite === true) ? donnees.pad.activite : 0
 					// Copie du fond personnalisé + métadonnées pad en parallèle
 					const fondPad = donnees.pad.fond
-					const promesseFond = (fondPad && !fondPad.includes('/img/') && fondPad.substring(0, 1) !== '#' && fondPad !== '') ? televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fondPad), id) : Promise.resolve()
+					const promesseFond = (fondPad && !fondPad.includes('/img/') && fondPad.substring(0, 1) !== '#' && fondPad !== '') ? televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fondPad), id, donnees.pad.acces) : Promise.resolve()
 					await Promise.all([
 						promesseFond,
 						db.multi()
@@ -617,7 +607,7 @@ export default function enregistrerRoutesPads ({
 						await pipelineActivite.exec()
 					}
 					await supprimerArchives(source, dossierTemporaire)
-					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
+					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, fondUrl: await definirUrlFond(id, fondPad, donnees.pad.acces), acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
 				} catch (err) {
 					console.error(err.stack)
 					// Nettoyage en cas d'erreur pendant le traitement
@@ -940,12 +930,15 @@ export default function enregistrerRoutesPads ({
 			const pad = req.body.pad
 			const identifiant = req.body.identifiant
 			const code = req.body.code
+			if (!verifierIdentifiantPad(pad)) return res.status(401).json({ message: 'code_incorrect' })
+			if (await verifierLimiteEchecsCode(req.ip, pad)) return res.status(401).json({ message: 'code_incorrect' })
 			let donneesPad = await db.HGETALL('pads:' + pad)
 			donneesPad = donneesPad ? { ...donneesPad } : {}
-			if (!donneesPad.hasOwnProperty('code')) res.status(500).json({ message: 'erreur' })
+			if (!donneesPad.hasOwnProperty('code') || donneesPad.acces !== 'code') return res.status(401).json({ message: 'code_incorrect' })
 			const codeBuffer = Buffer.from(String(code))
 			const codeBufferDb = Buffer.from(String(donneesPad.code))
 			if (codeBuffer.length !== codeBufferDb.length || !timingSafeEqual(codeBuffer, codeBufferDb)) {
+				await compterEchecsCode(req.ip, pad)
 				return res.status(401).json({ message: 'code_incorrect' })
 			}
 			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, false)
@@ -968,6 +961,8 @@ export default function enregistrerRoutesPads ({
 			} else {
 				req.session.acces.push({ code: code, pad: parseInt(pad, 10) })
 			}
+			// Le compteur d'échecs ne doit pas pénaliser un visiteur qui a fini par saisir le bon code
+			await oublierEchecsCode(req.ip, pad)
 			res.status(200).json({ message: 'code_correct', pad: donneesPadProtege.pad, blocs: donneesPadProtege.blocs, activite: donneesPadProtege.activite })
 		} catch (err) {
 			console.error(err.stack)

@@ -11,10 +11,13 @@ import libre from 'libreoffice-convert'
 import { fileURLToPath } from 'url'
 import { etat } from './etat.js'
 import {
+	definirAccesLecture,
 	definirNomFichier,
-	definirCheminFichiers,
+	verifierIdentifiantPad,
 	verifierURL,
-	verifierContenuFichier
+	verifierContenuFichier,
+	genererJetonTeleversement,
+	genererJetonFichier
 } from './fonctions.js'
 libre.convertAsync = util.promisify(libre.convert)
 
@@ -29,14 +32,80 @@ export default function enregistrerRoutesFichiers ({
 	etherpad,
 	etherpadApi,
 	limiteTeleversement,
+	secretJetonTeleversement,
+	secretJetonFichier,
 	fonctions
 }) {
 	const {
 		verifierAdmin,
+		verifierAccesLectureDonnees,
 		definirParametresTeleverserS3,
 		verifierEspaceDisque,
-		verifierHoteBloque
+		verifierHoteBloque,
+		definirUrlFichier,
+		verifierFichierAutorise
 	} = fonctions
+
+	async function recupererPadAutorise (padId, session, { adminRequis = false } = {}) {
+		if (!verifierIdentifiantPad(padId)) return null
+		let donneesPad = await db.HGETALL('pads:' + padId)
+		donneesPad = donneesPad ? { ...donneesPad } : {}
+		if (!donneesPad.hasOwnProperty('identifiant')) return null
+		const admin = await verifierAdmin(padId, donneesPad, session)
+		if (adminRequis) return admin ? donneesPad : null
+		if (!definirAccesLecture(padId, donneesPad, admin, session)) return null
+		return donneesPad
+	}
+
+	const actionsJetonTeleversement = ['fichier', 'vignette', 'icone', 'audio', 'fond']
+
+	app.post('/api/generer-jeton-televersement', async (req, res) => {
+		if (etat.maintenance === true) return res.status(503).send('maintenance')
+		const identifiant = req.session.identifiant
+		if (!identifiant) return res.status(401).send('non_connecte')
+		const action = req.body.action
+		const pad = typeof req.body.pad === 'string' ? req.body.pad : ''
+		if (!actionsJetonTeleversement.includes(action)) return res.status(422).send('erreur')
+		try {
+			if (action === 'audio') {
+				const donneesPad = await recupererPadAutorise(pad, req.session)
+				if (!donneesPad) return res.status(403).send('non_autorise')
+			} else if (action === 'fond') {
+				const donneesPad = await recupererPadAutorise(pad, req.session, { adminRequis: true })
+				if (!donneesPad) return res.status(403).send('non_autorise')
+			}
+			const jeton = genererJetonTeleversement(secretJetonTeleversement, action, pad)
+			res.status(200).json({ jeton })
+		} catch (err) {
+			console.error(err.stack)
+			res.status(500).send('erreur')
+		}
+	})
+
+	app.post('/api/generer-lien-fichier', async (req, res) => {
+		if (etat.maintenance === true) return res.status(503).send('maintenance')
+		try {
+			const pad = req.body.pad
+			const fichier = req.body.fichier
+			const bloc = typeof req.body.bloc === 'string' ? req.body.bloc : ''
+			const telechargement = req.body.telechargement === true
+			// Lien pour visionneuse externe
+			const visionneuse = req.body.visionneuse === true
+			if (!verifierIdentifiantPad(pad) || typeof fichier !== 'string' || fichier === '' || /[/\\]/.test(fichier) || fichier.includes('..')) return res.status(422).send('erreur')
+			let donneesPad = await db.HGETALL('pads:' + pad)
+			donneesPad = donneesPad ? { ...donneesPad } : {}
+			if (!await verifierAccesLectureDonnees(pad, donneesPad, req.session)) return res.status(403).send('non_autorise')
+			if (!await verifierFichierAutorise(pad, donneesPad, bloc, fichier, req.session)) return res.status(403).send('non_autorise')
+			let url = await definirUrlFichier(pad, fichier, donneesPad.acces, { telechargement })
+			if (visionneuse && stockage === 'fs' && donneesPad.acces !== 'public' && url !== '') {
+				url += '?jeton=' + encodeURIComponent(genererJetonFichier(secretJetonFichier, pad, fichier))
+			}
+			res.status(200).json({ url })
+		} catch (err) {
+			console.error(err.stack)
+			res.status(500).send('erreur')
+		}
+	})
 
 	app.post('/api/televerser-fichier', (req, res) => {
 		if (etat.maintenance === true) return res.status(503).send('maintenance')
@@ -80,8 +149,8 @@ export default function enregistrerRoutesFichiers ({
 					if (extensionFichier === '.jpg' || extensionFichier === '.jpeg') {
 						try {
 							const bufferOptimise = await sharp(bufferFichier, { failOnError: false })
-								.withMetadata()
 								.rotate()
+								.keepIccProfile()
 								.jpeg({
 									quality: 90,
 									progressive: true
@@ -95,7 +164,8 @@ export default function enregistrerRoutesFichiers ({
 					} else if (extensionFichier !== '.gif') {
 						try {
 							const bufferOptimise = await sharp(bufferFichier, { failOnError: false })
-								.withMetadata()
+								.rotate()
+								.keepIccProfile()
 								.resize(1200, 1200, { fit: sharp.fit.inside, withoutEnlargement: true })
 								.toBuffer()
 							if (bufferOptimise) {
@@ -250,13 +320,14 @@ export default function enregistrerRoutesFichiers ({
 			if (!bufferAudio || !nomFichier) return res.status(422).send('erreur_televersement')
 			const padId = donneesFormulaire.get('pad')
 			try {
+				const donneesPad = await recupererPadAutorise(padId, req.session)
+				if (!donneesPad) return res.status(403).send('non_autorise')
 				if (stockage === 's3') {
-					await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(padId + '/' + nomFichier, bufferAudio)))
+					await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nomFichier, bufferAudio)))
 					res.status(200).send(nomFichier)
 				} else {
-					const cheminFichier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padId + '/' + nomFichier)
-					if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
-					await fs.ensureDir(path.dirname(cheminFichier))
+					const cheminFichier = path.join(__dirname, '..', '/static/temp/' + nomFichier)
+					if (!await verifierEspaceDisque('temp')) return res.status(507).send('erreur_espace_disque')
 					await fs.writeFile(cheminFichier, bufferAudio)
 					res.status(200).send(nomFichier)
 				}
@@ -304,8 +375,8 @@ export default function enregistrerRoutesFichiers ({
 			try {
 				if (extensionFichier === '.jpg' || extensionFichier === '.jpeg') {
 					bufferOptimise = await sharp(bufferImage, { failOnError: false })
-						.withMetadata()
 						.rotate()
+						.keepIccProfile()
 						.jpeg({
 							quality: 90,
 							progressive: true
@@ -314,7 +385,8 @@ export default function enregistrerRoutesFichiers ({
 						.toBuffer()
 				} else {
 					bufferOptimise = await sharp(bufferImage, { failOnError: false })
-						.withMetadata()
+						.rotate()
+						.keepIccProfile()
 						.resize(400, 400, { fit: sharp.fit.inside, withoutEnlargement: true })
 						.toBuffer()
 				}
@@ -375,10 +447,12 @@ export default function enregistrerRoutesFichiers ({
 			const extensionFichier = path.parse(nomFichier).ext.toLowerCase()
 			let bufferOptimise = null
 			try {
+				const donneesPad = await recupererPadAutorise(padId, req.session, { adminRequis: true })
+				if (!donneesPad) return res.status(403).send('non_autorise')
 				if (extensionFichier === '.jpg' || extensionFichier === '.jpeg') {
 					bufferOptimise = await sharp(bufferImage, { failOnError: false })
-						.withMetadata()
 						.rotate()
+						.keepIccProfile()
 						.jpeg({
 							quality: 90,
 							progressive: true
@@ -387,18 +461,18 @@ export default function enregistrerRoutesFichiers ({
 						.toBuffer()
 				} else {
 					bufferOptimise = await sharp(bufferImage, { failOnError: false })
-						.withMetadata()
+						.rotate()
+						.keepIccProfile()
 						.resize(1200, 1200, { fit: sharp.fit.inside, withoutEnlargement: true })
 						.toBuffer()
 				}
 				if (!bufferOptimise) return res.status(422).send('erreur_televersement')
 				if (stockage === 's3') {
-					await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3(padId + '/' + nomFichier, bufferOptimise)))
+					await s3Client.send(new PutObjectCommand(definirParametresTeleverserS3('temp/' + nomFichier, bufferOptimise)))
 					res.status(200).send(nomFichier)
 				} else {
-					const cheminFichier = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padId + '/' + nomFichier)
-					if (!await verifierEspaceDisque()) return res.status(507).send('erreur_espace_disque')
-					await fs.ensureDir(path.dirname(cheminFichier))
+					const cheminFichier = path.join(__dirname, '..', '/static/temp/' + nomFichier)
+					if (!await verifierEspaceDisque('temp')) return res.status(507).send('erreur_espace_disque')
 					await fs.writeFile(cheminFichier, bufferOptimise)
 					res.status(200).send(nomFichier)
 				}

@@ -127,7 +127,7 @@
 				<div class="pads" aria-live="polite" v-if="pads.length > 0 && requete === ''">
 					<template v-for="pad in pads" :key="'pad_' + pad.id">
 						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
-							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)">
+							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad)">
 								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 							</a>
 							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
@@ -162,7 +162,7 @@
 						</div>
 
 						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
-							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
+							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
@@ -204,7 +204,7 @@
 				<div class="pads" v-else-if="resultats.length > 0 && requete !== ''">
 					<template v-for="pad in resultats" :key="'resultats_' + pad.id">
 						<div :id="'pad-' + pad.id" class="pad liste" v-if="affichage === 'liste'">
-							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)">
+							<a class="fond" :href="'/p/' + pad.id + '/' + pad.token" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad)">
 								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 							</a>
 							<a class="meta" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
@@ -239,7 +239,7 @@
 						</div>
 
 						<div :id="'pad-' + pad.id" class="pad mosaique" v-else>
-							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad.fond, pad.id)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
+							<a class="conteneur" :class="{'fond-personnalise': !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#'}" :style="definirFond(pad)" :href="'/p/' + pad.id + '/' + pad.token" @dragstart="definirIdPad($event, pad.id)">
 								<span class="prive" :title="$t('prive')" v-if="pad.acces === 'prive'"><i class="material-icons" aria-hidden="true">lock</i></span>
 								<div class="meta">
 									<span class="titre"><span class="mise-a-jour" v-if="pad.hasOwnProperty('notification') && pad.notification.includes(identifiant)" />{{ pad.titre }} <small v-if="verifierDossierPad(pad.id) && (onglet === 'pads-crees' || onglet === 'pads-rejoints' || onglet === 'pads-admins' || onglet === 'pads-favoris')"> (📁 {{ verifierTitreDossier(pad.id) }})</small></span>
@@ -539,9 +539,9 @@
 
 		<Message :message="message" @elementPrecedent="definirElementPrecedent" @fermer="fermerMessage" v-if="message !== ''" />
 
-		<Chargement v-if="chargement" />
+		<Chargement :chargement="chargement" />
 
-		<ChargementPage v-if="chargementPage" />
+		<ChargementPage :chargement="chargementPage" />
 	</div>
 </template>
 
@@ -597,6 +597,10 @@ export default {
 			dossier: '',
 			dossierId: '',
 			dossierActuel: {},
+			creationPadSansCompte: 0,
+			delaiRafraichissementFonds: 900000,
+			dernierRafraichissementFonds: Date.now(),
+			couleurFondIndisponible: '#00ced1',
 			elementPrecedent: null,
 			hote: this.$pageContext.pageProps.hote,
 			langues: this.$pageContext.pageProps.langues,
@@ -615,8 +619,7 @@ export default {
 			padsFavoris: this.$pageContext.pageProps.padsFavoris,
 			dossiers: this.$pageContext.pageProps.dossiers,
 			stockage: import.meta.env.VITE_STORAGE,
-			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK,
-			creationPadSansCompte: 0
+			lienPublicS3: import.meta.env.VITE_S3_PUBLIC_LINK
 		}
 	},
 	computed : {
@@ -635,6 +638,7 @@ export default {
 	},
 	watch: {
 		onglet (onglet) {
+			this.rafraichirFonds()
 			let pads = []
 			if (onglet === 'pads-crees') {
 				pads = JSON.parse(JSON.stringify(this.padsCrees))
@@ -712,6 +716,7 @@ export default {
 		})
 
 		document.addEventListener('keydown', this.gererClavier, false)
+		document.addEventListener('visibilitychange', this.rafraichirFondsVisibles, false)
 
 		if (this.email === '') {
 			this.afficherModaleEmail()
@@ -719,6 +724,7 @@ export default {
 	},
 	beforeUnmount () {
 		document.removeEventListener('keydown', this.gererClavier, false)
+		document.removeEventListener('visibilitychange', this.rafraichirFondsVisibles, false)
 	},
 	methods: {
 		gererMenu () {
@@ -743,13 +749,36 @@ export default {
 		activerInput (id) {
 			document.querySelector('#' + id)?.click()
 		},
-		definirFond (fond, id) {
+		rafraichirFondsVisibles () {
+			if (document.visibilityState === 'visible') this.rafraichirFonds()
+		},
+		async rafraichirFonds () {
+			if (this.stockage !== 's3') return
+			if (Date.now() - this.dernierRafraichissementFonds < this.delaiRafraichissementFonds) return
+			this.dernierRafraichissementFonds = Date.now()
+			try {
+				const reponse = await axios.post(this.hote + '/api/rafraichir-fonds', { identifiant: this.identifiant })
+				const fonds = reponse.data.fonds
+				const listes = [this.padsCrees, this.padsCorbeille, this.padsRejoints, this.padsAdmins, this.padsFavoris, this.pads, this.resultats]
+				listes.forEach((liste) => {
+					liste.forEach((pad) => {
+						if (fonds.hasOwnProperty(pad.id)) pad.fondUrl = fonds[pad.id]
+					})
+				})
+			} catch {}
+		},
+		definirFond (pad) {
+			const fond = pad.fond
 			if (fond.substring(0, 1) === '#') {
 				return { backgroundColor: fond }
 			} else if (fond.includes('/img/')) {
 				return { backgroundImage: 'url(' + fond + ')' }
+			} else if (pad.fondUrl) {
+				return { backgroundImage: 'url(' + pad.fondUrl + ')' }
+			} else if (Object.hasOwn(pad, 'fondUrl')) {
+				return { backgroundColor: this.couleurFondIndisponible }
 			} else {
-				return { backgroundImage: 'url(' + this.definirCheminFichiers() + '/' + id + '/' + this.definirNomLienFichier(fond) + ')' }
+				return { backgroundImage: 'url(' + this.definirCheminFichiers() + '/' + pad.id + '/' + this.definirNomLienFichier(fond) + ')' }
 			}
 		},
 		definirNomLienFichier (fichier) {
@@ -797,7 +826,7 @@ export default {
 					} else if (err.response?.data?.message === 'limite_atteinte') {
 						this.message = this.$t('limitePad', { limite: err.response.data.limite })
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -864,7 +893,7 @@ export default {
 					} else if (err.response?.data === 'erreur_espace_disque') {
 						this.message = this.$t('erreurEspaceDisque')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else {
@@ -932,7 +961,7 @@ export default {
 				} else if (err.response?.data === 'motdepasse_incorrect') {
 					this.message = this.$t('motDePassePasCorrect')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1189,7 +1218,7 @@ export default {
 					} else if (err.response?.data?.message === 'limite_atteinte') {
 						this.message = this.$t('limiteCompteDestination', { limite: err.response.data.limite })
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1249,7 +1278,7 @@ export default {
 					} else if (err.response?.data?.message === 'limite_atteinte') {
 						this.message = this.$t('limiteCompteDestination', { limite: err.response.data.limite })
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1306,7 +1335,7 @@ export default {
 				} else if (err.response?.data === 'erreur_espace_disque') {
 					this.message = this.$t('erreurEspaceDisque')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1333,7 +1362,7 @@ export default {
 				} else if (err.response?.data === 'pad_inexistant') {
 					this.message = this.$t('padInexistant')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1374,7 +1403,7 @@ export default {
 				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1415,7 +1444,7 @@ export default {
 				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1454,7 +1483,7 @@ export default {
 				} else if (err.response?.data === 'erreur_suppression') {
 					this.message = this.$t('erreurSuppressionPad')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1478,7 +1507,7 @@ export default {
 				} else if (err.response?.data === 'non_autorise') {
 					this.message = this.$t('actionNonAutorisee')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1566,7 +1595,7 @@ export default {
 					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1600,7 +1629,7 @@ export default {
 					} else if (err.response?.data === 'email_existe_deja') {
 						this.message = this.$t('emailExisteDeja', { email: email })
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1651,7 +1680,7 @@ export default {
 					} else if (err.response?.data === 'motdepasse_incorrect') {
 						this.message = this.$t('motDePasseActuelPasCorrect')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else if (nouveauMotDePasse !== confirmationNouveauMotDePasse) {
@@ -1683,7 +1712,7 @@ export default {
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1703,7 +1732,7 @@ export default {
 					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1736,7 +1765,7 @@ export default {
 					} else if (err.response?.data === 'erreur_ajout_dossier') {
 						this.message = this.$t('erreurAjoutDossier')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -1834,7 +1863,7 @@ export default {
 				} else if (err.response?.data === 'suppression_incomplete') {
 					this.message = this.$t('suppressionIncomplete')
 				} else {
-					this.message = this.$t('erreurCommunicationServeur')
+					this.message = this.definirMessageErreur(err)
 				}
 			})
 		},
@@ -1844,9 +1873,9 @@ export default {
 			axios.post(this.hote + '/api/deconnexion').then(() => {
 				this.$socket.emit('deconnexion', identifiant)
 				window.location.replace('/')
-			}).catch(() => {
+			}).catch((err) => {
 				this.chargement = false
-				this.message = this.$t('erreurCommunicationServeur')
+				this.message = this.definirMessageErreur(err)
 			})
 		},
 		fermerModale () {

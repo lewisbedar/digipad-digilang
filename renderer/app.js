@@ -51,6 +51,15 @@ function createPageApp (pageContext) {
 	app.use(i18n)
 	app.use(masonry)
 
+	app.mixin({
+		methods: {
+			definirMessageErreur (err, cle = 'erreurCommunicationServeur') {
+				if (err && err.response && err.response.status === 429) return this.$t('erreurRequetesNombreuses')
+				return this.$t(cle)
+			}
+		}
+	})
+
 	app.config.globalProperties.$socket = io(pageProps.hote, {
 		upgrade: false,
 		transports: ['websocket'],

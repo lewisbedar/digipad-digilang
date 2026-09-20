@@ -198,7 +198,7 @@
 
 		<Message :message="message" @elementPrecedent="definirElementPrecedent" @fermer="fermerMessage" v-if="message !== ''" />
 
-		<Chargement v-if="chargement" />
+		<Chargement :chargement="chargement" />
 	</div>
 </template>
 
@@ -332,7 +332,7 @@ export default {
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -352,8 +352,9 @@ export default {
 				maintenance: valeur
 			}).then((reponse) => {
 				this.maintenance = reponse.data.maintenance
-			}).catch(() => {
+			}).catch((err) => {
 				this.$socket.emit('verifiermaintenance')
+				this.message = this.definirMessageErreur(err)
 			})
 		},
 		modifierMotDePasse () {
@@ -381,7 +382,7 @@ export default {
 					} else if (err.response?.data === 'email_non_valide') {
 						this.message = this.$t('erreurEmail')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -407,7 +408,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -429,7 +430,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -455,7 +456,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -488,7 +489,7 @@ export default {
 					} else if (err.response?.data === 'pad_inexistant') {
 						this.message = this.$t('padInexistant')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -525,7 +526,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -567,7 +568,7 @@ export default {
 						} else if (err.response?.data === 'non_autorise') {
 							this.message = this.$t('actionNonAutorisee')
 						} else {
-							this.message = this.$t('erreurCommunicationServeur')
+							this.message = this.definirMessageErreur(err)
 						}
 					})
 				}).catch((err) => {
@@ -579,7 +580,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -614,7 +615,7 @@ export default {
 					} else if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -649,7 +650,7 @@ export default {
 					} else if (err.response?.data === 'transfert_incomplet') {
 						this.message = this.$t('transfertIncomplet')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}
@@ -680,7 +681,7 @@ export default {
 					} else if (err.response?.data === 'suppression_incomplete') {
 						this.message = this.$t('suppressionIncomplete')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}

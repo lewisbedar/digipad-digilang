@@ -3,6 +3,8 @@ import { etat } from './etat.js'
 import {
 	definirSalonUtilisateur,
 	definirSalonAdmin,
+	parseJSON,
+	verifierIdentifiantPad,
 	sauvegarderSession
 } from './fonctions.js'
 
@@ -16,8 +18,73 @@ export default function creerGestionnairesPad ({
 }) {
 	const {
 		verifierAdmin,
-		supprimerFichierSansEchec
+		supprimerFichierSansEchec,
+		definirUrlFond,
+		modifierACLFichiers,
+		televerserFichierTemp,
+		fetchSockets,
+		verifierAccesLectureDonnees,
+		definirAdministrateursPad
 	} = fonctions
+
+	const accesPossibles = ['public', 'prive', 'code']
+	const delaiAttenteOuvertureACL = 10000
+	const delaiAttenteFermetureACL = 30000
+	const tentativesEvacuation = 3
+	const delaiEntreTentativesEvacuation = 1000
+
+	function temporiser (duree) {
+		return new Promise((resoudre) => {
+			const minuteur = setTimeout(resoudre, duree)
+			if (typeof minuteur.unref === 'function') minuteur.unref()
+		})
+	}
+
+	function signalerSynchronisationACL (pad, resultat, envoyer) {
+		if (resultat.echecs === 0 && resultat.interrompue !== true) return
+		console.error('Synchronisation ACL du pad ' + pad + ' : ' + resultat.echecs + ' fichier(s) en échec sur ' + (resultat.traites + resultat.echecs) + (resultat.interrompue === true ? ' (listage interrompu, des fichiers n\'ont pas été tentés)' : ''))
+		envoyer(resultat.interrompue === true ? 0 : resultat.echecs)
+	}
+
+	async function evacuerSalonNonAdmins (pad) {
+		const salonPad = 'pad-' + pad
+		const salonAdmin = definirSalonAdmin(pad)
+		let clients = null
+		for (let tentative = 0; tentative < tentativesEvacuation && clients === null; tentative++) {
+			if (tentative > 0) await temporiser(delaiEntreTentativesEvacuation)
+			clients = await fetchSockets(salonPad, { strict: true })
+		}
+		if (clients === null) {
+			console.error('Évacuation du salon du pad ' + pad + ' : liste des sockets indisponible, des visiteurs peuvent y être restés')
+			return false
+		}
+		clients.forEach((client) => {
+			if (client.rooms.has(salonAdmin)) return
+			client.leave(salonPad)
+			if (client.data.identifiant) client.leave(definirSalonUtilisateur(pad, client.data.identifiant))
+		})
+		return true
+	}
+
+	async function synchroniserACL (pad, acces, delaiAttente) {
+		let terminee = false
+		const synchronisation = modifierACLFichiers(pad, acces).catch((err) => {
+			console.error('Synchronisation ACL du pad ' + pad + ' : ' + err.stack)
+			return { traites: 0, echecs: 0, interrompue: true }
+		}).then((resultat) => {
+			terminee = true
+			return resultat
+		})
+		await Promise.race([synchronisation, temporiser(delaiAttente)])
+		if (terminee) return synchronisation
+		const salonAdmin = definirSalonAdmin(pad)
+		synchronisation.then((resultat) => {
+			signalerSynchronisationACL(pad, resultat, (nombre) => io.to(salonAdmin).emit('erreurfichiers', nombre))
+		}).catch((err) => {
+			console.error('Signalement de la synchronisation ACL du pad ' + pad + ' : ' + err.stack)
+		})
+		return 'encours'
+	}
 
 	return function enregistrer (socket, req) {
 		socket.on('modifiertitre', async (pad, titre, identifiant) => {
@@ -65,9 +132,13 @@ export default function creerGestionnairesPad ({
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
 				await db.HSET('pads:' + pad, 'code', code)
-				io.to('pad-' + pad).emit('modifiercodeacces', code, identifiant)
+				const salonAdmin = definirSalonAdmin(pad)
+				io.to(salonAdmin).emit('modifiercodeacces', code, identifiant)
+				io.to('pad-' + pad).except(salonAdmin).emit('modifiercodeacces', '', identifiant)
+				const evacuation = donneesPad.acces === 'code' ? await evacuerSalonNonAdmins(pad) : true
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
+				if (!evacuation) socket.emit('erreurevacuation')
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -86,7 +157,7 @@ export default function creerGestionnairesPad ({
 				} else if (donneesPad.hasOwnProperty('admins')) {
 					listeAdmins = JSON.parse(donneesPad.admins)
 				}
-				if (!listeAdmins.includes(identifiant) && donneesPad.identifiant !== identifiant) return socket.emit('nonautorise')
+				if (!await verifierAdmin(pad, donneesPad, req.session)) return socket.emit('nonautorise')
 				await db.HSET('pads:' + pad, 'admins', JSON.stringify(admins))
 				await Promise.all(admins.map(async (admin) => {
 					if (!listeAdmins.includes(admin)) {
@@ -124,16 +195,35 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!accesPossibles.includes(acces)) return socket.emit('erreur')
 				let code = ''
 				if (donneesPad.hasOwnProperty('code') && donneesPad.code !== '') {
 					code = donneesPad.code
 				} else {
 					code = Math.floor(100000 + Math.random() * 900000)
 				}
+				const accesPrecedent = donneesPad.acces
 				await db.HSET('pads:' + pad, ['acces', acces, 'code', code])
-				io.to('pad-' + pad).emit('modifieracces', acces, code)
+				const changementAcces = accesPrecedent !== acces
+				let synchronisation = null
+				if (changementAcces && acces === 'public') {
+					synchronisation = await synchroniserACL(pad, acces, delaiAttenteOuvertureACL)
+				}
+				const salonAdmin = definirSalonAdmin(pad)
+				io.to(salonAdmin).emit('modifieracces', acces, code)
+				io.to('pad-' + pad).except(salonAdmin).emit('modifieracces', acces, '')
+				const evacuation = acces !== 'public' ? await evacuerSalonNonAdmins(pad) : true
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
+				if (!evacuation) socket.emit('erreurevacuation')
+				if (changementAcces && acces !== 'public') {
+					synchronisation = await synchroniserACL(pad, acces, delaiAttenteFermetureACL)
+				}
+				if (synchronisation === 'encours') {
+					socket.emit('synchronisationfichiers', acces)
+				} else if (synchronisation) {
+					signalerSynchronisationACL(pad, synchronisation, (nombre) => socket.emit('erreurfichiers', nombre))
+				}
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -232,7 +322,11 @@ export default function creerGestionnairesPad ({
 				if (!admin) return socket.emit('nonautorise')
 				const fondPrecedent = donneesPad.fond
 				await db.HSET('pads:' + pad, ['fond', fond, 'fondRepete', 'desactive'])
-				io.to('pad-' + pad).emit('modifierfond', fond, identifiant)
+				if (typeof fond === 'string' && fond !== '' && !fond.includes('/img/') && fond.substring(0, 1) !== '#') {
+					await televerserFichierTemp(path.basename(fond), pad, donneesPad.acces)
+				}
+				const fondUrl = await definirUrlFond(pad, fond, donneesPad.acces)
+				io.to('pad-' + pad).emit('modifierfond', fond, identifiant, fondUrl)
 				if (typeof fondPrecedent === 'string' && fondPrecedent !== fond && fondPrecedent !== '' && !fondPrecedent.includes('/img/') && fondPrecedent.substring(0, 1) !== '#') {
 					await supprimerFichierSansEchec(pad, path.basename(fondPrecedent))
 				}
@@ -652,8 +746,21 @@ export default function creerGestionnairesPad ({
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('erreur')
 			try {
-				await db.HSET('pads:' + pad, 'notification', JSON.stringify(admins))
-				io.to('pad-' + pad).emit('modifiernotification', admins)
+				if (!verifierIdentifiantPad(pad)) return socket.emit('erreur')
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				if (!donneesPad.hasOwnProperty('identifiant')) return socket.emit('erreur')
+				if (!await verifierAccesLectureDonnees(pad, donneesPad, req.session)) return socket.emit('nonautorise')
+				const administrateurs = definirAdministrateursPad(donneesPad)
+				const listeEnregistree = parseJSON(donneesPad.notification, [])
+				const listeActuelle = Array.isArray(listeEnregistree) ? listeEnregistree.filter((admin) => administrateurs.includes(admin)) : []
+				const recus = Array.isArray(admins) ? admins.filter((admin) => administrateurs.includes(admin)) : []
+				const notification = [...new Set([...listeActuelle, ...recus])]
+				const inchangee = Array.isArray(listeEnregistree) && notification.length === listeEnregistree.length && notification.every((admin, index) => admin === listeEnregistree[index])
+				if (!inchangee) {
+					await db.HSET('pads:' + pad, 'notification', JSON.stringify(notification))
+					io.to('pad-' + pad).emit('modifiernotification', notification)
+				}
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {

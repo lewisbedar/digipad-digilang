@@ -1,6 +1,4 @@
 import 'dotenv/config'
-import path from 'path'
-import fs from 'fs-extra'
 import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
@@ -10,13 +8,14 @@ import compression from 'compression'
 import { createClient } from 'redis'
 import cron from 'node-cron'
 import nodemailer from 'nodemailer'
-import { URL, fileURLToPath } from 'url'
+import { URL } from 'url'
 import { RedisStore } from 'connect-redis'
 import session from 'express-session'
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { RedisStore as RateLimitRedisStore } from 'rate-limit-redis'
 import { EventEmitter } from 'events'
 import { Agent } from 'https'
+import { createHmac } from 'crypto'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { S3Client } from '@aws-sdk/client-s3'
 import { verifierMotDePasseAdmin } from './fonctions.js'
@@ -29,7 +28,6 @@ let cluster = false
 if (production) {
 	cluster = parseInt(process.env.NODE_CLUSTER) === 1
 }
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 demarrerServeur().catch((err) => {
 	console.error('Démarrage du serveur impossible :', err && err.stack ? err.stack : err)
@@ -125,10 +123,11 @@ async function demarrerServeur () {
 		throw new Error('SESSION_KEY manquante dans les variables d\'environnement. Arrêt du serveur.')
 	}
 	const redisStore = new RedisStore(storeOptions)
+	const nomCookieSession = 'digipad'
 	const sessionOptions = {
 		secret: process.env.SESSION_KEY || 'cle-par-defaut-dev',
 		store: redisStore,
-		name: 'digipad',
+		name: nomCookieSession,
 		resave: false,
 		rolling: true,
 		saveUninitialized: false,
@@ -163,10 +162,7 @@ async function demarrerServeur () {
 		else console.log('SMTP prêt')
 	})
 
-	const dateCron = process.env.CRON_TASK_DATE || '59 23 * * Saturday' // tous les samedis à 23h59
-	cron.schedule(dateCron, async () => {
-		await fs.emptyDir(path.join(__dirname, '..', '/static/temp'))
-	})
+	const dateCron = process.env.CRON_TASK_DATE || '0 1 */2 * *' // tous les 2 jours à 1h du matin
 
 	const minimumEspaceDisque = parseInt(process.env.ALERT_AVAILABLE_SPACE) || 10
 
@@ -180,6 +176,23 @@ async function demarrerServeur () {
 
 	const cleCrypto = process.env.ENCRYPTION_KEY || ''
 
+	if (production && process.env.UPLOAD_HOST && !process.env.UPLOAD_TOKEN_SECRET) {
+		throw new Error('UPLOAD_TOKEN_SECRET manquante dans les variables d\'environnement alors qu\'UPLOAD_HOST est configuré. Arrêt du serveur.')
+	}
+	const secretJetonTeleversement = process.env.UPLOAD_TOKEN_SECRET || 'cle-par-defaut-dev'
+
+	const secretJetonFichier = createHmac('sha256', process.env.SESSION_KEY || 'cle-par-defaut-dev').update('jeton-fichier').digest()
+
+	if (stockage === 'fs' && parseInt(process.env.REVERSE_PROXY) === 1) {
+		console.warn('REVERSE_PROXY=1 avec un stockage disque : « /fichiers » doit être transmis à Express (proxy_pass) et non servi directement par le reverse proxy, sinon les fichiers des pads privés et en accès protégé ne bénéficient pas du contrôle d\'accès. Voir la section « Fichiers (stockage disque) » du README.')
+	}
+
+	if (stockage === 'fs' && parseInt(process.env.X_ACCEL_REDIRECT) === 1) {
+		console.log('X_ACCEL_REDIRECT=1 : après contrôle par Express, les fichiers sont servis par nginx depuis « /fichiers-internes/ ». Cette location doit exister et être déclarée « internal », sans quoi les réponses partiront vides. Voir la section « Fichiers (stockage disque) » du README.')
+	} else if (stockage !== 'fs' && parseInt(process.env.X_ACCEL_REDIRECT) === 1) {
+		console.warn('X_ACCEL_REDIRECT=1 est sans effet avec un stockage S3 : « /fichiers » n\'est plus utilisé par l\'application.')
+	}
+
 	const validationInscription = parseInt(process.env.ACCOUNT_VALIDATION) || 0
 
 	const limiteRequetesAuth = parseInt(process.env.RATE_LIMIT_AUTH) || 10
@@ -188,6 +201,9 @@ async function demarrerServeur () {
 	const limiteRequetesConnexion = parseInt(process.env.RATE_LIMIT_LOGIN) || 30
 	const limiteEchecsConnexionParIdentifiant = parseInt(process.env.RATE_LIMIT_LOGIN_USERNAME) || 10
 	const limiteRequetesActionsSensibles = parseInt(process.env.RATE_LIMIT_SENSITIVE) || 10
+	const limiteEchecsCodeAdresse = parseInt(process.env.RATE_LIMIT_CODE) || 100
+	const limiteRequetesApi = parseInt(process.env.RATE_LIMIT_API) || 100
+	const limiteRequetesLienFichier = parseInt(process.env.RATE_LIMIT_FILE_LINK) || 300
 	const fenetreEchecsConnexionParIdentifiant = 15 * 60
 
 	let trustProxy = process.env.TRUST_PROXY
@@ -212,14 +228,30 @@ async function demarrerServeur () {
 
 	const limitePadsParCompte = parseInt(process.env.VITE_PAD_LIMIT, 10) || 100
 
+	const cheminLienFichier = '/generer-lien-fichier'
+
 	const limiteApi = rateLimit({
 		windowMs: 15 * 60 * 1000,
-		limit: 100,
+		limit: limiteRequetesApi,
 		standardHeaders: 'draft-7',
 		legacyHeaders: false,
 		store: new RateLimitRedisStore({
 			sendCommand: (...args) => db.sendCommand(args),
 			prefix: 'rl-api:'
+		}),
+		skipSuccessfulRequests: true,
+		skip: (req) => req.path === cheminLienFichier,
+		validate: { trustProxy: false }
+	})
+
+	const limiteLienFichier = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesLienFichier,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-lien-fichier:'
 		}),
 		skipSuccessfulRequests: true,
 		validate: { trustProxy: false }
@@ -344,6 +376,24 @@ async function demarrerServeur () {
 	if (!production) {
 		scriptSrc.push("'unsafe-inline'")
 	}
+
+	const originesS3 = []
+	if (stockage === 's3') {
+		const ajouterOrigineS3 = (lien, prefixe = '') => {
+			if (!lien || lien === '') return
+			try {
+				const url = new URL(lien)
+				const origine = url.protocol + '//' + (prefixe !== '' ? prefixe + '.' : '') + url.host
+				if (!originesS3.includes(origine)) originesS3.push(origine)
+			} catch {}
+		}
+		ajouterOrigineS3(lienPublicS3)
+		ajouterOrigineS3(process.env.S3_ENDPOINT)
+		if (bucket && bucket !== '' && (process.env.S3_SERVER_TYPE || 'aws') !== 'minio') {
+			ajouterOrigineS3(process.env.S3_ENDPOINT, bucket)
+		}
+	}
+
 	let hoteVite = 'ws://localhost:24678'
 	if (production) {
 		hoteVite = ''
@@ -378,8 +428,43 @@ async function demarrerServeur () {
 		langueParDefaut,
 		minimumEspaceDisque,
 		fenetreEchecsConnexionParIdentifiant,
+		limiteEchecsCodeAdresse,
 		salonMaintenance
 	})
+
+	const dureeVerrouPurge = 14400
+	cron.schedule(dateCron, async () => {
+		try {
+			const verrou = await db.SET('verrou-purge-temp', '1', { NX: true, EX: dureeVerrouPurge })
+			if (!verrou) return
+			const purgeLocale = await fonctions.purgerFichiersTemporairesLocaux()
+			if (purgeLocale.supprimes > 0 || purgeLocale.echecs > 0) {
+				console.log('Purge des fichiers temporaires locaux : ' + purgeLocale.supprimes + ' supprimé(s), ' + purgeLocale.echecs + ' échec(s)')
+			}
+			const purge = await fonctions.purgerFichiersTemporairesS3()
+			if (purge.supprimes > 0 || purge.echecs > 0) {
+				console.log('Purge des fichiers temporaires S3 : ' + purge.supprimes + ' supprimé(s), ' + purge.echecs + ' échec(s)')
+			}
+		} catch (err) {
+			console.error('Purge des fichiers temporaires : ' + err.stack)
+		}
+	})
+
+	const dureeVerrouACL = 840
+	if (stockage === 's3') {
+		cron.schedule('*/15 * * * *', async () => {
+			try {
+				const verrou = await db.SET('verrou-acl', '1', { NX: true, EX: dureeVerrouACL })
+				if (!verrou) return
+				const acl = await fonctions.resynchroniserACLEnAttente()
+				if (acl.pads > 0) {
+					console.log('Reprise des resynchronisations ACL : ' + acl.resolus + ' pad(s) sur ' + acl.pads)
+				}
+			} catch (err) {
+				console.error('Reprise des resynchronisations ACL : ' + err.stack)
+			}
+		})
+	}
 
 	await initialiserRoutes({
 		app,
@@ -391,6 +476,8 @@ async function demarrerServeur () {
 		dureeSession,
 		earlyHints103,
 		cleCrypto,
+		secretJetonTeleversement,
+		secretJetonFichier,
 		creationCompte,
 		validationInscription,
 		limiteEchecsConnexionParIdentifiant,
@@ -416,9 +503,13 @@ async function demarrerServeur () {
 		hoteVite,
 		domaineUmami,
 		domaineMatomo,
+		originesS3,
 		sessionMiddleware,
+		nomCookieSession,
 		domainesAutorises,
 		limiteApi,
+		limiteLienFichier,
+		cheminLienFichier,
 		fonctions
 	})
 	if (cluster === true) {
@@ -483,6 +574,7 @@ async function demarrerServeur () {
 		dureeSession,
 		dureeTransfertPropriete,
 		salonMaintenance,
+		trustProxy,
 		fonctions
 	})
 

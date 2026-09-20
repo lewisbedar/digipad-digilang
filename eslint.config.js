@@ -111,6 +111,13 @@ export default [
 		rules: regles
 	},
 	{
+		name: 'app/composant-a-script-externe',
+		files: ['pages/p/+Page.vue'],
+		rules: {
+			'vue/multi-word-component-names': 'off'
+		}
+	},
+	{
 		files: ['server/**/*.js', 'tests/**/*.js'],
 		languageOptions: {
 			globals: {

@@ -13,6 +13,7 @@ export default function initialiserSocket ({
 	dureeSession,
 	dureeTransfertPropriete,
 	salonMaintenance,
+	trustProxy,
 	fonctions
 }) {
 	const enregistrerConnexion = creerGestionnairesConnexion({
@@ -20,6 +21,7 @@ export default function initialiserSocket ({
 		db,
 		dureeSession,
 		salonMaintenance,
+		trustProxy,
 		fonctions
 	})
 	const enregistrerBlocs = creerGestionnairesBlocs({

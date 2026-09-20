@@ -28,7 +28,8 @@ export default function creerGestionnairesColonnes ({
 		verifierEspaceDisque,
 		annulerDupliquerBloc,
 		dupliquerBloc,
-		definirScoreMaximum
+		definirScoreMaximum,
+		appliquerUrlsFichiers
 	} = fonctions
 
 	return function enregistrer (socket, req) {
@@ -43,8 +44,10 @@ export default function creerGestionnairesColonnes ({
 				if (!donneesPad.hasOwnProperty('colonnes') || !donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
-				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : colonnes.map(() => true)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
+				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : colonnes.map(() => true)
+				if (!Array.isArray(affichageColonnes)) return socket.emit('erreur')
 				if (!Number.isInteger(indexColonne) || indexColonne < 0 || indexColonne > colonnes.length) return socket.emit('erreur')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
@@ -99,7 +102,8 @@ export default function creerGestionnairesColonnes ({
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
 				if (!await verifierEspaceDisque()) return socket.emit('espacedisque')
-				const colonnes = JSON.parse(donneesPad.colonnes)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
 				let affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : null
 				if (!Array.isArray(affichageColonnes) || affichageColonnes.length !== colonnes.length) {
 					affichageColonnes = colonnes.map(() => true)
@@ -133,7 +137,7 @@ export default function creerGestionnairesColonnes ({
 				// Contenu dupliqué avant toute écriture : si une copie échoue, rien n'a encore été modifié et la duplication est abandonnée
 				const duplications = await executerTransactions(blocsADupliquer, async (donneesBloc, index) => {
 					const nouveauBloc = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
-					const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer)
+					const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer, donneesPad.acces)
 					return { nouveauBloc, contenu, donneesBloc, blocId: blocCourant + index + 1, score: scoreBase + index + 1 }
 				}, tailleLotTransaction)
 				if (duplications.some((duplication) => duplication.contenu.echec)) {
@@ -162,6 +166,7 @@ export default function creerGestionnairesColonnes ({
 					const { nouveauBloc, contenu, donneesBloc, blocId } = duplication
 					return { bloc: nouveauBloc, titre: donneesBloc.titre || '', type: donneesBloc.type || '', source: donneesBloc.source || '', identifiant, nom, date, couleur: donneesBloc.couleur || '', commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne: indexColonne, visibilite: donneesBloc.visibilite || 'visible', texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette, id: blocId }
 				})
+				await appliquerUrlsFichiers(pad, blocsDupliques, donneesPad.acces)
 				const donneesColonne = { identifiant, nom, titre, indexColonne, colonnes, affichageColonnes, date, activiteId }
 				const salonAdmin = definirSalonAdmin(pad)
 				io.to(salonAdmin).emit('dupliquercolonne', { ...donneesColonne, blocs: blocsDupliques })
@@ -187,10 +192,12 @@ export default function creerGestionnairesColonnes ({
 				if (!donneesPad.hasOwnProperty('colonnes')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
 				if (typeof index !== 'number' || index < 0 || index > colonnes.length) return socket.emit('erreur')
 				if (index === colonnes.length) {
-					const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : []
+					const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : []
+					if (!Array.isArray(affichageColonnes)) return socket.emit('erreur')
 					colonnes.push(titre)
 					affichageColonnes.push(true)
 					await db.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes)])
@@ -215,10 +222,12 @@ export default function creerGestionnairesColonnes ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
 				let affichageColonnes = []
 				if (donneesPad.hasOwnProperty('affichageColonnes')) {
-					affichageColonnes = JSON.parse(donneesPad.affichageColonnes)
+					affichageColonnes = parseJSON(donneesPad.affichageColonnes, null)
+					if (!Array.isArray(affichageColonnes)) return socket.emit('erreur')
 				} else {
 					colonnes.forEach(() => {
 						affichageColonnes.push(true)
@@ -262,7 +271,8 @@ export default function creerGestionnairesColonnes ({
 				if (!donneesPad.hasOwnProperty('colonnes')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
 				colonne = parseInt(colonne, 10)
 				if (!Number.isInteger(colonne) || colonne < 0 || colonne >= colonnes.length) return socket.emit('erreur')
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
@@ -305,9 +315,11 @@ export default function creerGestionnairesColonnes ({
 				if (!donneesPad.hasOwnProperty('colonnes')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
 				colonnes.splice(colonne, 1)
-				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : colonnes.map(() => true)
+				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : colonnes.map(() => true)
+				if (!Array.isArray(affichageColonnes)) return socket.emit('erreur')
 				affichageColonnes.splice(colonne, 1)
 				const blocs = await db.ZRANGE('blocs:' + pad, 0, -1)
 				if (blocs === null) return socket.emit('erreur')
@@ -364,8 +376,10 @@ export default function creerGestionnairesColonnes ({
 				if (!donneesPad.hasOwnProperty('colonnes')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				const colonnes = JSON.parse(donneesPad.colonnes)
-				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : colonnes.map(() => true)
+				const colonnes = parseJSON(donneesPad.colonnes, null)
+				if (!Array.isArray(colonnes)) return socket.emit('erreur')
+				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? parseJSON(donneesPad.affichageColonnes, null) : colonnes.map(() => true)
+				if (!Array.isArray(affichageColonnes)) return socket.emit('erreur')
 				const indexColonne = parseInt(colonne, 10)
 				if (direction === 'gauche') {
 					const titreColonne = colonnes.splice(indexColonne, 1)[0]

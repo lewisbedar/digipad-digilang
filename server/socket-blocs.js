@@ -5,6 +5,7 @@ import {
 	limitesTailleInput,
 	definirBlocDiffuse,
 	verifierColonneMasquee,
+	definirAccesLecture,
 	verifierIdentifiantBloc,
 	recupererNombreCommentaires,
 	sauvegarderSession,
@@ -36,7 +37,8 @@ export default function creerGestionnairesBlocs ({
 		annulerDupliquerBloc,
 		supprimerEtherpad,
 		dupliquerBloc,
-		definirScoreDuplication
+		definirScoreDuplication,
+		ajouterUrlsFichiers
 	} = fonctions
 
 	return function enregistrer (socket, req) {
@@ -55,6 +57,7 @@ export default function creerGestionnairesBlocs ({
 				const padValide = clesRequises.every(champ => donneesPad.hasOwnProperty(champ))
 				if (!padValide) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				const autorisation = (donneesPad.id === pad && donneesPad.token === token && (donneesPad.contributions !== 'fermees' || admin))
 				if (!autorisation) return socket.emit('nonautorise')
 				const blocExiste = await db.EXISTS('pad-' + pad + ':' + bloc)
@@ -90,12 +93,13 @@ export default function creerGestionnairesBlocs ({
 						.exec()
 				}
 				if (media !== '' && type !== 'embed' && type !== 'lien') {
-					await televerserFichierTemp(media, pad)
+					await televerserFichierTemp(media, pad, donneesPad.acces)
 				}
 				if (vignettePersonnalisee) {
-					await televerserFichierTemp(vignette, pad)
+					await televerserFichierTemp(vignette, pad, donneesPad.acces)
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -114,12 +118,15 @@ export default function creerGestionnairesBlocs ({
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
 				if (!donneesBloc.hasOwnProperty('titre')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesBloc.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				let vignette = donneesBloc.vignette
 				if (vignette && definirVignettePersonnalisee(vignette) === true) {
 					vignette = path.basename(vignette)
 				}
-				socket.emit('recupererbloc', { bloc, titre: donneesBloc.titre, texte: donneesBloc.texte, media: donneesBloc.media, alt: donneesBloc.alt || '', iframe: donneesBloc.iframe, vignette })
+				const reponse = { bloc, titre: donneesBloc.titre, texte: donneesBloc.texte, media: donneesBloc.media, alt: donneesBloc.alt || '', iframe: donneesBloc.iframe, vignette, type: donneesBloc.type }
+				await ajouterUrlsFichiers(pad, reponse, donneesPad.acces)
+				socket.emit('recupererbloc', reponse)
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
@@ -144,6 +151,7 @@ export default function creerGestionnairesBlocs ({
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
 				if (Object.keys(donneesBloc).length === 0) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
 				const autorisation = (donneesBloc.identifiant === identifiant || admin || (donneesPad.contributions === 'modifiables' && !blocMasque))
 				if (!autorisation) return socket.emit('nonautorise')
@@ -183,16 +191,17 @@ export default function creerGestionnairesBlocs ({
 				}
 				// Ajout du nouveau media si modifié
 				if (mediaModifie && media !== '' && type !== 'embed' && type !== 'lien') {
-					await televerserFichierTemp(media, pad)
+					await televerserFichierTemp(media, pad, donneesPad.acces)
 				}
 				const ancienneVignettePersonnalisee = (donneesBloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(donneesBloc.vignette) === true)
 				if (vignetteModifiee && ancienneVignettePersonnalisee) {
 					await supprimerFichierSansEchec(pad, path.basename(donneesBloc.vignette))
 				}
 				if (vignettePersonnalisee && vignetteModifiee) {
-					await televerserFichierTemp(vignette, pad)
+					await televerserFichierTemp(vignette, pad, donneesPad.acces)
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -231,7 +240,7 @@ export default function creerGestionnairesBlocs ({
 				const type = donneesBloc.type || ''
 				const sourceBloc = donneesBloc.source || ''
 				const couleur = donneesBloc.couleur || ''
-				const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer)
+				const contenu = await dupliquerBloc(pad, donneesBloc, contenusANettoyer, donneesPad.acces)
 				if (contenu.echec) {
 					await annulerDupliquerBloc(pad, contenusANettoyer)
 					return socket.emit('erreur')
@@ -253,6 +262,7 @@ export default function creerGestionnairesBlocs ({
 						.exec()
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, blocOrigine, titre, type, source: sourceBloc, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, contenu, donneesPad.contributions)
+				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
 				diffuserBloc(pad, 'dupliquerbloc', blocDiffuse, identifiant, colonneMasquee)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -311,12 +321,13 @@ export default function creerGestionnairesBlocs ({
 						.exec()
 				}
 				if (media !== '' && type !== 'embed' && type !== 'lien') {
-					await copierFichier(padOrigine, pad, media, 'media')
+					await copierFichier(padOrigine, pad, media, 'media', donneesPad.acces)
 				}
 				if (vignettePersonnalisee && vignette !== '') {
-					await copierFichier(padOrigine, pad, vignette, 'vignette')
+					await copierFichier(padOrigine, pad, vignette, 'vignette', donneesPad.acces)
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}), type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
 				socket.emit('copierbloc')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -378,6 +389,7 @@ export default function creerGestionnairesBlocs ({
 				const listeEvaluations = (evaluationsBrutes || []).map(ev => parseJSON(ev, null)).filter(e => e !== null)
 				const evaluationsVisibles = (donneesPad.visibiliteEvaluations === 'admin') ? [] : listeEvaluations
 				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, alt: item.alt || '', iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
+				await ajouterUrlsFichiers(pad, donneesBlocAutoriseBase, donneesPad.acces)
 				if (moderation === 'moderee' && item.activiteId) {
 					donneesBlocAutoriseBase.publication = { activiteId: item.activiteId, date: item.date, identifiant: item.identifiant, nom: item.nom }
 				}
@@ -461,7 +473,9 @@ export default function creerGestionnairesBlocs ({
 				if (blocExiste !== 1) return socket.emit('erreur')
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
-				const autorisation = (donneesBloc.identifiant === identifiant || await verifierAdmin(pad, donneesPad, req.session) === true)
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
+				const autorisation = (donneesBloc.identifiant === identifiant || admin === true)
 				if (!autorisation) return socket.emit('nonautorise')
 				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== bloc) return socket.emit('erreur')
 				if (donneesBloc.hasOwnProperty('media') && donneesBloc.media !== '' && donneesBloc.type !== 'embed' && donneesBloc.type !== 'lien') {
@@ -494,16 +508,16 @@ export default function creerGestionnairesBlocs ({
 
 		socket.on('verifiermodifierbloc', async (pad, bloc, identifiant) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
+			if (!socket.rooms.has('pad-' + pad)) return
 			socket.to('pad-' + pad).emit('verifiermodifierbloc', bloc, identifiant)
 			req.session.cookie.expires = new Date(Date.now() + dureeSession)
 			await sauvegarderSession(req)
 		})
 
-		socket.on('reponsemodifierbloc', async (pad, identifiant, reponse) => {
+		socket.on('reponsemodifierbloc', (pad, identifiant, reponse) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
+			if (!socket.rooms.has('pad-' + pad)) return
 			socket.to('pad-' + pad).emit('reponsemodifierbloc', identifiant, reponse)
-			req.session.cookie.expires = new Date(Date.now() + dureeSession)
-			await sauvegarderSession(req)
 		})
 	}
 }

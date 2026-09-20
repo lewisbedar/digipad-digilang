@@ -731,14 +731,14 @@
 						<audio id="audio" controls :src="media" v-show="!chargementMedia" v-else-if="type === 'enregistrement'" />
 						<audio id="audio" controls :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'audio'" />
 						<video id="video" controls playsinline crossOrigin="anonymous" :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'video'" />
-						<iframe id="document" :src="'/pdfjs/web/viewer.html?file=' + definirLienFichierHote(pad.id, media)" allowfullscreen v-show="!chargementMedia" v-else-if="type === 'pdf'" />
-						<iframe id="document" :src="visionneuse + definirLienFichierHote(pad.id, media)" allowfullscreen v-show="!chargementMedia" v-else-if="(type === 'office' || type === 'document') && visionneuse !== ''" />
+						<iframe id="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?file=', definirLienFichierHote(pad.id, media))" allowfullscreen v-show="!chargementMedia" v-else-if="type === 'pdf'" />
+						<iframe id="document" :src="definirLienVisionneuse(visionneuse, definirLienModaleVisionneuse())" allowfullscreen v-show="!chargementMedia" v-else-if="(type === 'office' || type === 'document') && visionneuse !== ''" />
 						<a id="lien" :href="media" target="_blank" v-show="!chargementMedia" v-else-if="type === 'lien'">
 							<span class="type">{{ $t('lienExterne') }}</span>
 							<span class="nom">{{ definirNomFichier(media) }}</span>
 							<span class="icone" aria-hidden="true"><i class="material-icons">link</i></span>
 						</a>
-						<a id="fichier" :href="definirLienFichier(pad.id, media)" download v-show="!chargementMedia" v-else>
+						<a id="fichier" :href="definirLienFichier(pad.id, media)" download v-show="!chargementMedia" v-else @click="telechargerFichierModale($event, media)">
 							<span class="type">{{ definirExtensionFichier(media) }}</span>
 							<span class="nom">{{ definirNomFichier(media) }}</span>
 							<span class="icone" aria-hidden="true"><i class="material-icons">attachment</i></span>
@@ -989,21 +989,21 @@
 				</div>
 				<div class="conteneur conteneur-media" v-if="donneesBloc.media">
 					<div class="media" v-if="donneesBloc.iframe === ''">
-						<img :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-if="donneesBloc.type === 'image'">
+						<img :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-if="donneesBloc.type === 'image'" @error="rafraichirUrlFichier(donneesBloc, 'media')">
 						<img :src="donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-else-if="donneesBloc.type === 'lien-image'">
-						<audio controls :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" />
-						<video controls playsinline crossOrigin="anonymous" :src="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" />
-						<iframe class="document" :src="'/pdfjs/web/viewer.html?file=' + definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
-						<iframe class="document" :src="visionneuse + definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media" allowfullscreen v-else-if="(donneesBloc.type === 'office' || donneesBloc.type === 'document') && visionneuse !== ''" />
+						<audio controls :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
+						<video controls playsinline crossOrigin="anonymous" :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
+						<iframe class="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?file=', stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media)" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
+						<iframe class="document" :src="definirLienVisionneuse(visionneuse, definirLienDocumentVisionneuse())" allowfullscreen v-else-if="(donneesBloc.type === 'office' || donneesBloc.type === 'document') && visionneuse !== ''" />
 						<span v-else-if="donneesBloc.type === 'lien'">
 							<a :href="donneesBloc.media" target="_blank">
-								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''">
+								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
 								<img src="/img/lien.png" alt="lien.png" v-else>
 							</a>
 						</span>
 						<span v-else>
-							<a :href="definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" download>
-								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''">
+							<a :href="definirLienTelechargement(pad.id, donneesBloc)" :title="$t('telecharger')" :aria-label="$t('telecharger')" download @click="telechargerFichier($event, pad.id, donneesBloc)">
+								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
 								<img src="/img/telechargement.png" alt="telechargement.png" v-else>
 							</a>
 						</span>
@@ -1177,7 +1177,7 @@
 
     <Message :message="message" @elementPrecedent="definirElementPrecedent" @fermer="fermerMessage" v-if="message !== ''" />
 
-    <Chargement v-if="chargement" />
+    <Chargement :chargement="chargement" />
 
-    <ChargementPage v-if="chargementPage" />
+    <ChargementPage :chargement="chargementPage" />
 </div>

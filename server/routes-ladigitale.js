@@ -4,7 +4,6 @@ import axios from 'axios'
 import dayjs from 'dayjs'
 import bcrypt from 'bcrypt'
 import { randomBytes } from 'crypto'
-import { CopyObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { URL } from 'url'
 import { fileURLToPath } from 'url'
 import {
@@ -27,8 +26,6 @@ export default function enregistrerRoutesLadigitale ({
 	app,
 	langueParDefaut,
 	stockage,
-	s3Client,
-	bucket,
 	db,
 	etherpad,
 	etherpadApi,
@@ -42,7 +39,7 @@ export default function enregistrerRoutesLadigitale ({
 		supprimerPad,
 		verifierAutorisationApi,
 		definirVignettePersonnalisee,
-		definirParametresCopierS3,
+		copierFichiersPad,
 		televerserFichierArchive,
 		verifierEspaceDisque,
 		extraireIdentifiantEtherpad,
@@ -257,21 +254,7 @@ export default function enregistrerRoutesLadigitale ({
 				}
 				await pipelineBlocs.exec()
 				// Copie des fichiers
-				if (stockage === 'fs') {
-					const dossierSource = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padSource)
-					const dossierDestination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + padId)
-					if (await fs.pathExists(dossierSource)) {
-						await fs.copy(dossierSource, dossierDestination)
-					}
-				} else if (stockage === 's3') {
-					const listeObjets = await s3Client.send(new ListObjectsV2Command({ Bucket: bucket, Prefix: padSource + '/' }))
-					if (listeObjets && listeObjets.hasOwnProperty('Contents') && Array.isArray(listeObjets.Contents)) {
-						await executerTransactions(listeObjets.Contents, (objet) => {
-							const nouvelleCle = objet.Key.replace(padSource + '/', padId + '/')
-							return s3Client.send(new CopyObjectCommand(definirParametresCopierS3(nouvelleCle, '/' + bucket + '/' + objet.Key)))
-						}, tailleLotTransaction)
-					}
-				}
+				await copierFichiersPad(padSource, padId, donneesPad.acces)
 				return res.status(200).send(padId + '/' + token)
 			}
 			// ACTION : EXPORTER
@@ -410,10 +393,10 @@ export default function enregistrerRoutesLadigitale ({
 						}
 					}
 					if (bloc.hasOwnProperty('media') && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
-						await televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.media, id)
+						await televerserFichierArchive(dossierTemporaire, dossierDestination, bloc.media, id, donnees.pad.acces)
 					}
 					if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette)) {
-						await televerserFichierArchive(dossierTemporaire, dossierDestination, vignette, id)
+						await televerserFichierArchive(dossierTemporaire, dossierDestination, vignette, id, donnees.pad.acces)
 					}
 					return { bloc: bloc.bloc, blocId: blocId }
 				}, tailleLotTransaction)
@@ -424,7 +407,7 @@ export default function enregistrerRoutesLadigitale ({
 				const activiteId = parametres.activite === true ? donnees.pad.activite : 0
 				const fond = donnees.pad.fond
 				if (fond && !fond.includes('/img/') && fond.substring(0, 1) !== '#') {
-					await televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fond), id)
+					await televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fond), id, donnees.pad.acces)
 				}
 				await db.multi()
 					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])

@@ -11,7 +11,7 @@ import 'dayjs/locale/it.js'
 import localizedFormat from 'dayjs/plugin/localizedFormat.js'
 import { promises as dnsPromises } from 'dns'
 import { URL } from 'url'
-import { createHash, timingSafeEqual } from 'crypto'
+import { createHash, createHmac, timingSafeEqual } from 'crypto'
 
 dayjs.extend(localizedFormat)
 
@@ -54,6 +54,11 @@ function verifierIdentifiantPad (pad) {
 
 function verifierIdentifiantBloc (bloc) {
 	return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{20,64}$/.test(bloc)
+}
+
+// Compatibilité avec les anciens id de bloc
+function verifierIdentifiantBlocExistant (bloc) {
+	return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{10,64}$/.test(bloc)
 }
 
 function verifierBlocVisible (bloc, contributions) {
@@ -157,7 +162,7 @@ function sauvegarderSession (req) {
 	})
 }
 
-const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage', 'colonnes']
+const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'fondUrl', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage', 'colonnes']
 
 function filtrerChamps (objet, champs) {
 	const resultat = {}
@@ -441,9 +446,17 @@ function parseJSON (str, fallback) {
 	}
 }
 
+function comparerChaines (c1, c2) {
+	if (typeof c1 !== 'string' || typeof c2 !== 'string') return false
+	const tampon1 = Buffer.from(c1)
+	const tampon2 = Buffer.from(c2)
+	if (tampon1.length !== tampon2.length) return false
+	return timingSafeEqual(tampon1, tampon2)
+}
+
 function comparerHash (h1, h2) {
-	if (!h1 || !h2 || h1.length !== h2.length) return false
-	return timingSafeEqual(Buffer.from(h1), Buffer.from(h2))
+	if (!h1 || !h2) return false
+	return comparerChaines(h1, h2)
 }
 
 function verifierMotDePasseAdmin (motdepasse) {
@@ -452,6 +465,36 @@ function verifierMotDePasseAdmin (motdepasse) {
 	const empreinte = createHash('sha256').update(motdepasse).digest()
 	const empreinteAdmin = createHash('sha256').update(motdepasseAdmin).digest()
 	return timingSafeEqual(empreinte, empreinteAdmin)
+}
+
+const dureeJetonTeleversement = 120_000
+
+function genererJetonTeleversement (secret, action, pad) {
+	const charge = Buffer.from(JSON.stringify({ action, pad: pad || '', exp: Date.now() + dureeJetonTeleversement })).toString('base64url')
+	const signature = createHmac('sha256', secret).update(charge).digest('base64url')
+	return charge + '.' + signature
+}
+
+const dureeJetonFichier = 3600_000
+
+function genererJetonFichier (secret, pad, fichier) {
+	const charge = Buffer.from(JSON.stringify({ pad: String(pad), fichier, exp: Date.now() + dureeJetonFichier })).toString('base64url')
+	const signature = createHmac('sha256', secret).update(charge).digest('base64url')
+	return charge + '.' + signature
+}
+
+function verifierJetonFichier (secret, jeton, pad, fichier) {
+	if (!secret || typeof jeton !== 'string' || jeton === '') return false
+	const separateur = jeton.lastIndexOf('.')
+	if (separateur === -1) return false
+	const charge = jeton.substring(0, separateur)
+	const signature = jeton.substring(separateur + 1)
+	const signatureAttendue = createHmac('sha256', secret).update(charge).digest('base64url')
+	if (!comparerChaines(signature, signatureAttendue)) return false
+	const donnees = parseJSON(Buffer.from(charge, 'base64url').toString(), null)
+	if (!donnees || typeof donnees !== 'object') return false
+	if (String(donnees.pad) !== String(pad) || donnees.fichier !== fichier) return false
+	return typeof donnees.exp === 'number' && donnees.exp > Date.now()
 }
 
 function verifierContenuFichier (buffer, mimetype) {
@@ -526,6 +569,7 @@ export {
 	verifierColonneMasquee,
 	verifierIdentifiantPad,
 	verifierIdentifiantBloc,
+	verifierIdentifiantBlocExistant,
 	verifierBlocVisible,
 	definirDonneesPadExport,
 	definirBlocsExport,
@@ -568,6 +612,9 @@ export {
 	parseJSON,
 	comparerHash,
 	verifierMotDePasseAdmin,
+	genererJetonTeleversement,
+	genererJetonFichier,
+	verifierJetonFichier,
 	verifierContenuFichier,
 	formaterDate
 }

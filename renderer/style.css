@@ -1085,6 +1085,10 @@ label.bouton-bleu {
 	opacity: 0;
 }
 
+.fondu-leave-active {
+	pointer-events: none;
+}
+
 /* Chargement
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 .conteneur-chargement {

@@ -168,7 +168,7 @@
 
 		<Message :message="message" @elementPrecedent="definirElementPrecedent" @fermer="fermerMessage" v-if="message !== ''" />
 
-		<ChargementPage v-if="chargementPage" />
+		<ChargementPage :chargement="chargementPage" />
 	</div>
 </template>
 
@@ -288,7 +288,7 @@ export default {
 					} else if (err.response?.data === 'erreur_creation') {
 						this.message = this.$t('erreurCreationPad')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else {
@@ -328,7 +328,7 @@ export default {
 					} else if (err.response?.data === 'erreur_connexion') {
 						this.message = this.$t('informationsConnexionIncorrectes')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else {
@@ -378,7 +378,7 @@ export default {
 					} else if (err.response?.data === 'erreur_email') {
 						this.message = this.$t('erreurEnvoiEmail')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else if (identifiant === '' || motdepasse === '' || this.confirmationMotDePasse.trim() === '' || email === '') {
@@ -425,7 +425,7 @@ export default {
 					if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else if (this.identifiant.trim() === '' || this.email.trim() === '') {
@@ -478,7 +478,7 @@ export default {
 					if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			} else if (this.email.trim() === '') {
@@ -510,7 +510,7 @@ export default {
 					if (err.response?.data === 'non_autorise') {
 						this.message = this.$t('actionNonAutorisee')
 					} else {
-						this.message = this.$t('erreurCommunicationServeur')
+						this.message = this.definirMessageErreur(err)
 					}
 				})
 			}

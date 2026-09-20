@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { etat } from './etat.js'
 import {
 	limitesTailleInput,
+	definirAccesLecture,
 	definirSalonUtilisateur,
 	definirSalonAdmin,
 	sauvegarderSession,
@@ -34,6 +35,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if ((donneesPad.accesCommentaires === 'admin' || donneesPad.visibiliteCommentaires === 'admin') && !admin) return socket.emit('nonautorise')
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
@@ -148,6 +150,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentairesJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				texte = assainirHTML(texte)
@@ -181,6 +184,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentaireJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
@@ -210,6 +214,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentaires === null) return socket.emit('erreur')
 				const nomsUtilisateurs = new Map()
@@ -237,6 +242,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if ((donneesPad.accesEvaluations === 'admin' || donneesPad.visibiliteEvaluations === 'admin') && !admin) return socket.emit('nonautorise')
 				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
 				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
@@ -278,6 +284,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesPad.visibiliteEvaluations === 'admin' && !admin) return socket.emit('nonautorise')
 				if (evaluationJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
@@ -313,6 +320,7 @@ export default function creerGestionnairesCommentaires ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (blocExiste !== 1) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if (donneesPad.visibiliteEvaluations === 'admin' && !admin) return socket.emit('nonautorise')
 				if (evaluationJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()

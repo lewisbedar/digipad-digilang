@@ -93,12 +93,12 @@ export default function enregistrerRoutesPages ({
 				supprimerSession(req)
 				return res.redirect(302, '/')
 			}
-			const [padsCreesRaw, padsCorbeilleRaw, padsRejointsRaw, padsAdminsRaw, padsFavorisRaw] = await recupererDonneesUtilisateur(identifiant)
-			let padsCrees = nettoyerPads(padsCreesRaw)
-			let padsCorbeille = nettoyerPads(padsCorbeilleRaw)
-			let padsRejoints = nettoyerPads(padsRejointsRaw)
-			let padsAdmins = nettoyerPads(padsAdminsRaw)
-			let padsFavoris = nettoyerPads(padsFavorisRaw)
+			const [padsCreesBrut, padsCorbeilleBrut, padsRejointsBrut, padsAdminsBrut, padsFavorisBrut] = await recupererDonneesUtilisateur(identifiant, req.session)
+			let padsCrees = nettoyerPads(padsCreesBrut)
+			let padsCorbeille = nettoyerPads(padsCorbeilleBrut)
+			let padsRejoints = nettoyerPads(padsRejointsBrut)
+			let padsAdmins = nettoyerPads(padsAdminsBrut)
+			let padsFavoris = nettoyerPads(padsFavorisBrut)
 			const idsCorbeille = new Set(padsCorbeille.map(p => p.id))
 			const idsAdmins = new Set(padsAdmins.map(p => p.id))
 			// Filtrer les favoris supprimés
@@ -320,7 +320,7 @@ export default function enregistrerRoutesPages ({
 			const titre = donneesPad.titre
 			const lien = hote + '/p/' + id + '/' + token
 			const langue = req.session.langue || langueParDefaut
-			const xml = genererXML(hote, id, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
+			const xml = genererXML(hote, titre, lien, donneesBlocs.blocs, donneesBlocs.admin, langue)
 			if (xml === null || xml === '') {
 				res.redirect(302, '/p/' + id + '/' + token)
 			} else {

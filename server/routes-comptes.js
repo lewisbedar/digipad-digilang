@@ -37,7 +37,9 @@ export default function enregistrerRoutesComptes ({
 		enregistrerTentativeConnexion,
 		reinitialiserEchecsConnexion,
 		recupererDonneesAuteur,
+		recupererDonneesUtilisateur,
 		recupererDonneesPadProtege,
+		resoudreFonds,
 		verifierAdmin,
 		envoyerEmail
 	} = fonctions
@@ -317,6 +319,33 @@ export default function enregistrerRoutesComptes ({
 			padsCrees = supprimerDoublons(padsCrees)
 			padsAdmins = supprimerDoublons(padsAdmins)
 			res.status(200).json({ padsCrees, padsAdmins })
+		} catch (err) {
+			console.error(err.stack)
+			res.status(500).send('erreur')
+		}
+	})
+
+	app.post('/api/rafraichir-fonds', async (req, res) => {
+		if (etat.maintenance === true) return res.status(503).send('maintenance')
+		const identifiant = req.body.identifiant
+		if (!req.session.identifiant || req.session.identifiant !== identifiant || req.session.statut !== 'utilisateur' || !req.session.hasOwnProperty('motdepasse') || req.session.motdepasse === '') return res.status(403).send('non_autorise')
+		try {
+			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
+			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(403).send('non_autorise')
+			if (!comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)) return res.status(403).send('non_autorise')
+			const listes = await recupererDonneesUtilisateur(identifiant, req.session)
+			const fonds = {}
+			const pads = new Map()
+			listes.flat().forEach((pad) => {
+				if (pad && pad.hasOwnProperty('id') && !pads.has(pad.id)) pads.set(pad.id, pad)
+			})
+			const entrees = Array.from(pads.values()).filter((pad) => pad.fondUrl).map((pad) => ({ padId: pad.id, donneesPad: pad }))
+			await resoudreFonds(entrees, { sansCache: true })
+			entrees.forEach((entree) => {
+				if (entree.donneesPad.fondUrl !== '') fonds[entree.padId] = entree.donneesPad.fondUrl
+			})
+			res.status(200).json({ fonds })
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur')
