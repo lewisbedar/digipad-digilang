@@ -6,7 +6,7 @@
 			<h4><a :href="hote">{{ $t('retourAccueil') }}</a></h4>
 		</div>
 
-		<ChargementPage v-if="chargementPage" />
+		<ChargementPage :chargement="chargementPage" />
 	</div>
 </template>
 

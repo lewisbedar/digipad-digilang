@@ -5,7 +5,7 @@
 			<h3>{{ $t('maintenanceDigipad') }}</h3>
 		</div>
 
-		<ChargementPage v-if="chargementPage" />
+		<ChargementPage :chargement="chargementPage" />
 	</div>
 </template>
 

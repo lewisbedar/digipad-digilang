@@ -7,7 +7,7 @@
 			<a href="/">{{ $t('retourAccueil') }}</a>
 		</div>
 
-		<ChargementPage v-if="chargementPage" />
+		<ChargementPage :chargement="chargementPage" />
 	</div>
 </template>
 

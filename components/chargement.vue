@@ -1,6 +1,6 @@
 <template>
 	<Transition name="fondu">
-		<div id="conteneur-chargement">
+		<div id="conteneur-chargement" v-if="chargement">
 			<div id="chargement">
 				<div class="spinner">
 					<div />
@@ -23,7 +23,13 @@
 
 <script>
 export default {
-	name: 'DigipadChargement'
+	name: 'DigipadChargement',
+	props: {
+		chargement: {
+			type: Boolean,
+			default: false
+		}
+	}
 }
 </script>
 
