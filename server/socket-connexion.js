@@ -20,6 +20,7 @@ export default function creerGestionnairesConnexion ({
 	const {
 		recupererDonneesPadProtege,
 		fetchSockets,
+		viderCacheAdmins,
 		verifierAdmin,
 		verifierAccesLecturePad,
 		verifierLimiteEchecsCode,
@@ -76,6 +77,8 @@ export default function creerGestionnairesConnexion ({
 				}
 				socket.data.identifiant = identifiant
 				socket.data.nom = nom
+				socket.data.identifiantSession = req.session.identifiant || ''
+				viderCacheAdmins(pad)
 				const clients = await fetchSockets(salon)
 				const utilisateurs = []
 				if (clients.length > 0) {
@@ -97,15 +100,15 @@ export default function creerGestionnairesConnexion ({
 			if (req.session.identifiant) {
 				socket.leave(definirSalonUtilisateur(pad, req.session.identifiant))
 			}
+			viderCacheAdmins(pad)
 			socket.to('pad-' + pad).emit('deconnexion', identifiant)
 		})
 
 		socket.on('disconnecting', () => {
-			if (req.session.identifiant !== '') {
-				socket.rooms.forEach((salon) => {
-					io.to(salon).emit('deconnexion', req.session.identifiant)
-				})
-			}
+			socket.rooms.forEach((salon) => {
+				if (typeof salon === 'string' && /^pad-[0-9]{1,15}$/.test(salon)) viderCacheAdmins(salon.slice(4))
+				if (req.session.identifiant !== '') io.to(salon).emit('deconnexion', req.session.identifiant)
+			})
 		})
 
 		socket.on('deconnexion', async (identifiant) => {
@@ -160,7 +163,8 @@ export default function creerGestionnairesConnexion ({
 					}
 					return socket.emit('verifieracces', { acces: false })
 				}
-				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, false)
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, admin)
 				if (donneesPadProtege === 'erreur') return socket.emit('erreur')
 				if (!req.session.hasOwnProperty('acces')) {
 					req.session.acces = []

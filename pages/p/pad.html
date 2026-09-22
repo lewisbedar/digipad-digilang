@@ -27,9 +27,9 @@
 		<button type="button" id="motdepasse" :disabled="disabled" :title="$t('motDePassePad')" :aria-label="$t('motDePassePad')" @click="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse') && !admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">vpn_key</i></button>
 		<button type="button" id="options" :disabled="disabled" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" v-if="admin"><i class="material-icons" aria-hidden="true">settings</i></button>
 		<button type="button" id="options" :disabled="disabled" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" v-else-if="!admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">language</i></button>
-		<button type="button" id="organisation" :disabled="disabled" :title="$t('modeOrganiser')" :aria-label="$t('modeOrganiser')" :class="{'desactive': definirClasseOrganiser() === false}" @click="activerModeOrganiser" v-if="admin && action !== 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></button>
+		<button type="button" id="organisation" :disabled="disabled || definirClasseOrganiser() === false" :title="$t('modeOrganiser')" :aria-label="$t('modeOrganiser')" :class="{'desactive': definirClasseOrganiser() === false}" @click="activerModeOrganiser" v-if="admin && action !== 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></button>
 		<button type="button" id="organisation" class="actif" :disabled="disabled" :title="$t('finModeOrganiser')" :aria-label="$t('finModeOrganiser')" @click="desactiverModeOrganiser" v-else-if="admin && action === 'organiser'"><i class="material-icons" aria-hidden="true">sort</i></button>
-		<button type="button" id="diaporama" :disabled="disabled" :title="$t('modeDiaporama')" :aria-label="$t('modeDiaporama')" :class="{'desactive': blocs.length === 0}" @click="afficherModaleDiaporama"><i class="material-icons" aria-hidden="true">slideshow</i></button>
+		<button type="button" id="diaporama" :disabled="disabled || blocs.length === 0" :title="$t('modeDiaporama')" :aria-label="$t('modeDiaporama')" :class="{'desactive': blocs.length === 0}" @click="afficherModaleDiaporama"><i class="material-icons" aria-hidden="true">slideshow</i></button>
 		<button type="button" id="deconnexion" :disabled="disabled" :title="$t('deconnexion')" :aria-label="$t('deconnexion')" @click="deconnexion" v-if="statut === 'utilisateur'"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
 		<button type="button" id="deconnexion" :disabled="disabled" :title="$t('seDeconnecterPad')" :aria-label="$t('seDeconnecterPad')" @click="afficherSeDeconnecterPad" v-else-if="admin"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
 	</nav>
@@ -457,7 +457,10 @@
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
-				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad">{{ $t('exporterPad') }}</button>
+				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad('archive')">{{ $t('exporterPadArchive') }}</button>
+			</div>
+			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
+				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad('web')">{{ $t('exporterPadWeb') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && (statut === 'auteur' || statut === 'utilisateur')">
 				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherViderPad">{{ $t('viderPad') }}</button>
@@ -1163,7 +1166,8 @@
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="typeConfirmation === 'supprimer-pad'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserMessages" v-else-if="typeConfirmation === 'reinitialiser-messages'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserActivite" v-else-if="typeConfirmation === 'reinitialiser-activite'">{{ $t('oui') }}</button>
-						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad" v-else-if="typeConfirmation === 'exporter-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad('archive')" v-else-if="typeConfirmation === 'exporter-pad'">{{ $t('oui') }}</button>
+						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad('web')" v-else-if="typeConfirmation === 'exporter-pad-web'">{{ $t('oui') }}</button>
 						<button type="button" class="bouton" :disabled="disabledConfirmation" @click="reinitialiserVues" v-else-if="typeConfirmation === 'reinitialiser-vues'">{{ $t('oui') }}</button>
 					</div>
 				</div>

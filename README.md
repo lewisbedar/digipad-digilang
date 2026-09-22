@@ -80,6 +80,7 @@ RATE_LIMIT_LOGIN (nombre max d'échecs d'authentification par IP sur 15 min pour
 RATE_LIMIT_LOGIN_USERNAME (nombre max d'échecs de connexion sur 15 min pour un couple identifiant + IP, fenêtre fixe non prolongée / 10 par défaut)
 RATE_LIMIT_SENSITIVE (nombre max de tentatives en échec sur 15 min pour un couple identifiant + IP, pour le rattachement d'un pad et le transfert des pads d'un compte / 10 par défaut)
 RATE_LIMIT_CODE (nombre max d'échecs de saisie du code d'accès sur 15 min pour un couple IP + pad, fenêtre fixe non prolongée, remise à zéro dès qu'un code correct est saisi / 100 par défaut)
+RATE_LIMIT_PASSWORD (nombre max d'échecs de saisie du mot de passe d'un pad sur 15 min pour un couple IP + pad, fenêtre fixe non prolongée, remise à zéro dès qu'un mot de passe correct est saisi / 10 par défaut)
 RATE_LIMIT_API (nombre max de requêtes en échec par IP sur 15 min, tous appels /api/ confondus hors lien de fichier / 100 par défaut / à relever pour une instance dont les utilisateurs partagent une même adresse publique)
 RATE_LIMIT_FILE_LINK (nombre max de requêtes en échec par IP sur 15 min pour la génération de liens de fichiers / 300 par défaut)
 TRUST_PROXY (configuration Express « trust proxy » : true, false, un entier = nombre de proxies de confiance ou une liste d'IP / sous-réseaux / 1 par défaut)

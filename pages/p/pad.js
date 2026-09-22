@@ -429,22 +429,7 @@ export default {
 		const observer = new PerformanceObserver(async (liste) => {
 			for (const entree of liste.getEntries()) {
 				if (entree.type === 'back_forward') {
-					try {
-						const reponse = await axios.post(this.hote + '/api/recuperer-donnees-pad', {
-							id: this.pad.id,
-							token: this.pad.token
-						}, {
-							headers: { 'Content-Type': 'application/json' }
-						})
-						if (reponse && reponse.hasOwnProperty('data') && reponse.data !== 'erreur') {
-							this.pad = reponse.data.pad
-							this.blocs = reponse.data.blocs
-							this.activite = reponse.data.activite
-							if (this.pad.affichage === 'colonnes') {
-								this.definirColonnes(this.blocs)
-							}
-						}
-					} catch {}
+					await this.actualiserDonneesPad()
 				}
 			}
 		})
@@ -3806,7 +3791,6 @@ export default {
 			this.chargement = true
 			axios.post(this.hote + '/api/verifier-mot-de-passe', {
 				pad: this.pad.id,
-				identifiant: this.pad.identifiant,
 				acces: this.accesAutorise,
 				motdepasse: this.motDePasse
 			}).then((reponse) => {
@@ -3847,6 +3831,8 @@ export default {
 				this.chargement = false
 				if (err.response?.data?.message === 'motdepasse_incorrect') {
 					this.message = this.$t('motDePassePasCorrect')
+				} else if (err.response?.data?.message === 'tentatives_nombreuses') {
+					this.message = this.$t('erreurTentativesNombreuses')
 				} else {
 					this.message = this.definirMessageErreur(err)
 				}
@@ -3880,25 +3866,53 @@ export default {
 				this.message = this.definirMessageErreur(err)
 			})
 		},
-		afficherExporterPad () {
-			this.messageConfirmation = this.$t('confirmationExporterPad')
-			this.typeConfirmation = 'exporter-pad'
+		async actualiserDonneesPad () {
+			try {
+				const reponse = await axios.post(this.hote + '/api/recuperer-donnees-pad', {
+					id: this.pad.id,
+					token: this.pad.token
+				}, {
+					headers: { 'Content-Type': 'application/json' }
+				})
+				if (reponse && reponse.hasOwnProperty('data') && reponse.data !== 'erreur') {
+					this.pad = reponse.data.pad
+					this.blocs = reponse.data.blocs
+					this.activite = reponse.data.activite
+					if (this.pad.affichage === 'colonnes') {
+						this.definirColonnes(this.blocs)
+					}
+				}
+			} catch (err) {
+				if (err.response?.status === 403) window.location.reload()
+			}
+		},
+		appliquerChangementDroitsAdmin () {
+			if (!this.admin && this.pad.acces !== 'public') {
+				window.location.reload()
+				return
+			}
+			this.actualiserDonneesPad()
+		},
+		afficherExporterPad (format) {
+			this.messageConfirmation = format === 'web' ? this.$t('confirmationExporterPadWeb') : this.$t('confirmationExporterPad')
+			this.typeConfirmation = format === 'web' ? 'exporter-pad-web' : 'exporter-pad'
 			this.elementPrecedent = (document.activeElement || document.body)
 			this.modaleConfirmation = true
 			this.$nextTick(() => {
 				document.querySelector('.modale .bouton')?.focus()
 			})
 		},
-		exporterPad () {
+		exporterPad (format) {
 			this.modaleConfirmation = false
 			this.chargement = true
 			axios.post(this.hote + '/api/exporter-pad', {
 				padId: this.pad.id,
 				identifiant: this.identifiant,
-				admin: ''
+				admin: '',
+				format
 			}).then((reponse) => {
 				this.chargement = false
-				saveAs('/temp/' + reponse.data, 'pad-' + this.pad.id + '.zip')
+				saveAs('/temp/' + reponse.data, 'pad-' + this.pad.id + (format === 'web' ? '-web' : '') + '.zip')
 			}).catch((err) => {
 				this.chargement = false
 				if (err.response?.data === 'erreur_export') {
@@ -3998,26 +4012,6 @@ export default {
 					this.message = this.definirMessageErreur(err)
 				}
 			})
-		},
-		envoyerNotificationAdmins () {
-			if (this.identifiant !== this.pad.identifiant) {
-				const adminsNonConnectes = []
-				let notification = []
-				if (this.pad.hasOwnProperty('notification')) {
-					notification = this.pad.notification
-				}
-				if (!this.utilisateurs.map((e) => { return e.identifiant }).includes(this.pad.identifiant) && !notification.includes(this.pad.identifiant)) {
-					adminsNonConnectes.push(this.pad.identifiant)
-				}
-				this.pad.admins.forEach((admin) => {
-					if (!this.utilisateurs.map((e) => { return e.identifiant }).includes(admin) && !notification.includes(admin)) {
-						adminsNonConnectes.push(admin)
-					}
-				})
-				if (adminsNonConnectes.length > 0) {
-					this.$socket.emit('modifiernotification', this.pad.id, adminsNonConnectes, this.identifiant)
-				}
-			}
 		},
 		definirLienFichier (id, media) {
 			if (this.mode === 'creation' || (this.mode === 'edition' && this.donneesBloc.media !== media)) {
@@ -4551,6 +4545,11 @@ export default {
 				this.message = this.$t('verrouColonnes')
 			})
 
+			this.$socket.on('titrecolonneexistant', () => {
+				this.chargement = false
+				this.message = this.$t('erreurTitreColonneExistant')
+			})
+
 			this.$socket.on('espacedisque', () => {
 				this.chargement = false
 				this.message = this.$t('erreurEspaceDisque')
@@ -4619,7 +4618,6 @@ export default {
 							bloc.scrollIntoView()
 						})
 					}
-					this.envoyerNotificationAdmins()
 				}
 			})
 
@@ -4668,7 +4666,6 @@ export default {
 							}
 						})
 					}
-					this.envoyerNotificationAdmins()
 				}
 				this.chargement = false
 			})
@@ -4708,7 +4705,6 @@ export default {
 					if (!donneesCompletes && !(donnees.visibilite === 'privee' && !this.admin)) {
 						this.recupererBloc(donnees.bloc)
 					}
-					this.envoyerNotificationAdmins()
 				}
 			})
 
@@ -4880,7 +4876,6 @@ export default {
 					this.notification = this.$t('capsuleSupprimeeUtilisateur')
 				}
 				this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-supprime' })
-				this.envoyerNotificationAdmins()
 			})
 
 			this.$socket.on('commenterbloc', (donnees) => {
@@ -4897,7 +4892,6 @@ export default {
 					} else if (modaleOuverte && this.commentairesVisibles) {
 						this.rafraichirCommentaires(donnees.bloc)
 					}
-					this.envoyerNotificationAdmins()
 				}
 			})
 
@@ -4967,7 +4961,6 @@ export default {
 						this.blocs = blocs
 						this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-evalue' })
 					}
-					this.envoyerNotificationAdmins()
 				}
 			})
 
@@ -5034,10 +5027,15 @@ export default {
 			})
 
 			this.$socket.on('modifieradmins', (admins, identifiant) => {
+				const adminAvant = this.admin
 				this.pad.admins = admins
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('listeAdminsModifiee')
+				}
+				if (adminAvant !== this.admin) {
+					this.notification = this.admin ? this.$t('droitsAdminAjoutes') : this.$t('droitsAdminRetires')
+					this.appliquerChangementDroitsAdmin()
 				}
 			})
 
@@ -5418,7 +5416,9 @@ export default {
 				this.pad.colonnes = donnees.colonnes
 				this.pad.affichageColonnes = donnees.affichageColonnes
 				this.blocs = blocs
-				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-ajoutee' })
+				if (donnees.hasOwnProperty('activiteId')) {
+					this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-ajoutee' })
+				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneAjoutee')
 					this.$nextTick(() => {
@@ -5446,7 +5446,9 @@ export default {
 				this.pad.colonnes = donnees.colonnes
 				this.pad.affichageColonnes = donnees.affichageColonnes
 				this.blocs = blocs
-				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-dupliquee' })
+				if (donnees.hasOwnProperty('activiteId')) {
+					this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-dupliquee' })
+				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneDupliquee')
 					this.$nextTick(() => {
@@ -5467,8 +5469,11 @@ export default {
 				this.chargement = false
 			})
 
-			this.$socket.on('modifieraffichagecolonne', (affichageColonnes, valeur, colonne, identifiant) => {
+			this.$socket.on('modifieraffichagecolonne', (affichageColonnes, valeur, colonne, identifiant, colonnes) => {
 				this.pad.affichageColonnes = affichageColonnes
+				if (Array.isArray(colonnes)) {
+					this.pad.colonnes = colonnes
+				}
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('affichageColonneModifie')
 					this.chargement = false
@@ -5491,7 +5496,9 @@ export default {
 				const blocs = JSON.parse(JSON.stringify(this.blocs))
 				this.blocs = blocs.filter(bloc => parseInt(bloc.colonne, 10) !== parseInt(donnees.colonne, 10))
 				this.definirColonnes(this.blocs)
-				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-videe' })
+				if (donnees.hasOwnProperty('activiteId')) {
+					this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-videe' })
+				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneVidee')
 				}
@@ -5512,7 +5519,9 @@ export default {
 				this.pad.colonnes = donnees.colonnes
 				this.pad.affichageColonnes = donnees.affichageColonnes
 				this.blocs = blocs
-				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-supprimee' })
+				if (donnees.hasOwnProperty('activiteId')) {
+					this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-supprimee' })
+				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneSupprimee')
 				} else if (this.modale === 'bloc' && parseInt(this.colonne, 10) === parseInt(donnees.colonne, 10)) {
@@ -5554,7 +5563,9 @@ export default {
 				this.pad.colonnes = donnees.colonnes
 				this.pad.affichageColonnes = donnees.affichageColonnes
 				this.blocs = blocs
-				this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-deplacee' })
+				if (donnees.hasOwnProperty('activiteId')) {
+					this.activite.unshift({ id: donnees.activiteId, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'colonne-deplacee' })
+				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneDeplacee')
 				} else {

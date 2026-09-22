@@ -93,10 +93,11 @@
 				</h1>
 				<div class="conteneur">
 					<label for="champ-numero-pad-e">{{ $t('numeroPad') }}</label>
-					<input id="champ-numero-pad-e" type="number" :value="padIdE" :disabled="disabled" @input="padIdE = $event.target.value" @keydown.enter="exporterPad">
+					<input id="champ-numero-pad-e" type="number" :value="padIdE" :disabled="disabled" @input="padIdE = $event.target.value" @keydown.enter="exporterPad('archive')">
 				</div>
 				<div class="conteneur actions">
-					<button type="button" class="bouton" :disabled="disabled" @click="exporterPad">{{ $t('valider') }}</button>
+					<button type="button" class="bouton" :disabled="disabled" @click="exporterPad('archive')">{{ $t('archive') }}</button>
+					<button type="button" class="bouton" :disabled="disabled" @click="exporterPad('web')">{{ $t('pageWeb') }}</button>
 				</div>
 				<h1>
 					<span>{{ $t('rattacherPad') }}</span>
@@ -468,16 +469,17 @@ export default {
 				this.suppressionFichiers = false
 			}
 		},
-		exporterPad () {
+		exporterPad (format) {
 			if (this.padIdE !== '') {
 				this.chargement = true
 				axios.post(this.hote + '/api/exporter-pad', {
 					padId: this.padIdE,
 					identifiant: '',
-					admin: this.admin
+					admin: this.admin,
+					format
 				}).then((reponse) => {
 					this.chargement = false
-					saveAs('/temp/' + reponse.data, 'pad-' + this.padIdE + '.zip')
+					saveAs('/temp/' + reponse.data, 'pad-' + this.padIdE + (format === 'web' ? '-web' : '') + '.zip')
 					this.padIdE = ''
 				}).catch((err) => {
 					this.chargement = false
@@ -968,7 +970,7 @@ export default {
 
 @media screen and (max-width: 599px) {
 	#conteneur h1 {
-		font-size: 2em;
+		font-size: 2rem;
 		margin-bottom: 1em;
 	}
 
@@ -980,7 +982,7 @@ export default {
 
 @media screen and (max-width: 850px) and (max-height: 500px) {
 	#conteneur h1 {
-		font-size: 2em;
+		font-size: 2rem;
 		margin-bottom: 1em;
 	}
 

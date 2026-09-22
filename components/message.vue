@@ -51,6 +51,10 @@ export default {
 	line-height: 1.5;
 }
 
+#conteneur-message .message p:last-child {
+	margin-bottom: 0;
+}
+
 #conteneur-message .bouton {
 	margin-top: 20px;
 }

@@ -3,8 +3,9 @@ import { etat } from './etat.js'
 import {
 	definirSalonUtilisateur,
 	definirSalonAdmin,
-	parseJSON,
+	nombreMaxAdmins,
 	verifierIdentifiantPad,
+	verifierIdentifiantUtilisateur,
 	sauvegarderSession
 } from './fonctions.js'
 
@@ -23,7 +24,6 @@ export default function creerGestionnairesPad ({
 		modifierACLFichiers,
 		televerserFichierTemp,
 		fetchSockets,
-		verifierAccesLectureDonnees,
 		definirAdministrateursPad
 	} = fonctions
 
@@ -149,36 +149,37 @@ export default function creerGestionnairesPad ({
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
+				if (!verifierIdentifiantPad(pad)) return socket.emit('erreur')
+				if (!Array.isArray(admins) || admins.length > nombreMaxAdmins) return socket.emit('erreur')
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
-				let listeAdmins = []
-				if (donneesPad.hasOwnProperty('admins') && donneesPad.admins.substring(0, 1) === '"') { // fix bug update 0.9.0
-					listeAdmins = JSON.parse(JSON.parse(donneesPad.admins))
-				} else if (donneesPad.hasOwnProperty('admins')) {
-					listeAdmins = JSON.parse(donneesPad.admins)
-				}
-				if (!await verifierAdmin(pad, donneesPad, req.session)) return socket.emit('nonautorise')
-				await db.HSET('pads:' + pad, 'admins', JSON.stringify(admins))
-				await Promise.all(admins.map(async (admin) => {
-					if (!listeAdmins.includes(admin)) {
-						await db.SADD('pads-admins:' + admin, pad.toString())
-					}
-				}))
-				await Promise.all(listeAdmins.map(async (admin) => {
-					if (!admins.includes(admin)) {
-						await db.SREM('pads-admins:' + admin, pad.toString())
-					}
-				}))
+				if (!donneesPad.hasOwnProperty('identifiant')) return socket.emit('erreur')
+				// Seul le propriétaire du pad peut ajouter ou révoquer des co-admins
+				if (donneesPad.identifiant !== identifiant || !await verifierAdmin(pad, donneesPad, req.session)) return socket.emit('nonautorise')
+				const listeAdmins = definirAdministrateursPad(donneesPad).filter((admin) => admin !== donneesPad.identifiant)
+				const candidats = [...new Set(admins.filter((admin) => verifierIdentifiantUtilisateur(admin) && admin !== donneesPad.identifiant))]
+				const comptesExistants = await Promise.all(candidats.map((admin) => db.EXISTS('utilisateurs:' + admin)))
+				const nouveauxAdmins = candidats.filter((admin, index) => comptesExistants[index] === 1)
+				const adminsAjoutes = nouveauxAdmins.filter((admin) => !listeAdmins.includes(admin))
+				const adminsRetires = listeAdmins.filter((admin) => !nouveauxAdmins.includes(admin))
+				await db.HSET('pads:' + pad, 'admins', JSON.stringify(nouveauxAdmins))
+				await Promise.all(adminsAjoutes.map((admin) => db.SADD('pads-admins:' + admin, pad.toString())))
+				await Promise.all(adminsRetires.map((admin) => db.SREM('pads-admins:' + admin, pad.toString())))
 				const salonAdmin = definirSalonAdmin(pad)
-				const adminsAjoutes = admins.filter((admin) => !listeAdmins.includes(admin))
-				const adminsRetires = listeAdmins.filter((admin) => !admins.includes(admin) && admin !== donneesPad.identifiant)
 				adminsAjoutes.forEach((adminAjoute) => {
 					io.in(definirSalonUtilisateur(pad, adminAjoute)).socketsJoin(salonAdmin)
 				})
 				adminsRetires.forEach((adminRetire) => {
 					io.in(definirSalonUtilisateur(pad, adminRetire)).socketsLeave(salonAdmin)
 				})
-				io.to('pad-' + pad).emit('modifieradmins', admins, identifiant)
+				// La liste des admins n'est diffusée qu'aux admins
+				io.to(salonAdmin).emit('modifieradmins', nouveauxAdmins, identifiant)
+				adminsAjoutes.forEach((adminAjoute) => {
+					io.to(definirSalonUtilisateur(pad, adminAjoute)).emit('modifieradmins', nouveauxAdmins, identifiant)
+				})
+				adminsRetires.forEach((adminRetire) => {
+					io.to(definirSalonUtilisateur(pad, adminRetire)).emit('modifieradmins', [], identifiant)
+				})
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -736,33 +737,6 @@ export default function creerGestionnairesPad ({
 				const colonnes = donneesPad.hasOwnProperty('colonnes') ? JSON.parse(donneesPad.colonnes) : []
 				const affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : []
 				socket.to('pad-' + pad).emit('viderpad', colonnes, affichageColonnes)
-			} catch (err) {
-				console.error(err.stack)
-				socket.emit('erreur')
-			}
-		})
-
-		socket.on('modifiernotification', async (pad, admins, identifiant) => {
-			if (etat.maintenance === true) return socket.emit('maintenance')
-			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('erreur')
-			try {
-				if (!verifierIdentifiantPad(pad)) return socket.emit('erreur')
-				let donneesPad = await db.HGETALL('pads:' + pad)
-				donneesPad = donneesPad ? { ...donneesPad } : {}
-				if (!donneesPad.hasOwnProperty('identifiant')) return socket.emit('erreur')
-				if (!await verifierAccesLectureDonnees(pad, donneesPad, req.session)) return socket.emit('nonautorise')
-				const administrateurs = definirAdministrateursPad(donneesPad)
-				const listeEnregistree = parseJSON(donneesPad.notification, [])
-				const listeActuelle = Array.isArray(listeEnregistree) ? listeEnregistree.filter((admin) => administrateurs.includes(admin)) : []
-				const recus = Array.isArray(admins) ? admins.filter((admin) => administrateurs.includes(admin)) : []
-				const notification = [...new Set([...listeActuelle, ...recus])]
-				const inchangee = Array.isArray(listeEnregistree) && notification.length === listeEnregistree.length && notification.every((admin, index) => admin === listeEnregistree[index])
-				if (!inchangee) {
-					await db.HSET('pads:' + pad, 'notification', JSON.stringify(notification))
-					io.to('pad-' + pad).emit('modifiernotification', notification)
-				}
-				req.session.cookie.expires = new Date(Date.now() + dureeSession)
-				await sauvegarderSession(req)
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')

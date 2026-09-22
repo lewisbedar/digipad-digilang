@@ -202,6 +202,7 @@ async function demarrerServeur () {
 	const limiteEchecsConnexionParIdentifiant = parseInt(process.env.RATE_LIMIT_LOGIN_USERNAME) || 10
 	const limiteRequetesActionsSensibles = parseInt(process.env.RATE_LIMIT_SENSITIVE) || 10
 	const limiteEchecsCodeAdresse = parseInt(process.env.RATE_LIMIT_CODE) || 100
+	const limiteEchecsMotDePasseAdresse = parseInt(process.env.RATE_LIMIT_PASSWORD) || 10
 	const limiteRequetesApi = parseInt(process.env.RATE_LIMIT_API) || 100
 	const limiteRequetesLienFichier = parseInt(process.env.RATE_LIMIT_FILE_LINK) || 300
 	const fenetreEchecsConnexionParIdentifiant = 15 * 60
@@ -429,6 +430,7 @@ async function demarrerServeur () {
 		minimumEspaceDisque,
 		fenetreEchecsConnexionParIdentifiant,
 		limiteEchecsCodeAdresse,
+		limiteEchecsMotDePasseAdresse,
 		salonMaintenance
 	})
 

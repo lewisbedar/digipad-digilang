@@ -12,7 +12,8 @@ import {
 	verifierEmail,
 	verifierFormatEmail,
 	verifierDomaineEmail,
-	comparerHash
+	comparerHash,
+	verifierIdentifiantPad
 } from './fonctions.js'
 
 // Comptes utilisateurs : inscription, activation, connexion, profil, préférences et dossiers
@@ -41,6 +42,9 @@ export default function enregistrerRoutesComptes ({
 		recupererDonneesPadProtege,
 		resoudreFonds,
 		verifierAdmin,
+		verifierLimiteEchecsMotDePasse,
+		compterEchecsMotDePasse,
+		oublierEchecsMotDePasse,
 		envoyerEmail
 	} = fonctions
 
@@ -314,8 +318,8 @@ export default function enregistrerRoutesComptes ({
 			if (!autorisation) return res.status(403).send('non_autorise')
 			const pads = await recupererDonneesAuteur(identifiant)
 			if (!pads.hasOwnProperty('padsCrees') || !pads.hasOwnProperty('padsAdmins')) return res.status(500).send('erreur')
-			let padsCrees = nettoyerPads(pads.padsCrees)
-			let padsAdmins = nettoyerPads(pads.padsAdmins)
+			let padsCrees = nettoyerPads(pads.padsCrees, identifiant)
+			let padsAdmins = nettoyerPads(pads.padsAdmins, identifiant)
 			padsCrees = supprimerDoublons(padsCrees)
 			padsAdmins = supprimerDoublons(padsAdmins)
 			res.status(200).json({ padsCrees, padsAdmins })
@@ -441,28 +445,34 @@ export default function enregistrerRoutesComptes ({
 		if (etat.maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const pad = req.body.pad
+			if (!verifierIdentifiantPad(pad)) return res.status(400).json({ message: 'erreur' })
+			const motdepasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse : ''
+			if (motdepasse === '') return res.status(401).json({ message: 'motdepasse_incorrect' })
+			if (await verifierLimiteEchecsMotDePasse(req.ip, pad)) return res.status(429).json({ message: 'tentatives_nombreuses' })
 			let donneesPad = await db.HGETALL('pads:' + pad)
 			donneesPad = donneesPad ? { ...donneesPad } : {}
 			if (!donneesPad.hasOwnProperty('motdepasse')) return res.status(500).json({ message: 'erreur' })
-			const motdepasse = req.body.motdepasse
-			const motdepasseCorrect = (motdepasse.trim() !== '' && donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse))
-			if (!motdepasseCorrect) return res.status(401).json({ message: 'motdepasse_incorrect' })
-			const identifiant = req.body.identifiant
+			const motdepasseCorrect = (motdepasse.trim() !== '' && donneesPad.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse))
+			if (!motdepasseCorrect) {
+				await compterEchecsMotDePasse(req.ip, pad)
+				return res.status(401).json({ message: 'motdepasse_incorrect' })
+			}
+			// Le compteur ne doit pas pénaliser celui qui a fini par saisir le bon mot de passe
+			await oublierEchecsMotDePasse(req.ip, pad)
+			const identifiant = donneesPad.identifiant
+			if (typeof identifiant !== 'string' || identifiant === '') return res.status(500).json({ message: 'erreur' })
 			const acces = req.body.acces
 			let langue = langueParDefaut
-			if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
+			if (typeof req.session.langue === 'string' && langues.includes(req.session.langue)) {
 				langue = req.session.langue
 			}
-			let nom = ''
-			if (req.session.hasOwnProperty('nom') && req.session.nom !== '' && req.session.nom !== undefined) {
-				nom = req.session.nom
-			}
+			let nom = /^u[0-9a-f]{8,13}$/.test(identifiant) ? identifiant.slice(0, 8).toUpperCase() : identifiant.toUpperCase()
 			const utilisateurExiste = await db.EXISTS('utilisateurs:' + identifiant)
 			if (utilisateurExiste === 1) {
 				let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 				donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-				nom = donneesUtilisateur.nom
-				langue = donneesUtilisateur.langue
+				if (typeof donneesUtilisateur.nom === 'string' && donneesUtilisateur.nom !== '') nom = donneesUtilisateur.nom
+				if (typeof donneesUtilisateur.langue === 'string' && langues.includes(donneesUtilisateur.langue)) langue = donneesUtilisateur.langue
 			} else {
 				const date = dayjs().format()
 				await db.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])

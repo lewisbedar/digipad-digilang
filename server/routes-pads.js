@@ -22,6 +22,8 @@ import {
 	assainirTexteAlternatif,
 	executerTransactions,
 	parseJSON,
+	normaliserAffichageColonnes,
+	normaliserTitresColonnes,
 	comparerHash,
 	verifierMotDePasseAdmin
 } from './fonctions.js'
@@ -66,7 +68,8 @@ export default function enregistrerRoutesPads ({
 		supprimerEtherpadBlocs,
 		verifierLimiteEchecsCode,
 		compterEchecsCode,
-		oublierEchecsCode
+		oublierEchecsCode,
+		definirAdministrateursPad
 	} = fonctions
 
 	app.post('/api/recuperer-donnees-pad', async (req, res) => {
@@ -81,7 +84,10 @@ export default function enregistrerRoutesPads ({
 			if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
 				await recupererDonneesPadJSON(id)
 			}
-			const donneesPad = await recupererDonneesPad(id, token, identifiant, statut, pads)
+			let donneesPadBrut = await db.HGETALL('pads:' + id)
+			donneesPadBrut = donneesPadBrut ? { ...donneesPadBrut } : {}
+			if (donneesPadBrut.acces === 'prive' && !await verifierAdmin(id, donneesPadBrut, req.session)) return res.status(403).send('non_autorise')
+			const donneesPad = await recupererDonneesPad(id, token, identifiant, statut, pads, donneesPadBrut)
 			if (typeof donneesPad === 'object' && donneesPad && donneesPad.hasOwnProperty('pad') && donneesPad.hasOwnProperty('blocs') && donneesPad.hasOwnProperty('activite')) {
 				res.status(200).json(donneesPad)
 			} else {
@@ -379,12 +385,8 @@ export default function enregistrerRoutesPads ({
 			if (donneesPadSource.hasOwnProperty('fond') && typeof donneesPadSource.fond === 'string' && donneesPadSource.fond !== '' && !donneesPadSource.fond.includes('/img/') && donneesPadSource.fond.substring(0, 1) !== '#') {
 				donneesPadSource.fond = path.basename(donneesPadSource.fond)
 			}
-			let affichageColonnes = []
-			if (donneesPadSource.hasOwnProperty('affichageColonnes')) {
-				affichageColonnes = JSON.parse(donneesPadSource.affichageColonnes)
-			} else {
-				JSON.parse(donneesPadSource.colonnes).forEach(() => { affichageColonnes.push(true) })
-			}
+			const colonnesDupliquees = JSON.stringify(normaliserTitresColonnes(parseJSON(donneesPadSource.colonnes, [])))
+			const affichageColonnes = normaliserAffichageColonnes(parseJSON(donneesPadSource.colonnes, []), parseJSON(donneesPadSource.affichageColonnes, null))
 			// Duplication des blocs par lots
 			const listeBlocs = await db.ZRANGE('blocs:' + padSource, 0, -1)
 			if (listeBlocs === null) return res.status(500).send('erreur_duplication')
@@ -418,7 +420,7 @@ export default function enregistrerRoutesPads ({
 			}
 			await pipelineBlocsDupliques.exec()
 			// Création des métadonnées du pad
-			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', donneesPadSource.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
+			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
 			// Ajout du code d'accès seulement s'il existait dans l'original
 			if (donneesPadSource.hasOwnProperty('code')) {
 				champsPad.push('code', code)
@@ -442,7 +444,7 @@ export default function enregistrerRoutesPads ({
 					}
 				}
 			}
-			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, fondUrl: await definirUrlFond(nId, donneesPadSource.fond, donneesPadSource.acces), acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, colonnes: donneesPadSource.colonnes, affichageColonnes, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
+			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, fondUrl: await definirUrlFond(nId, donneesPadSource.fond, donneesPadSource.acces), acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_duplication')
@@ -466,7 +468,8 @@ export default function enregistrerRoutesPads ({
 					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
 				if (!admin && await verifierAdmin(id, donneesPad, req.session) === false) return res.status(403).send('non_autorise')
-				const padExporte = await exporterPad(id, 'erreur_export', req.session.langue)
+				const format = req.body.format === 'web' ? 'web' : 'archive'
+				const padExporte = await exporterPad(id, 'erreur_export', req.session.langue, format)
 				res.status(200).send(padExporte)
 			} catch (err) {
 				console.error(err.stack)
@@ -498,7 +501,7 @@ export default function enregistrerRoutesPads ({
 				if (err) return res.status(500).send('erreur_import')
 				if (!req.file) return res.status(500).send('erreur_import')
 				const source = path.join(__dirname, '..', '/static/temp/' + req.file.filename)
-				const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + Math.floor((Math.random() * 100000) + 1))
+				const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + randomBytes(16).toString('hex'))
 				try {
 					await extraireArchive(source, dossierTemporaire)
 					const donnees = await fs.readJson(path.normalize(dossierTemporaire + '/donnees.json'))
@@ -569,12 +572,8 @@ export default function enregistrerRoutesPads ({
 					const largeur = donnees.pad.largeur || 'normale'
 					const enregistrements = donnees.pad.enregistrements || 'desactives'
 					const copieBloc = donnees.pad.copieBloc || 'desactivee'
-					let affichageColonnes = []
-					if (donnees.pad.hasOwnProperty('affichageColonnes')) {
-						affichageColonnes = JSON.parse(donnees.pad.affichageColonnes)
-					} else {
-						JSON.parse(donnees.pad.colonnes).forEach(() => { affichageColonnes.push(true) })
-					}
+					const colonnesImportees = JSON.stringify(normaliserTitresColonnes(parseJSON(donnees.pad.colonnes, [])))
+					const affichageColonnes = normaliserAffichageColonnes(parseJSON(donnees.pad.colonnes, []), parseJSON(donnees.pad.affichageColonnes, null))
 					const activiteId = (parametres.activite === true) ? donnees.pad.activite : 0
 					// Copie du fond personnalisé + métadonnées pad en parallèle
 					const fondPad = donnees.pad.fond
@@ -582,7 +581,7 @@ export default function enregistrerRoutesPads ({
 					await Promise.all([
 						promesseFond,
 						db.multi()
-							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donnees.pad)])
+							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'activiteColonne', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donnees.pad)])
 							.SADD('pads-crees:' + identifiant, id.toString())
 							.SADD('utilisateurs-pads:' + id, identifiant)
 							.exec()
@@ -607,7 +606,7 @@ export default function enregistrerRoutesPads ({
 						await pipelineActivite.exec()
 					}
 					await supprimerArchives(source, dossierTemporaire)
-					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, fondUrl: await definirUrlFond(id, fondPad, donnees.pad.acces), acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, colonnes: donnees.pad.colonnes, affichageColonnes, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
+					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, fondUrl: await definirUrlFond(id, fondPad, donnees.pad.acces), acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
 				} catch (err) {
 					console.error(err.stack)
 					// Nettoyage en cas d'erreur pendant le traitement
@@ -787,10 +786,10 @@ export default function enregistrerRoutesPads ({
 					.exec()
 				let colonnes = null
 				let affichageColonnes = null
-				const champsReinitialises = ['bloc', 0, 'activite', 0, 'vues', 0, 'notification', JSON.stringify([])]
+				const champsReinitialises = ['bloc', 0, 'activite', 0, 'activiteColonne', 0, 'vues', 0, 'notification', JSON.stringify([])]
 				if (donneesPad.affichage === 'colonnes' && !suppressionColonnes) {
 					colonnes = donneesPad.hasOwnProperty('colonnes') ? JSON.parse(donneesPad.colonnes) : []
-					affichageColonnes = donneesPad.hasOwnProperty('affichageColonnes') ? JSON.parse(donneesPad.affichageColonnes) : []
+					affichageColonnes = normaliserAffichageColonnes(colonnes, parseJSON(donneesPad.affichageColonnes, null))
 				} else {
 					colonnes = donneesPad.affichage === 'colonnes' ? [titreColonne || ''] : []
 					affichageColonnes = donneesPad.affichage === 'colonnes' ? [true] : []
@@ -878,12 +877,10 @@ export default function enregistrerRoutesPads ({
 					}
 					if (type === 'pad-admin') {
 						await db.SREM('pads-admins:' + identifiant, pad.toString())
-						if (donneesPad.hasOwnProperty('admins')) {
-							let listeAdmins = JSON.parse(donneesPad.admins)
-							if (listeAdmins.includes(identifiant)) {
-								listeAdmins.splice(listeAdmins.indexOf(identifiant), 1)
-								await db.HSET('pads:' + pad, 'admins', JSON.stringify(listeAdmins))
-							}
+						const listeAdmins = definirAdministrateursPad(donneesPad).filter((admin) => admin !== donneesPad.identifiant)
+						if (listeAdmins.includes(identifiant)) {
+							listeAdmins.splice(listeAdmins.indexOf(identifiant), 1)
+							await db.HSET('pads:' + pad, 'admins', JSON.stringify(listeAdmins))
 						}
 					}
 					await db.SREM('pads-favoris:' + identifiant, pad.toString())
@@ -928,7 +925,7 @@ export default function enregistrerRoutesPads ({
 		if (etat.maintenance === true) return res.status(503).send('maintenance')
 		try {
 			const pad = req.body.pad
-			const identifiant = req.body.identifiant
+			const identifiant = req.session.identifiant || ''
 			const code = req.body.code
 			if (!verifierIdentifiantPad(pad)) return res.status(401).json({ message: 'code_incorrect' })
 			if (await verifierLimiteEchecsCode(req.ip, pad)) return res.status(401).json({ message: 'code_incorrect' })
@@ -941,7 +938,8 @@ export default function enregistrerRoutesPads ({
 				await compterEchecsCode(req.ip, pad)
 				return res.status(401).json({ message: 'code_incorrect' })
 			}
-			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, false)
+			const admin = await verifierAdmin(pad, donneesPad, req.session)
+			const donneesPadProtege = await recupererDonneesPadProtege(donneesPad, pad, identifiant, admin)
 			if (donneesPadProtege === 'erreur') return res.status(500).json({ message: 'erreur' })
 			if (!req.session.hasOwnProperty('acces')) {
 				req.session.acces = []

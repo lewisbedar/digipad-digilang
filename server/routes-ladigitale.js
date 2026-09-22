@@ -15,7 +15,10 @@ import {
 	supprimerArchives,
 	verifierURL,
 	assainirTexteAlternatif,
-	executerTransactions
+	executerTransactions,
+	parseJSON,
+	normaliserAffichageColonnes,
+	normaliserTitresColonnes
 } from './fonctions.js'
 const production = process.env.NODE_ENV === 'production'
 
@@ -194,18 +197,12 @@ export default function enregistrerRoutesLadigitale ({
 				const hash = await bcrypt.hash(nouveaumotdepasse, 10)
 				const date = dayjs().format()
 				const code = Math.floor(100000 + Math.random() * 900000)
-				let affichageColonnes = []
-				if (donneesPad.hasOwnProperty('affichageColonnes')) {
-	                affichageColonnes = JSON.parse(donneesPad.affichageColonnes)
-				} else {
-	                JSON.parse(donneesPad.colonnes).forEach(() => {
-		                affichageColonnes.push(true)
-	                })
-				}
+				const colonnesDupliquees = JSON.stringify(normaliserTitresColonnes(parseJSON(donneesPad.colonnes, [])))
+				const affichageColonnes = normaliserAffichageColonnes(parseJSON(donneesPad.colonnes, []), parseJSON(donneesPad.affichageColonnes, null))
 				if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 	                donneesPad.fond = path.basename(donneesPad.fond)
 				}
-				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', donneesPad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
+				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
 				if (donneesPad.hasOwnProperty('code')) {
 					champsPad.push('code', code)
 				}
@@ -274,7 +271,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				const autorisation = await verifierAutorisationApi(donneesPad, identifiant, motdepasse)
 				if (!autorisation) return res.status(403).send('non_autorise')
-				const padExporte = await exporterPad(pad, 'erreur_export', langue)
+				const format = req.body.format === 'web' ? 'web' : 'archive'
+				const padExporte = await exporterPad(pad, 'erreur_export', langue, format)
 				return res.status(200).send(padExporte)
 			}
 			// ACTION : SUPPRIMER
@@ -336,7 +334,7 @@ export default function enregistrerRoutesLadigitale ({
 					langue = req.session.langue
 				}
 				const source = path.join(__dirname, '..', '/static/temp/' + req.file.filename)
-				const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + Math.floor((Math.random() * 100000) + 1))
+				const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + randomBytes(16).toString('hex'))
 				await extraireArchive(source, dossierTemporaire)
 				const donnees = await fs.readJson(path.normalize(dossierTemporaire + '/donnees.json'))
 				const parametres = JSON.parse(req.body.parametres)
@@ -403,14 +401,15 @@ export default function enregistrerRoutesLadigitale ({
 				const token = Math.random().toString(16).slice(2)
 				const date = dayjs().format()
 				const code = Math.floor(100000 + Math.random() * 900000)
-				const affichageColonnes = donnees.pad.affichageColonnes ? JSON.parse(donnees.pad.affichageColonnes) : JSON.parse(donnees.pad.colonnes).map(() => true)
+				const colonnesImportees = JSON.stringify(normaliserTitresColonnes(parseJSON(donnees.pad.colonnes, [])))
+				const affichageColonnes = normaliserAffichageColonnes(parseJSON(donnees.pad.colonnes, []), parseJSON(donnees.pad.affichageColonnes, null))
 				const activiteId = parametres.activite === true ? donnees.pad.activite : 0
 				const fond = donnees.pad.fond
 				if (fond && !fond.includes('/img/') && fond.substring(0, 1) !== '#') {
 					await televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fond), id, donnees.pad.acces)
 				}
 				await db.multi()
-					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])
+					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'activiteColonne', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])
 					.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
 					.SADD('pads-crees:' + identifiant, id.toString())
 					.exec()

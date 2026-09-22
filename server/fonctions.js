@@ -21,6 +21,9 @@ const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250 }
 // Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
 const tailleLotTransaction = 10
 
+// Nombre maximum d'administrateurs d'un pad
+const nombreMaxAdmins = 50
+
 function obtenirCleEchecConnexion (identifiant, ip) {
 	if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return null
 	const adresse = typeof ip === 'string' && ip !== '' ? ip : 'inconnu'
@@ -44,12 +47,113 @@ function definirBlocDiffuse (champsBase, visibilite, contenu, contributions) {
 	return { complet: blocComplet, reduit: blocReduit }
 }
 
+function validerIndexColonne (colonne, nombreColonnes) {
+	if (typeof colonne !== 'number' && typeof colonne !== 'string') return null
+	const index = Number(colonne)
+	if (!Number.isInteger(index) || index < 0) return null
+	if (index >= Math.max(nombreColonnes, 1)) return null
+	return index
+}
+
+function definirColonneBloc (colonne, nombreColonnes) {
+	const index = parseInt(colonne, 10)
+	if (!Number.isInteger(index) || index < 0) return 0
+	if (nombreColonnes > 0 && index >= nombreColonnes) return nombreColonnes - 1
+	return index
+}
+
+function reduireColonnesMasquees (colonnes, affichageColonnes) {
+	if (!Array.isArray(colonnes) || !Array.isArray(affichageColonnes)) return colonnes
+	return colonnes.map((titre, index) => affichageColonnes[index] === false ? '' : titre)
+}
+
+function verifierTitreColonneDisponible (colonnes, titre, indexIgnore = -1) {
+	if (typeof titre !== 'string' || titre === '') return true
+	if (!Array.isArray(colonnes)) return true
+	return !colonnes.some((el, index) => index !== indexIgnore && el === titre)
+}
+
+function verifierTitreColonne (titre) {
+	return typeof titre === 'string' && titre.length <= limitesTailleInput.titre
+}
+
+function definirTitreColonne (titre, suffixe) {
+	return titre.substring(0, Math.max(limitesTailleInput.titre - suffixe.length, 0)) + suffixe
+}
+
+function definirTitreColonneDisponible (colonnes, titre) {
+	if (verifierTitreColonneDisponible(colonnes, titre)) return titre
+	let compteur = 2
+	while (!verifierTitreColonneDisponible(colonnes, definirTitreColonne(titre, ' (' + compteur + ')'))) compteur++
+	return definirTitreColonne(titre, ' (' + compteur + ')')
+}
+
+function normaliserTitresColonnes (colonnes) {
+	if (!Array.isArray(colonnes)) return []
+	const occurrences = new Map()
+	colonnes.forEach((titre) => {
+		if (typeof titre !== 'string' || titre === '') return
+		occurrences.set(titre, (occurrences.get(titre) || 0) + 1)
+	})
+	const titresRetenus = []
+	colonnes.forEach((titre, index) => {
+		if (typeof titre !== 'string' || titre === '' || occurrences.get(titre) === 1) {
+			titresRetenus.push(titre)
+			return
+		}
+		let compteur = index + 1
+		while (!verifierTitreColonneDisponible(titresRetenus, definirTitreColonne(titre, ' ' + compteur)) || colonnes.includes(definirTitreColonne(titre, ' ' + compteur))) compteur++
+		titresRetenus.push(definirTitreColonne(titre, ' ' + compteur))
+	})
+	return titresRetenus
+}
+
+function creerFiltreActiviteColonnes (colonnes, affichageColonnes) {
+	const titresMasques = new Set()
+	if (Array.isArray(colonnes)) {
+		colonnes.forEach((titre, index) => {
+			if (typeof titre !== 'string' || titre === '') return
+			if (Array.isArray(affichageColonnes) && affichageColonnes[index] === false) titresMasques.add(titre)
+		})
+	}
+	return (entree) => {
+		if (entree.masquee === true) return false
+		return !titresMasques.has(entree.titre)
+	}
+}
+
+function normaliserAffichageColonnes (colonnes, affichageColonnes) {
+	const listeColonnes = Array.isArray(colonnes) ? colonnes : parseJSON(colonnes, null)
+	if (!Array.isArray(listeColonnes)) return []
+	const listeAffichage = Array.isArray(affichageColonnes) ? affichageColonnes : parseJSON(affichageColonnes, null)
+	if (!Array.isArray(listeAffichage)) return listeColonnes.map(() => true)
+	return listeColonnes.map((titre, index) => listeAffichage[index] !== false)
+}
+
+function definirAffichageColonnes (donneesPad, affichageColonnes) {
+	const colonnes = Array.isArray(donneesPad.colonnes) ? donneesPad.colonnes : parseJSON(donneesPad.colonnes, null)
+	const listeAffichage = Array.isArray(affichageColonnes) ? affichageColonnes : parseJSON(affichageColonnes, null)
+	if (!Array.isArray(colonnes)) return Array.isArray(listeAffichage) ? listeAffichage : null
+	return normaliserAffichageColonnes(colonnes, listeAffichage)
+}
+
+function creerFiltreColonneMasquee (donneesPad, affichageColonnes) {
+	if (donneesPad.affichage !== 'colonnes') return () => false
+	const liste = definirAffichageColonnes(donneesPad, affichageColonnes)
+	if (!liste) return () => false
+	return (colonne) => liste[definirColonneBloc(colonne, liste.length)] === false
+}
+
 function verifierColonneMasquee (donneesPad, affichageColonnes, colonne) {
-	return (donneesPad.affichage === 'colonnes' && Array.isArray(affichageColonnes) && affichageColonnes[colonne] === false)
+	return creerFiltreColonneMasquee(donneesPad, affichageColonnes)(colonne)
 }
 
 function verifierIdentifiantPad (pad) {
 	return (typeof pad === 'string' || typeof pad === 'number') && /^[0-9]{1,15}$/.test(String(pad))
+}
+
+function verifierIdentifiantUtilisateur (identifiant) {
+	return typeof identifiant === 'string' && identifiant.length <= 100 && /^[\w-]+$/.test(identifiant)
 }
 
 function verifierIdentifiantBloc (bloc) {
@@ -65,6 +169,27 @@ function verifierBlocVisible (bloc, contributions) {
 	return !((contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
 }
 
+function verifierCapsuleLisible (donneesPad, bloc, admin, identifiant) {
+	if (admin === true) return true
+	if (bloc.identifiant && bloc.identifiant === identifiant) return true
+	if (!verifierBlocVisible(bloc, donneesPad.contributions)) return false
+	return !verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), bloc.colonne)
+}
+
+function definirIndicesColonnesExport (pad) {
+	if (pad.affichage !== 'colonnes') return null
+	const colonnes = parseJSON(pad.colonnes, null)
+	if (!Array.isArray(colonnes)) return null
+	const affichageColonnes = normaliserAffichageColonnes(colonnes, parseJSON(pad.affichageColonnes, null))
+	if (!colonnes.some((titre, index) => affichageColonnes[index] === false)) return null
+	const indices = new Map()
+	colonnes.forEach((titre, index) => {
+		if (affichageColonnes[index] === false) return
+		indices.set(index, indices.size)
+	})
+	return indices
+}
+
 function definirDonneesPadExport (pad) {
 	const champs = ['titre', 'affichage', 'ordre', 'largeur', 'colonnes', 'fond', 'fondRepete', 'commentaires', 'evaluations']
 	const donneesPadExport = {}
@@ -73,18 +198,41 @@ function definirDonneesPadExport (pad) {
 	})
 	if (pad.visibiliteCommentaires === 'admin') donneesPadExport.commentaires = 'desactives'
 	if (pad.visibiliteEvaluations === 'admin') donneesPadExport.evaluations = 'desactivees'
+	const indicesColonnes = definirIndicesColonnesExport(pad)
+	if (indicesColonnes) {
+		const titres = parseJSON(pad.colonnes, []).filter((titre, index) => indicesColonnes.has(index))
+		donneesPadExport.colonnes = JSON.stringify(titres)
+		if (titres.length === 0) donneesPadExport.affichage = 'mur'
+	}
 	return donneesPadExport
+}
+
+function definirFichiersExport (blocs) {
+	const fichiers = new Set()
+	blocs.forEach((bloc) => {
+		if (typeof bloc.media === 'string' && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien' && !verifierURL(bloc.media, ['https', 'http'])) fichiers.add(path.basename(bloc.media))
+		if (typeof bloc.vignette === 'string' && bloc.vignette !== '' && !bloc.vignette.includes('/img/') && !verifierURL(bloc.vignette, ['https', 'http'])) fichiers.add(path.basename(bloc.vignette))
+	})
+	return Array.from(fichiers)
 }
 
 function definirBlocsExport (blocs, pad) {
 	const commentairesVisibles = pad.visibiliteCommentaires !== 'admin'
 	const evaluationsVisibles = pad.visibiliteEvaluations !== 'admin'
 	const champs = ['bloc', 'titre', 'texte', 'media', 'alt', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
-	return blocs.filter((bloc) => verifierBlocVisible(bloc, pad.contributions)).map((bloc) => {
+	const indicesColonnes = definirIndicesColonnesExport(pad)
+	const nombreColonnes = parseJSON(pad.colonnes, []).length
+	const colonneMasquee = creerFiltreColonneMasquee(pad, pad.affichageColonnes)
+	const colonneEffective = (bloc) => definirColonneBloc(bloc.colonne, nombreColonnes)
+	const blocsExportes = blocs.filter((bloc) => verifierBlocVisible(bloc, pad.contributions) && !colonneMasquee(colonneEffective(bloc)))
+	return blocsExportes.map((bloc) => {
 		const blocExport = {}
 		champs.forEach((champ) => {
 			if (bloc.hasOwnProperty(champ)) blocExport[champ] = bloc[champ]
 		})
+		if (indicesColonnes) {
+			blocExport.colonne = indicesColonnes.get(colonneEffective(bloc)) ?? 0
+		}
 		const listeCommentaires = (commentairesVisibles && Array.isArray(bloc.listeCommentaires)) ? bloc.listeCommentaires.filter((commentaire) => commentaire.visibilite !== 'masquee') : []
 		blocExport.listeCommentaires = listeCommentaires
 		blocExport.commentaires = listeCommentaires.length
@@ -94,10 +242,14 @@ function definirBlocsExport (blocs, pad) {
 	})
 }
 
-function definirBlocsDeplaces (listeItems, blocs, contributions, identifiantLecteur) {
+function definirBlocsDeplaces (listeItems, blocs, donneesPad, identifiantLecteur) {
+	const colonneMasquee = creerFiltreColonneMasquee(donneesPad, donneesPad.affichageColonnes)
 	return listeItems.filter((item, index) => {
 		const bloc = blocs[index]
-		return verifierBlocVisible(bloc, contributions) || (identifiantLecteur && bloc.identifiant === identifiantLecteur)
+		if (!bloc) return false
+		if (identifiantLecteur && bloc.identifiant === identifiantLecteur) return true
+		if (!verifierBlocVisible(bloc, donneesPad.contributions)) return false
+		return !colonneMasquee(bloc.colonne)
 	})
 }
 
@@ -162,7 +314,7 @@ function sauvegarderSession (req) {
 	})
 }
 
-const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'fondUrl', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage', 'colonnes']
+const champsPadsClient = ['id', 'token', 'titre', 'identifiant', 'nom', 'fond', 'fondUrl', 'acces', 'date', 'vues', 'notification', 'transfertPropriete', 'affichage']
 
 function filtrerChamps (objet, champs) {
 	const resultat = {}
@@ -173,10 +325,40 @@ function filtrerChamps (objet, champs) {
 	return resultat
 }
 
-function nettoyerPads (pads) {
+function reduireNotification (notification, identifiant) {
+	if (!identifiant) return []
+	const liste = typeof notification === 'string' ? parseJSON(notification, []) : notification
+	if (!Array.isArray(liste)) return []
+	return liste.includes(identifiant) ? [identifiant] : []
+}
+
+function definirAdministrateursPad (donneesPad) {
+	const administrateurs = []
+	if (donneesPad.identifiant) administrateurs.push(donneesPad.identifiant)
+	if (!donneesPad.hasOwnProperty('admins')) return administrateurs
+	try {
+		let admins = donneesPad.admins
+		if (typeof admins === 'string') admins = admins.substring(0, 2) === '"\\' ? [] : JSON.parse(admins)
+		if (typeof admins === 'string') admins = JSON.parse(admins)
+		if (Array.isArray(admins)) {
+			admins.forEach((admin) => {
+				if (typeof admin === 'string' && admin !== '' && !administrateurs.includes(admin)) administrateurs.push(admin)
+			})
+		}
+	} catch {}
+	return administrateurs
+}
+
+function verifierAdministrateurListe (identifiant, donneesPad) {
+	if (!identifiant) return false
+	return definirAdministrateursPad(donneesPad).includes(identifiant)
+}
+
+function nettoyerPads (pads, identifiant) {
 	return pads.filter(el => el && Object.keys(el).length > 0).map((el) => {
 		const pad = filtrerChamps(el, champsPadsClient)
 		pad.id = parseInt(el.id, 10)
+		if (pad.hasOwnProperty('notification')) pad.notification = reduireNotification(pad.notification, identifiant)
 		return pad
 	})
 }
@@ -563,16 +745,30 @@ function formaterDate (donnees, langue) {
 
 export {
 	limitesTailleInput,
+	nombreMaxAdmins,
 	tailleLotTransaction,
 	obtenirCleEchecConnexion,
 	definirBlocDiffuse,
+	definirColonneBloc,
+	normaliserAffichageColonnes,
+	validerIndexColonne,
+	reduireColonnesMasquees,
+	verifierTitreColonne,
+	verifierTitreColonneDisponible,
+	definirTitreColonneDisponible,
+	normaliserTitresColonnes,
+	creerFiltreActiviteColonnes,
+	creerFiltreColonneMasquee,
 	verifierColonneMasquee,
 	verifierIdentifiantPad,
+	verifierIdentifiantUtilisateur,
 	verifierIdentifiantBloc,
 	verifierIdentifiantBlocExistant,
 	verifierBlocVisible,
+	verifierCapsuleLisible,
 	definirDonneesPadExport,
 	definirBlocsExport,
+	definirFichiersExport,
 	definirBlocsDeplaces,
 	recupererNombreCommentaires,
 	verifierActiviteVisible,
@@ -586,6 +782,8 @@ export {
 	champsPadsClient,
 	filtrerChamps,
 	nettoyerPads,
+	definirAdministrateursPad,
+	verifierAdministrateurListe,
 	supprimerDoublons,
 	definirAccesLecture,
 	supprimerSession,

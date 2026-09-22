@@ -23,7 +23,10 @@ export default function creerGestionnairesActivite ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
-				await db.UNLINK('activite:' + pad)
+				await db.multi()
+					.UNLINK('activite:' + pad)
+					.HSET('pads:' + pad, 'activiteColonne', 0)
+					.exec()
 				io.to('pad-' + pad).emit('reinitialiseractivite', identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)

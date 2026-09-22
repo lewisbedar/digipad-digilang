@@ -5,6 +5,10 @@ import {
 	limitesTailleInput,
 	definirBlocDiffuse,
 	verifierColonneMasquee,
+	validerIndexColonne,
+	definirColonneBloc,
+	verifierBlocVisible,
+	verifierCapsuleLisible,
 	definirAccesLecture,
 	verifierIdentifiantBloc,
 	recupererNombreCommentaires,
@@ -26,6 +30,7 @@ export default function creerGestionnairesBlocs ({
 		diffuserAdmin,
 		diffuserBloc,
 		diffuserBlocsDeplaces,
+		notifierAdminsAbsents,
 		recupererCommentairesMasques,
 		verifierAdmin,
 		verifierAccesLecturePad,
@@ -38,7 +43,8 @@ export default function creerGestionnairesBlocs ({
 		supprimerEtherpad,
 		dupliquerBloc,
 		definirScoreDuplication,
-		ajouterUrlsFichiers
+		ajouterUrlsFichiers,
+		definirAdministrateursPad
 	} = fonctions
 
 	return function enregistrer (socket, req) {
@@ -60,6 +66,8 @@ export default function creerGestionnairesBlocs ({
 				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				const autorisation = (donneesPad.id === pad && donneesPad.token === token && (donneesPad.contributions !== 'fermees' || admin))
 				if (!autorisation) return socket.emit('nonautorise')
+				colonne = validerIndexColonne(colonne, parseJSON(donneesPad.colonnes, []).length)
+				if (colonne === null) return socket.emit('erreur')
 				const blocExiste = await db.EXISTS('pad-' + pad + ':' + bloc)
 				if (blocExiste === 1) return socket.emit('erreur')
 				const blocId = parseInt(donneesPad.bloc, 10) + 1
@@ -100,7 +108,9 @@ export default function creerGestionnairesBlocs ({
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
-				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
+				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant, colonneMasquee)
+				notifierAdminsAbsents(pad, donneesPad, req.session.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -152,8 +162,7 @@ export default function creerGestionnairesBlocs ({
 				if (Object.keys(donneesBloc).length === 0) return socket.emit('erreur')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
-				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
-				const autorisation = (donneesBloc.identifiant === identifiant || admin || (donneesPad.contributions === 'modifiables' && !blocMasque))
+				const autorisation = (donneesBloc.identifiant === identifiant || admin || (donneesPad.contributions === 'modifiables' && verifierCapsuleLisible(donneesPad, donneesBloc, false, identifiant)))
 				if (!autorisation) return socket.emit('nonautorise')
 				let visibilite = donneesBloc.visibilite || 'visible'
 				if (admin && privee === true) {
@@ -200,9 +209,12 @@ export default function creerGestionnairesBlocs ({
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad, donneesPad.acces)
 				}
-				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
+				const colonneStockee = definirColonneBloc(donneesBloc.colonne, parseJSON(donneesPad.colonnes, []).length)
+				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne: colonneStockee, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
-				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonneStockee)
+				diffuserBloc(pad, 'modifierbloc', blocDiffuse, donneesBloc.identifiant, colonneMasquee)
+				notifierAdminsAbsents(pad, donneesPad, req.session.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -265,6 +277,7 @@ export default function creerGestionnairesBlocs ({
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
 				diffuserBloc(pad, 'dupliquerbloc', blocDiffuse, identifiant, colonneMasquee)
+				notifierAdminsAbsents(pad, donneesPad, req.session.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -288,14 +301,12 @@ export default function creerGestionnairesBlocs ({
 				const clesRequises = ['id', 'token', 'identifiant', 'bloc', 'activite']
 				const padValide = clesRequises.every(champ => donneesPad.hasOwnProperty(champ))
 				if (!padValide) return socket.emit('erreur')
-				let listeAdmins = []
-				if (donneesPad.hasOwnProperty('admins')) {
-					listeAdmins = JSON.parse(donneesPad.admins)
-				}
-				const admin = (listeAdmins.includes(identifiant) || donneesPad.identifiant === identifiant)
+				const admin = definirAdministrateursPad(donneesPad).includes(identifiant)
 				const autorisation = (donneesPad.id === pad && donneesPad.token === token && admin)
 				if (!autorisation) return socket.emit('nonautorise')
 				if (String(padOrigine) !== String(pad) && !await verifierAccesLecturePad(padOrigine, req.session)) return socket.emit('nonautorise')
+				colonne = validerIndexColonne(colonne, parseJSON(donneesPad.colonnes, []).length)
+				if (colonne === null) return socket.emit('erreur')
 				const blocId = parseInt(donneesPad.bloc, 10) + 1
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
@@ -328,7 +339,9 @@ export default function creerGestionnairesBlocs ({
 				}
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}), type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
-				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
+				diffuserBloc(pad, 'ajouterbloc', blocDiffuse, identifiant, colonneMasquee)
+				notifierAdminsAbsents(pad, donneesPad, req.session.identifiant)
 				socket.emit('copierbloc')
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
@@ -351,6 +364,7 @@ export default function creerGestionnairesBlocs ({
 				if (!autorisation) return socket.emit('nonautorise')
 				const blocExiste = await db.EXISTS('pad-' + pad + ':' + item.bloc)
 				if (blocExiste !== 1) return socket.emit('erreur')
+				const colonneBloc = definirColonneBloc(await db.HGET('pad-' + pad + ':' + item.bloc, 'colonne'), parseJSON(donneesPad.colonnes, []).length)
 				if (typeof item.titre === 'string' && item.titre.length > limitesTailleInput.titre) return socket.emit('erreur')
 				if (typeof item.texte === 'string' && item.texte.length > limitesTailleInput.texte) return socket.emit('erreur')
 				if (typeof item.iframe === 'string' && item.iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
@@ -388,14 +402,15 @@ export default function creerGestionnairesBlocs ({
 				const commentairesVisibles = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, donneesPad.visibiliteCommentaires !== 'admin')
 				const listeEvaluations = (evaluationsBrutes || []).map(ev => parseJSON(ev, null)).filter(e => e !== null)
 				const evaluationsVisibles = (donneesPad.visibiliteEvaluations === 'admin') ? [] : listeEvaluations
-				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, alt: item.alt || '', iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: item.colonne, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
+				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, alt: item.alt || '', iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: colonneBloc, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
 				await ajouterUrlsFichiers(pad, donneesBlocAutoriseBase, donneesPad.acces)
 				if (moderation === 'moderee' && item.activiteId) {
 					donneesBlocAutoriseBase.publication = { activiteId: item.activiteId, date: item.date, identifiant: item.identifiant, nom: item.nom }
 				}
 				const donneesBlocAutoriseAdmin = { ...donneesBlocAutoriseBase, ...commentairesAdmin, evaluations: listeEvaluations }
 				const donneesBlocAutorise = { ...donneesBlocAutoriseBase, ...commentairesVisibles, evaluations: evaluationsVisibles }
-				diffuserAdmin(pad, 'autoriserbloc', donneesBlocAutoriseAdmin, donneesBlocAutorise)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonneBloc)
+				diffuserAdmin(pad, 'autoriserbloc', donneesBlocAutoriseAdmin, donneesBlocAutorise, { identifiantAuteur: item.identifiant, diffusionRestreinte: colonneMasquee })
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -416,23 +431,37 @@ export default function creerGestionnairesBlocs ({
 				if (ordre === 'decroissant') {
 					listeItems.reverse()
 				}
+				if (affichage === 'colonnes') {
+					const nombreColonnes = parseJSON(donneesPad.colonnes, []).length
+					for (const item of listeItems) {
+						if (!item || !item.hasOwnProperty('colonne')) continue
+						item.colonne = nombreColonnes > 0 ? definirColonneBloc(item.colonne, nombreColonnes) : 0
+					}
+				}
+				const pipelineBlocsExistants = db.multi()
+				listeItems.forEach((item) => {
+					pipelineBlocsExistants.EXISTS('pad-' + pad + ':' + item.bloc)
+				})
+				const blocsExistants = await pipelineBlocsExistants.exec()
 				let compteurErreurs = 0
+				const pipelineDeplacements = db.multi()
+				let deplacements = 0
 				for (let i = 0; i < listeItems.length; i++) {
 					const item = listeItems[i]
-					const blocExiste = await db.EXISTS('pad-' + pad + ':' + item.bloc)
-					if (blocExiste !== 1) {
+					if (blocsExistants[i] !== 1) {
 						compteurErreurs++
 						continue
 					}
-					await db.multi()
+					pipelineDeplacements
 						.ZREM('blocs:' + pad, item.bloc)
 						.ZADD('blocs:' + pad, [{ score: i + 1, value: item.bloc }])
-						.exec()
 					// Mise à jour de la colonne si l'affichage est en colonnes
 					if (affichage === 'colonnes' && item.hasOwnProperty('colonne')) {
-						await db.HSET('pad-' + pad + ':' + item.bloc, 'colonne', item.colonne)
+						pipelineDeplacements.HSET('pad-' + pad + ':' + item.bloc, 'colonne', item.colonne)
 					}
+					deplacements++
 				}
+				if (deplacements > 0) await pipelineDeplacements.exec()
 				if (compteurErreurs === 0) {
 					if (ordre === 'decroissant') {
 						listeItems.reverse()
@@ -441,15 +470,15 @@ export default function creerGestionnairesBlocs ({
 					if (listeItems.length > 0) {
 						const pipelineVisibilites = db.multi()
 						listeItems.forEach((item) => {
-							pipelineVisibilites.HMGET('pad-' + pad + ':' + item.bloc, ['visibilite', 'identifiant'])
+							pipelineVisibilites.HMGET('pad-' + pad + ':' + item.bloc, ['visibilite', 'identifiant', 'colonne'])
 						})
 						const visibilites = await pipelineVisibilites.exec()
 						blocs = listeItems.map((item, index) => {
 							const champs = visibilites[index] || []
-							return { bloc: item.bloc, visibilite: champs[0] || 'visible', identifiant: champs[1] || '' }
+							return { bloc: item.bloc, visibilite: champs[0] || 'visible', identifiant: champs[1] || '', colonne: champs[2] || 0 }
 						})
 					}
-					diffuserBlocsDeplaces(pad, listeItems, blocs, donneesPad.contributions, identifiant)
+					diffuserBlocsDeplaces(pad, listeItems, blocs, donneesPad, identifiant)
 				} else {
 					socket.emit('erreur')
 				}
@@ -497,7 +526,12 @@ export default function creerGestionnairesBlocs ({
 					.HINCRBY('pads:' + pad, 'activite', 1)
 					.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-supprime' }) }])
 					.exec()
-				io.to('pad-' + pad).emit('supprimerbloc', { bloc, identifiant, nom, titre, date, colonne, activiteId })
+				const blocMasque = !verifierBlocVisible(donneesBloc, donneesPad.contributions)
+				const colonneStockee = definirColonneBloc(donneesBloc.colonne, parseJSON(donneesPad.colonnes, []).length)
+				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonneStockee)
+				const donneesSuppression = { bloc, identifiant, nom, titre, date, colonne: colonneStockee, activiteId }
+				diffuserBloc(pad, 'supprimerbloc', { complet: donneesSuppression, reduit: donneesSuppression }, donneesBloc.identifiant, blocMasque || colonneMasquee)
+				notifierAdminsAbsents(pad, donneesPad, req.session.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {

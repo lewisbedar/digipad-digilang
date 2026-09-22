@@ -18,6 +18,7 @@ import {
 	definirAccesLecture,
 	definirBlocsDeplaces,
 	definirBlocsExport,
+	definirFichiersExport,
 	definirCheminFichiers,
 	definirDonneesPadExport,
 	definirModeration,
@@ -35,6 +36,14 @@ import {
 	tailleLotTransaction,
 	verifierActiviteVisible,
 	verifierBlocVisible,
+	definirColonneBloc,
+	definirAdministrateursPad,
+	verifierAdministrateurListe,
+	normaliserAffichageColonnes,
+	normaliserTitresColonnes,
+	reduireColonnesMasquees,
+	creerFiltreActiviteColonnes,
+	creerFiltreColonneMasquee,
 	verifierColonneMasquee,
 	verifierDomaineEmail,
 	verifierFormatEmail,
@@ -67,6 +76,7 @@ export default function creerFonctions ({
 	minimumEspaceDisque,
 	fenetreEchecsConnexionParIdentifiant,
 	limiteEchecsCodeAdresse,
+	limiteEchecsMotDePasseAdresse,
 	salonMaintenance
 }) {
 	async function enregistrerTentativeConnexion (identifiant, ip) {
@@ -188,21 +198,9 @@ export default function creerFonctions ({
 		} else {
 			admins = JSON.stringify([])
 		}
-		// Gestion de l'affichage des colonnes
-		let affichageColonnes
-		if (donnees.pad.hasOwnProperty('affichageColonnes')) {
-			affichageColonnes = donnees.pad.affichageColonnes
-		} else if (donnees.pad.colonnes && donnees.pad.colonnes.length > 0) {
-			try {
-				const colonnesParsees = JSON.parse(donnees.pad.colonnes)
-				affichageColonnes = JSON.stringify(colonnesParsees.map(() => true))
-			} catch {
-				affichageColonnes = JSON.stringify([])
-			}
-		} else {
-			affichageColonnes = JSON.stringify([])
-		}
-		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', donnees.pad.colonnes, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'vues', vues, 'digidrive', digidrive, ...definirParametresModeration(donnees.pad)]
+		const colonnesImportees = JSON.stringify(normaliserTitresColonnes(parseJSON(donnees.pad.colonnes, [])))
+		const affichageColonnes = JSON.stringify(normaliserAffichageColonnes(parseJSON(donnees.pad.colonnes, []), parseJSON(donnees.pad.affichageColonnes, null)))
+		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', colonnesImportees, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'activiteColonne', 0, 'vues', vues, 'digidrive', digidrive, ...definirParametresModeration(donnees.pad)]
 		if (donnees.pad.hasOwnProperty('motdepasse')) {
 			champsPad.push('motdepasse', donnees.pad.motdepasse)
 		}
@@ -223,28 +221,6 @@ export default function creerFonctions ({
 			fs.remove(path.join(__dirname, '..', '/static/pads/pad-' + id + '.json'))
 		])
 		return 'pad_ajoute_dans_db'
-	}
-
-	function definirAdministrateursPad (donneesPad) {
-		const administrateurs = []
-		if (donneesPad.identifiant) administrateurs.push(donneesPad.identifiant)
-		if (!donneesPad.hasOwnProperty('admins')) return administrateurs
-		try {
-			let admins = donneesPad.admins
-			if (typeof admins === 'string') admins = admins.substring(0, 2) === '"\\' ? [] : JSON.parse(admins)
-			if (typeof admins === 'string') admins = JSON.parse(admins)
-			if (Array.isArray(admins)) {
-				admins.forEach((admin) => {
-					if (typeof admin === 'string' && admin !== '' && !administrateurs.includes(admin)) administrateurs.push(admin)
-				})
-			}
-		} catch {}
-		return administrateurs
-	}
-
-	function verifierAdministrateurListe (identifiant, donneesPad) {
-		if (!identifiant) return false
-		return definirAdministrateursPad(donneesPad).includes(identifiant)
 	}
 
 	async function recupererDonneesUtilisateur (identifiant, session = null) {
@@ -336,21 +312,15 @@ export default function creerFonctions ({
 		return { padsCrees, padsAdmins }
 	}
 
-	async function recupererDonneesPad (id, token, identifiant, statut, pads) {
+	async function recupererDonneesPad (id, token, identifiant, statut, pads, donneesPad = null) {
 		const nomsUtilisateurs = new Map()
 		const commentairesMasquesParBloc = new Map()
-		let pad = await db.HGETALL('pads:' + id)
+		let pad = donneesPad || await db.HGETALL('pads:' + id)
 		pad = pad ? { ...pad } : {}
 		if (!pad.id || pad.id !== id || !pad.token || pad.token !== token) return 'erreur'
+		const administrateurs = definirAdministrateursPad(pad)
 		try {
-			// Fix bug update 0.9.0 admins
-			if (!pad.hasOwnProperty('admins') || pad.admins.substring(0, 2) === '"\\') {
-				pad.admins = []
-			} else if (pad.admins.substring(0, 1) === '"') {
-				pad.admins = JSON.parse(JSON.parse(pad.admins))
-			} else {
-				pad.admins = JSON.parse(pad.admins)
-			}
+			pad.admins = administrateurs.filter((admin) => admin !== pad.identifiant)
 			pad.colonnes = JSON.parse(pad.colonnes)
 			if (pad.hasOwnProperty('notification')) {
 				pad.notification = JSON.parse(pad.notification)
@@ -358,8 +328,9 @@ export default function creerFonctions ({
 		} catch {
 			return 'erreur'
 		}
+		const notificationEnregistree = Array.isArray(pad.notification) ? pad.notification : []
 		const nombreColonnes = pad.colonnes.length
-		const admin = (statut === 'utilisateur' && (pad.admins.includes(identifiant) || pad.identifiant === identifiant)) || (statut === 'auteur' && pads && pads.includes(parseInt(id, 10)))
+		const admin = (statut === 'utilisateur' && administrateurs.includes(identifiant)) || (statut === 'auteur' && pads && pads.includes(parseInt(id, 10)))
 		const accesCode = pad.hasOwnProperty('code') && pad.acces === 'code'
 		const accesPrive = pad.acces === 'prive'
 		const accesLecture = admin || (!accesCode && !accesPrive)
@@ -373,26 +344,15 @@ export default function creerFonctions ({
 		if (pad.transfertPropriete === 'active' && (Number(pad.transfertProprieteExpire) || 0) <= Date.now()) {
 			pad.transfertPropriete = 'desactive'
 		}
-		if (accesLecture) {
-			if (pad.hasOwnProperty('affichageColonnes')) {
-				try {
-					pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
-					if (pad.affichageColonnes.length === 0 || pad.affichageColonnes.length !== pad.colonnes.length) {
-						pad.affichageColonnes = pad.colonnes.map(() => true)
-					}
-				} catch {
-					pad.affichageColonnes = pad.colonnes.map(() => true)
-				}
-			} else {
-				pad.affichageColonnes = pad.colonnes.map(() => true)
-			}
-		}
+		pad.affichageColonnes = normaliserAffichageColonnes(pad.colonnes, pad.affichageColonnes)
 		if (pad.hasOwnProperty('fond') && typeof pad.fond === 'string' && pad.fond !== '' && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#') {
 			pad.fond = path.basename(pad.fond)
 		}
 		pad.fondUrl = accesLecture ? await definirUrlFond(id, pad.fond, pad.acces) : ''
 		// Masquage des données sensibles
 		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
+		const activiteColonneLisible = admin ? () => true : creerFiltreActiviteColonnes(pad.colonnes, pad.affichageColonnes)
+		const filtreColonneMasquee = creerFiltreColonneMasquee(pad, pad.affichageColonnes)
 		if (!admin) {
 			if (pad.hasOwnProperty('code')) pad.code = ''
 			if (accesCode || accesPrive) {
@@ -400,6 +360,8 @@ export default function creerFonctions ({
 				pad.affichageColonnes = []
 			}
 			pad.admins = []
+			pad.notification = []
+			pad.colonnes = reduireColonnesMasquees(pad.colonnes, pad.affichageColonnes)
 		}
 		let donneesBlocs = []
 		let listeBlocsValides = []
@@ -412,12 +374,9 @@ export default function creerFonctions ({
 					bloc = { ...bloc }
 					if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
 					const blocVisible = !((pad.contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
-					const colonneMasquee = (pad.affichage === 'colonnes' && pad.affichageColonnes[bloc.colonne] === false)
+					bloc.colonne = definirColonneBloc(bloc.colonne, nombreColonnes)
+					const colonneMasquee = filtreColonneMasquee(bloc.colonne)
 					if ((!blocVisible || colonneMasquee) && bloc.identifiant !== identifiant && !admin) return null
-					// Correction colonne inexistante
-					if (parseInt(bloc.colonne, 10) >= nombreColonnes) {
-						bloc.colonne = nombreColonnes - 1
-					}
 					if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
 						bloc.vignette = path.basename(bloc.vignette)
 					}
@@ -480,6 +439,7 @@ export default function creerFonctions ({
 				donneesEntrees = resultatsActivite.filter(e => {
 					if (!e) return
 					const colonne = e.hasOwnProperty('type') && e.type.includes('colonne')
+					if (colonne && !activiteColonneLisible(e)) return false
 					const blocVisible = e.hasOwnProperty('bloc') && listeBlocsValides.includes(e.bloc)
 					return colonne || blocVisible
 				})
@@ -496,9 +456,9 @@ export default function creerFonctions ({
 			multi.SADD('utilisateurs-pads:' + id, identifiant)
 		}
 		// Vérifier notification mise à jour pad
-		if (pad.hasOwnProperty('notification') && Array.isArray(pad.notification) && pad.notification.includes(identifiant)) {
-			pad.notification.splice(pad.notification.indexOf(identifiant), 1)
-			multi.HSET('pads:' + id, 'notification', JSON.stringify(pad.notification))
+		if (notificationEnregistree.includes(identifiant)) {
+			notificationEnregistree.splice(notificationEnregistree.indexOf(identifiant), 1)
+			multi.HSET('pads:' + id, 'notification', JSON.stringify(notificationEnregistree))
 		}
 		await multi.exec()
 		return { pad, blocs: donneesBlocs, activite: donneesEntrees }
@@ -508,6 +468,7 @@ export default function creerFonctions ({
 		const nomsUtilisateurs = new Map()
 		const commentairesMasquesParBloc = new Map()
 		try {
+			pad.admins = definirAdministrateursPad(pad).filter((el) => el !== pad.identifiant)
 			pad.colonnes = JSON.parse(pad.colonnes)
 			if (pad.hasOwnProperty('notification')) {
 				pad.notification = JSON.parse(pad.notification)
@@ -515,19 +476,9 @@ export default function creerFonctions ({
 		} catch {
 			return 'erreur'
 		}
+		const notificationEnregistree = Array.isArray(pad.notification) ? pad.notification : []
 		const nombreColonnes = pad.colonnes.length
-		if (pad.hasOwnProperty('affichageColonnes')) {
-			try {
-				pad.affichageColonnes = JSON.parse(pad.affichageColonnes)
-				if (pad.affichageColonnes.length === 0 || pad.affichageColonnes.length !== pad.colonnes.length) {
-					pad.affichageColonnes = pad.colonnes.map(() => true)
-				}
-			} catch {
-				pad.affichageColonnes = pad.colonnes.map(() => true)
-			}
-		} else {
-			pad.affichageColonnes = pad.colonnes.map(() => true)
-		}
+		pad.affichageColonnes = normaliserAffichageColonnes(pad.colonnes, pad.affichageColonnes)
 		// Valeurs par défaut et compatibilité
 		if (!pad.hasOwnProperty('digidrive')) pad.digidrive = 0
 		if (!pad.hasOwnProperty('fondRepete')) pad.fondRepete = 'desactive'
@@ -542,7 +493,13 @@ export default function creerFonctions ({
 		// Masquage des données sensibles
 		if (pad.hasOwnProperty('motdepasse')) pad.motdepasse = ''
 		if (!admin && pad.hasOwnProperty('code')) pad.code = ''
-		pad.admins = []
+		const activiteColonneLisible = admin ? () => true : creerFiltreActiviteColonnes(pad.colonnes, pad.affichageColonnes)
+		const filtreColonneMasquee = creerFiltreColonneMasquee(pad, pad.affichageColonnes)
+		if (!admin) {
+			pad.colonnes = reduireColonnesMasquees(pad.colonnes, pad.affichageColonnes)
+			pad.admins = []
+			pad.notification = []
+		}
 		const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 		let donneesBlocs = []
 		let listeBlocsValides = []
@@ -554,12 +511,9 @@ export default function creerFonctions ({
 				if (!bloc.hasOwnProperty('visibilite')) bloc.visibilite = 'visible'
 				// Filtres de visibilité
 				const blocVisible = !((pad.contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
-				const colonneMasquee = (pad.affichage === 'colonnes' && pad.affichageColonnes[bloc.colonne] === false)
+				bloc.colonne = definirColonneBloc(bloc.colonne, nombreColonnes)
+				const colonneMasquee = filtreColonneMasquee(bloc.colonne)
 				if ((!blocVisible || colonneMasquee) && bloc.identifiant !== identifiant && !admin) return null
-				// Correction colonne inexistante
-				if (parseInt(bloc.colonne, 10) >= nombreColonnes) {
-					bloc.colonne = nombreColonnes - 1
-				}
 				if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
 					bloc.vignette = path.basename(bloc.vignette)
 				}
@@ -618,15 +572,16 @@ export default function creerFonctions ({
 			donneesEntrees = resultatsActivite.filter(e => {
 				if (!e) return
 				const colonne = e.hasOwnProperty('type') && e.type.includes('colonne')
+				if (colonne && !activiteColonneLisible(e)) return false
 				const blocVisible = e.hasOwnProperty('bloc') && listeBlocsValides.includes(e.bloc)
 				return colonne || blocVisible
 			})
 		}
 		donneesEntrees.reverse()
 		// Vérifier notification mise à jour pad
-		if (pad.hasOwnProperty('notification') && Array.isArray(pad.notification) && pad.notification.includes(identifiant)) {
-			pad.notification.splice(pad.notification.indexOf(identifiant), 1)
-			await db.HSET('pads:' + id, 'notification', JSON.stringify(pad.notification))
+		if (notificationEnregistree.includes(identifiant)) {
+			notificationEnregistree.splice(notificationEnregistree.indexOf(identifiant), 1)
+			await db.HSET('pads:' + id, 'notification', JSON.stringify(notificationEnregistree))
 		}
 		return { pad, blocs: donneesBlocs, activite: donneesEntrees }
 	}
@@ -647,11 +602,24 @@ export default function creerFonctions ({
 		return nom || ''
 	}
 
-	function diffuserAdmin (pad, evenement, donneesCompletes, donneesReduites) {
+	function diffuserAdmin (pad, evenement, donneesCompletes, donneesReduites, options = {}) {
+		const { identifiantAuteur = null, identifiantCapsule = null, diffusionRestreinte = false } = options
 		const salonAdmin = definirSalonAdmin(pad)
 		io.to(salonAdmin).emit(evenement, donneesCompletes)
+		const exclusions = [salonAdmin]
 		if (donneesReduites !== null) {
-			io.to('pad-' + pad).except(salonAdmin).emit(evenement, donneesReduites)
+			const identifiantsConcernes = new Set()
+			if (identifiantAuteur) identifiantsConcernes.add(identifiantAuteur)
+			if (diffusionRestreinte && identifiantCapsule) identifiantsConcernes.add(identifiantCapsule)
+			identifiantsConcernes.forEach((identifiantConcerne) => {
+				const salonConcerne = definirSalonUtilisateur(pad, identifiantConcerne)
+				io.to(salonConcerne).except(salonAdmin).emit(evenement, donneesReduites)
+				exclusions.push(salonConcerne)
+			})
+		}
+		if (diffusionRestreinte) return
+		if (donneesReduites !== null) {
+			io.to('pad-' + pad).except(exclusions).emit(evenement, donneesReduites)
 		}
 	}
 
@@ -672,19 +640,21 @@ export default function creerFonctions ({
 		io.to(salonPad).except(exclusions).emit(evenement, blocDiffuse.reduit)
 	}
 
-	function diffuserBlocsDeplaces (pad, listeItems, blocs, contributions, identifiantAdmin) {
+	function diffuserBlocsDeplaces (pad, listeItems, blocs, donneesPad, identifiantAdmin) {
 		const salonAdmin = definirSalonAdmin(pad)
 		const salonPad = 'pad-' + pad
 		io.to(salonAdmin).emit('deplacerbloc', { blocs: listeItems, identifiant: identifiantAdmin })
-		const blocsDeplaces = definirBlocsDeplaces(listeItems, blocs, contributions, null)
+		const blocsDeplaces = definirBlocsDeplaces(listeItems, blocs, donneesPad, null)
 		if (blocsDeplaces.length === listeItems.length) {
 			return io.to(salonPad).except(salonAdmin).emit('deplacerbloc', { blocs: blocsDeplaces, identifiant: identifiantAdmin })
 		}
-		const auteurs = new Set(blocs.filter((bloc) => !verifierBlocVisible(bloc, contributions) && bloc.identifiant).map((bloc) => bloc.identifiant))
+		// Auteurs des capsules retirées de la liste générale : masquées, privées ou en colonne masquée
+		const blocsDiffuses = new Set(blocsDeplaces.map((item) => item.bloc))
+		const auteurs = new Set(blocs.filter((bloc, index) => bloc && bloc.identifiant && !blocsDiffuses.has(listeItems[index].bloc)).map((bloc) => bloc.identifiant))
 		const exclusions = [salonAdmin]
 		auteurs.forEach((auteur) => {
 			const salonAuteur = definirSalonUtilisateur(pad, auteur)
-			io.to(salonAuteur).except(salonAdmin).emit('deplacerbloc', { blocs: definirBlocsDeplaces(listeItems, blocs, contributions, auteur), identifiant: identifiantAdmin })
+			io.to(salonAuteur).except(salonAdmin).emit('deplacerbloc', { blocs: definirBlocsDeplaces(listeItems, blocs, donneesPad, auteur), identifiant: identifiantAdmin })
 			exclusions.push(salonAuteur)
 		})
 		io.to(salonPad).except(exclusions).emit('deplacerbloc', { blocs: blocsDeplaces, identifiant: identifiantAdmin })
@@ -699,12 +669,12 @@ export default function creerFonctions ({
 		return { totalCommentaires, identifiantsMasques }
 	}
 
-	function diffuserCommentaires (pad, evenement, donneesCommunes, commentairesMasques, identifiantAuteur, donneesAdmin, commentairesVisibles = true, donneesAuteur = null) {
+	function diffuserCommentaires (pad, evenement, donneesCommunes, commentairesMasques, identifiantAuteur, donneesAdmin, commentairesVisibles = true, donneesAuteur = null, diffusionRestreinte = false, identifiantCapsule = null) {
 		const salonAdmin = definirSalonAdmin(pad)
 		const salonPad = 'pad-' + pad
 		const commentairesAdmin = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, true, null)
 		const commentaires = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, commentairesVisibles)
-		if (commentairesVisibles === true && !donneesAdmin && commentairesMasques.identifiantsMasques.length === 0) {
+		if (!diffusionRestreinte && commentairesVisibles === true && !donneesAdmin && commentairesMasques.identifiantsMasques.length === 0) {
 			return io.to(salonPad).emit(evenement, { ...donneesCommunes, ...commentairesAdmin })
 		}
 		io.to(salonAdmin).emit(evenement, { ...(donneesAdmin || donneesCommunes), ...commentairesAdmin })
@@ -712,6 +682,9 @@ export default function creerFonctions ({
 		const identifiantsConcernes = new Set(commentairesMasques.identifiantsMasques.map(extraireIdentifiantMasque))
 		if (identifiantAuteur) {
 			identifiantsConcernes.add(identifiantAuteur)
+		}
+		if (diffusionRestreinte && identifiantCapsule) {
+			identifiantsConcernes.add(identifiantCapsule)
 		}
 		const exclusions = [salonAdmin]
 		identifiantsConcernes.forEach((identifiantConcerne) => {
@@ -721,6 +694,7 @@ export default function creerFonctions ({
 			io.to(salonUtilisateur).except(salonAdmin).emit(evenement, { ...donneesUtilisateur, ...commentairesUtilisateur })
 			exclusions.push(salonUtilisateur)
 		})
+		if (diffusionRestreinte) return
 		io.to(salonPad).except(exclusions).emit(evenement, { ...donneesReduites, ...commentaires })
 	}
 
@@ -728,24 +702,18 @@ export default function creerFonctions ({
 		let pad = await db.HGETALL('pads:' + id)
 		pad = pad ? { ...pad } : {}
 		if (!pad.id || pad.id !== id || !pad.token || pad.token !== token) return 'erreur'
-		// Fix bug update 0.9.0 admins
-		if (!pad.hasOwnProperty('admins') || pad.admins.substring(0, 2) === '"\\') {
-			pad.admins = []
-		} else if (pad.admins.substring(0, 1) === '"') {
-			pad.admins = JSON.parse(JSON.parse(pad.admins))
-		} else {
-			pad.admins = JSON.parse(pad.admins)
-		}
-		const admin = (statut === 'utilisateur' && (pad.admins.includes(identifiant) || pad.identifiant === identifiant)) || (statut === 'auteur' && pads && pads.includes(parseInt(id, 10)))
+		const administrateurs = definirAdministrateursPad(pad)
+		pad.admins = administrateurs.filter((admin) => admin !== pad.identifiant)
+		const admin = (statut === 'utilisateur' && administrateurs.includes(identifiant)) || (statut === 'auteur' && pads && pads.includes(parseInt(id, 10)))
 		const accesCode = pad.hasOwnProperty('code') && pad.acces === 'code'
 		const accesPrive = pad.acces === 'prive'
-		let affichageColonnes = []
-		if (pad.hasOwnProperty('affichageColonnes')) {
-			try { affichageColonnes = JSON.parse(pad.affichageColonnes) } catch {}
-		}
+		const accesLecture = admin || (!accesCode && !accesPrive)
+		const affichageColonnes = normaliserAffichageColonnes(pad.colonnes, pad.affichageColonnes)
+		const filtreColonneMasquee = creerFiltreColonneMasquee(pad, affichageColonnes)
+		const nombreColonnes = parseJSON(pad.colonnes, []).length
 		let donneesBlocs = []
 		const nomsUtilisateurs = new Map()
-		if (admin || (!accesCode && !accesPrive)) {
+		if (accesLecture) {
 			const listeBlocs = await db.ZRANGE('blocs:' + id, 0, -1)
 			if (listeBlocs && listeBlocs.length > 0) {
 				const resultatsBlocs = await Promise.all(listeBlocs.map(async (blocId) => {
@@ -753,7 +721,7 @@ export default function creerFonctions ({
 					if (!bloc || Object.keys(bloc).length === 0) return null
 					bloc = { ...bloc }
 					const blocVisible = !((pad.contributions === 'moderees' && bloc.visibilite === 'masquee') || bloc.visibilite === 'privee')
-					const colonneMasquee = (pad.affichage === 'colonnes' && affichageColonnes[bloc.colonne] === false)
+					const colonneMasquee = filtreColonneMasquee(definirColonneBloc(bloc.colonne, nombreColonnes))
 					if ((!blocVisible || colonneMasquee) && bloc.identifiant !== identifiant && !admin) return null
 					if (bloc.hasOwnProperty('vignette') && definirVignettePersonnalisee(bloc.vignette) === true) {
 						bloc.vignette = path.basename(bloc.vignette)
@@ -769,7 +737,7 @@ export default function creerFonctions ({
 				donneesBlocs = resultatsBlocs.filter(b => b !== null)
 			}
 		}
-		return { blocs: donneesBlocs, admin }
+		return { blocs: donneesBlocs, admin, accesLecture }
 	}
 
 	async function recupererDonneesPadJSON (pad) {
@@ -820,10 +788,12 @@ export default function creerFonctions ({
 		return { acces: 'pad_debloque', utilisateur: donneesUtilisateur }
 	}
 
-	async function exporterPad (id, erreur, langue) {
+	async function exporterPad (id, erreur, langue, format = 'archive') {
 		if (!langues.includes(langue)) {
 			langue = langueParDefaut
 		}
+		if (format !== 'web') format = 'archive'
+		const dossierPad = path.join(__dirname, '..', '/static/temp', 'export-' + id + '_' + randomBytes(16).toString('hex'))
 		try {
 			let [donneesPad, listeBlocs, activite] = await Promise.all([
 				db.HGETALL('pads:' + id),
@@ -870,63 +840,58 @@ export default function creerFonctions ({
 			if (activite) {
 				donneesEntrees = activite.map(entreeStr => parseJSON(entreeStr, null)).filter(e => e !== null)
 			}
-			const parametres = { pad: donneesPad, blocs: donneesBlocs, activite: donneesEntrees }
-			const html = genererHTML(definirDonneesPadExport(donneesPad), definirBlocsExport(donneesBlocs, donneesPad), langue)
-			const dossierPad = path.join(__dirname, '..', '/static/temp', id.toString())
 			const dossierFichiers = path.join(dossierPad, 'fichiers')
-			const dossierStatic = path.join(dossierPad, 'static')
 			await fs.mkdirp(dossierFichiers)
-			await fs.mkdirp(path.join(dossierStatic, 'css'))
-			await fs.mkdirp(path.join(dossierStatic, 'js'))
-			await fs.mkdirp(path.join(dossierStatic, 'fonts'))
-			await fs.mkdirp(path.join(dossierStatic, 'img'))
-			await fs.writeFile(path.join(dossierPad, 'donnees.json'), JSON.stringify(parametres, '', 4), 'utf8')
-			await fs.writeFile(path.join(dossierPad, 'index.html'), html, 'utf8')
 			const transactionsFichiers = []
-			if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
-				const fichierFond = path.basename(donneesPad.fond)
+			const copierFichierPad = (fichier) => {
 				transactionsFichiers.push(() =>
-					copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + fichierFond), cleS3: id + '/' + fichierFond }, path.join(dossierFichiers, fichierFond))
-				)
-			} else if (donneesPad.hasOwnProperty('fond') && typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && donneesPad.fond.includes('/img/')) {
-				transactionsFichiers.push(() =>
-					fs.copy(path.join(__dirname, '..', '/public' + donneesPad.fond), path.join(dossierStatic, donneesPad.fond), { overwrite: true }).catch(() => {})
+					copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + fichier), cleS3: id + '/' + fichier }, path.join(dossierFichiers, fichier))
 				)
 			}
-			transactionsFichiers.push(
-				() => fs.copy(path.join(__dirname, '..', '/static/export/css'), path.join(dossierStatic, 'css')).catch(() => {}),
-				() => fs.copy(path.join(__dirname, '..', '/static/export/js'), path.join(dossierStatic, 'js')).catch(() => {}),
-				() => fs.copy(path.join(__dirname, '..', '/public/fonts/MaterialIcons-Regular.woff2'), path.join(dossierStatic, 'fonts/MaterialIcons-Regular.woff2')).catch(() => {}),
-				() => fs.copy(path.join(__dirname, '..', '/public/fonts/Roboto-Slab-Medium.woff2'), path.join(dossierStatic, 'fonts/Roboto-Slab-Medium.woff2')).catch(() => {}),
-				() => fs.copy(path.join(__dirname, '..', '/public/img/favicon.png'), path.join(dossierStatic, 'img/favicon.png')).catch(() => {})
-			)
-			for (const bloc of parametres.blocs) {
-				if (!bloc || Object.keys(bloc).length === 0) continue
-				if (bloc.media && bloc.media !== '' && bloc.type !== 'embed' && bloc.type !== 'lien') {
+			if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
+				copierFichierPad(path.basename(donneesPad.fond))
+			}
+			let fichiersBlocs
+			if (format === 'archive') {
+				const padExport = { ...donneesPad }
+				if (padExport.hasOwnProperty('motdepasse')) padExport.motdepasse = ''
+				if (padExport.hasOwnProperty('motdepasseAdmin')) padExport.motdepasseAdmin = ''
+				if (padExport.hasOwnProperty('code')) padExport.code = ''
+				const parametres = { pad: padExport, blocs: donneesBlocs, activite: donneesEntrees }
+				await fs.writeFile(path.join(dossierPad, 'donnees.json'), JSON.stringify(parametres, '', 4), 'utf8')
+				fichiersBlocs = definirFichiersExport(donneesBlocs)
+			} else {
+				const blocsExport = definirBlocsExport(donneesBlocs, donneesPad)
+				const html = genererHTML(definirDonneesPadExport(donneesPad), blocsExport, langue)
+				const dossierStatic = path.join(dossierPad, 'static')
+				await fs.mkdirp(path.join(dossierStatic, 'css'))
+				await fs.mkdirp(path.join(dossierStatic, 'js'))
+				await fs.mkdirp(path.join(dossierStatic, 'fonts'))
+				await fs.mkdirp(path.join(dossierStatic, 'img'))
+				await fs.writeFile(path.join(dossierPad, 'index.html'), html, 'utf8')
+				const copierImagePublique = (chemin) => {
 					transactionsFichiers.push(() =>
-						copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + bloc.media), cleS3: id + '/' + bloc.media }, path.join(dossierFichiers, bloc.media))
+						fs.copy(path.join(__dirname, '..', '/public' + chemin), path.join(dossierStatic, chemin), { overwrite: true }).catch(() => {})
 					)
 				}
-				if (bloc.vignette && bloc.vignette !== '' && typeof bloc.vignette === 'string') {
-					if (!verifierURL(bloc.vignette, ['https', 'http'])) {
-						if (bloc.vignette.includes('/img/')) {
-							transactionsFichiers.push(() =>
-								fs.copy(path.join(__dirname, '..', '/public' + bloc.vignette), path.join(dossierStatic, bloc.vignette), { overwrite: true }).catch(() => {})
-							)
-						} else {
-							const fichierVignette = path.basename(bloc.vignette)
-							transactionsFichiers.push(() =>
-								copierFichierExport({ chemin: path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id + '/' + fichierVignette), cleS3: id + '/' + fichierVignette }, path.join(dossierFichiers, fichierVignette))
-							)
-						}
-					}
-				}
+				if (typeof donneesPad.fond === 'string' && donneesPad.fond.includes('/img/')) copierImagePublique(donneesPad.fond)
+				transactionsFichiers.push(
+					() => fs.copy(path.join(__dirname, '..', '/static/export/css'), path.join(dossierStatic, 'css')).catch(() => {}),
+					() => fs.copy(path.join(__dirname, '..', '/static/export/js'), path.join(dossierStatic, 'js')).catch(() => {}),
+					() => fs.copy(path.join(__dirname, '..', '/public/fonts/MaterialIcons-Regular.woff2'), path.join(dossierStatic, 'fonts/MaterialIcons-Regular.woff2')).catch(() => {}),
+					() => fs.copy(path.join(__dirname, '..', '/public/fonts/Roboto-Slab-Medium.woff2'), path.join(dossierStatic, 'fonts/Roboto-Slab-Medium.woff2')).catch(() => {}),
+					() => fs.copy(path.join(__dirname, '..', '/public/img/favicon.png'), path.join(dossierStatic, 'img/favicon.png')).catch(() => {})
+				)
+				// Vignettes par défaut de l'application, pour les seules capsules exportées
+				const vignettesPubliques = new Set(blocsExport.filter((bloc) => typeof bloc.vignette === 'string' && bloc.vignette.includes('/img/') && !verifierURL(bloc.vignette, ['https', 'http'])).map((bloc) => bloc.vignette))
+				vignettesPubliques.forEach(copierImagePublique)
+				fichiersBlocs = definirFichiersExport(blocsExport)
 			}
+			fichiersBlocs.forEach(copierFichierPad)
 			// Exécution des transferts de fichiers par lots
 			await executerTransactions(transactionsFichiers, (tache) => tache(), tailleLotTransaction)
 			// Création de l'archive ZIP
-			const archiveId = Math.floor((Math.random() * 100000) + 1)
-			const nomArchive = 'pad-' + id + '_' + archiveId + '.zip'
+			const nomArchive = 'pad-' + id + (format === 'web' ? '-web' : '') + '_' + randomBytes(16).toString('hex') + '.zip'
 			const cheminArchive = path.join(path.dirname(dossierPad), nomArchive)
 			return new Promise((resolve, reject) => {
 				const sortie = fs.createWriteStream(cheminArchive)
@@ -949,7 +914,7 @@ export default function creerFonctions ({
 			})
 		} catch (err) {
 			console.error(err.stack)
-			await fs.remove(path.join(__dirname, '..', '/static/temp', id.toString()))
+			await fs.remove(dossierPad)
 			return erreur
 		}
 	}
@@ -1009,6 +974,53 @@ export default function creerFonctions ({
 		return true
 	}
 
+	async function notifierAdminsAbsents (pad, donneesPad, identifiantActeur = null) {
+		try {
+			const administrateurs = definirAdministrateursPad(donneesPad)
+			if (administrateurs.length === 0) return
+			const listeEnregistree = parseJSON(donneesPad.notification, [])
+			const listeActuelle = Array.isArray(listeEnregistree) ? listeEnregistree.filter((admin) => administrateurs.includes(admin)) : []
+			const candidatsNotification = administrateurs.filter((admin) => admin !== identifiantActeur && !listeActuelle.includes(admin))
+			if (candidatsNotification.length === 0) return
+			const adminsConnectes = await recupererPresenceAdmins(pad)
+			if (adminsConnectes === null) return
+			const adminsAbsents = candidatsNotification.filter((admin) => !adminsConnectes.has(admin))
+			const notification = [...new Set([...listeActuelle, ...adminsAbsents])]
+			const listeInchangee = Array.isArray(listeEnregistree) && notification.length === listeEnregistree.length && notification.every((admin, index) => admin === listeEnregistree[index])
+			if (listeInchangee) return
+			await db.HSET('pads:' + pad, 'notification', JSON.stringify(notification))
+			// La liste ne contient que des identifiants d'administrateurs : diffusion restreinte au salon admin
+			io.to(definirSalonAdmin(pad)).emit('modifiernotification', notification)
+		} catch (err) {
+			console.error(err.stack)
+		}
+	}
+
+	const cacheAdminsPad = new Map()
+	const dureeCacheAdmins = 60000
+	const tailleMaxCacheAdmins = 500
+
+	function viderCacheAdmins (pad) {
+		cacheAdminsPad.delete(String(pad))
+	}
+
+	async function recupererPresenceAdmins (pad) {
+		const cle = String(pad)
+		const enCache = cacheAdminsPad.get(cle)
+		if (enCache && enCache.expiration > Date.now()) return enCache.adminsConnectes
+		const clients = await fetchSockets(definirSalonAdmin(pad), { strict: true })
+		if (clients === null) return null
+		const adminsConnectes = new Set(clients.map((client) => client.data && client.data.identifiantSession).filter((el) => el))
+		if (cacheAdminsPad.size >= tailleMaxCacheAdmins) {
+			const maintenant = Date.now()
+			cacheAdminsPad.forEach((valeur, padEnCache) => {
+				if (valeur.expiration <= maintenant) cacheAdminsPad.delete(padEnCache)
+			})
+		}
+		cacheAdminsPad.set(cle, { adminsConnectes, expiration: Date.now() + dureeCacheAdmins })
+		return adminsConnectes
+	}
+
 	async function fetchSockets (salon, options = {}) {
 		for (let i = 0; i < 2; i++) {
 			try {
@@ -1023,15 +1035,11 @@ export default function creerFonctions ({
 	async function verifierAdmin (pad, donnees, session) {
 		if (!pad || !donnees || !donnees.hasOwnProperty('identifiant') || !session.hasOwnProperty('statut')) return false
 		if (session.hasOwnProperty('identifiant') && session.statut === 'utilisateur' && session.hasOwnProperty('motdepasse')) {
-			const proprietaire = donnees.identifiant
-			let listeAdmins = []
-			if (donnees.hasOwnProperty('admins')) {
-				listeAdmins = JSON.parse(donnees.admins)
-			}
+			const administrateurs = definirAdministrateursPad(donnees)
 			let donneesUtilisateur = await db.HGETALL('utilisateurs:' + session.identifiant)
 			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return false
-			if ((proprietaire === session.identifiant || listeAdmins.includes(session.identifiant)) && comparerHash(session.motdepasse, donneesUtilisateur.motdepasse)) {
+			if (administrateurs.includes(session.identifiant) && comparerHash(session.motdepasse, donneesUtilisateur.motdepasse)) {
 				return true
 			} else {
 				return false
@@ -1062,30 +1070,46 @@ export default function creerFonctions ({
 		return 'rl-code-ip:' + adresse + ':' + parseInt(pad, 10)
 	}
 
+	async function compterEchecs (cle) {
+		await db.multi().INCR(cle).EXPIRE(cle, dureeLimiteEchecsCode, 'NX').exec()
+	}
+
 	async function verifierLimiteEchecsCode (adresse, pad) {
 		return Number(await db.GET(definirCleEchecsCode(adresse, pad))) >= limiteEchecsCodeAdresse
 	}
 
 	async function compterEchecsCode (adresse, pad) {
-		const cle = definirCleEchecsCode(adresse, pad)
-		await db.multi().INCR(cle).EXPIRE(cle, dureeLimiteEchecsCode, 'NX').exec()
+		await compterEchecs(definirCleEchecsCode(adresse, pad))
 	}
 
 	async function oublierEchecsCode (adresse, pad) {
 		await db.UNLINK(definirCleEchecsCode(adresse, pad))
 	}
 
+	function definirCleEchecsMotDePasse (adresse, pad) {
+		return 'rl-mdp-ip:' + adresse + ':' + parseInt(pad, 10)
+	}
+
+	async function verifierLimiteEchecsMotDePasse (adresse, pad) {
+		return Number(await db.GET(definirCleEchecsMotDePasse(adresse, pad))) >= limiteEchecsMotDePasseAdresse
+	}
+
+	async function compterEchecsMotDePasse (adresse, pad) {
+		await compterEchecs(definirCleEchecsMotDePasse(adresse, pad))
+	}
+
+	async function oublierEchecsMotDePasse (adresse, pad) {
+		await db.UNLINK(definirCleEchecsMotDePasse(adresse, pad))
+	}
+
 	async function verifierAdminUtilisateur (pad, identifiant, motdepasse) {
 		if (!pad || !identifiant || !motdepasse) return false
 		let [donneesPad, donneesUtilisateur] = await Promise.all([db.HGETALL('pads:' + pad), db.HGETALL('utilisateurs:' + identifiant)])
 		donneesPad = donneesPad ? { ...donneesPad } : {}
-		let listeAdmins = []
-		if (donneesPad.hasOwnProperty('admins')) {
-			listeAdmins = JSON.parse(donneesPad.admins)
-		}
+		const administrateurs = definirAdministrateursPad(donneesPad)
 		donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 		if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return false
-		if ((donneesPad.identifiant === identifiant || listeAdmins.includes(identifiant)) && comparerHash(motdepasse, donneesUtilisateur.motdepasse)) {
+		if (administrateurs.includes(identifiant) && comparerHash(motdepasse, donneesUtilisateur.motdepasse)) {
 			return true
 		} else {
 			return false
@@ -1868,12 +1892,17 @@ export default function creerFonctions ({
 		exporterPad,
 		supprimerPad,
 		fetchSockets,
+		viderCacheAdmins,
+		notifierAdminsAbsents,
 		verifierAdmin,
 		verifierAccesLecturePad,
 		verifierAccesLectureDonnees,
 		verifierLimiteEchecsCode,
 		compterEchecsCode,
 		oublierEchecsCode,
+		verifierLimiteEchecsMotDePasse,
+		compterEchecsMotDePasse,
+		oublierEchecsMotDePasse,
 		definirAdministrateursPad,
 		verifierAdminUtilisateur,
 		verifierAutorisationApi,

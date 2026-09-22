@@ -94,11 +94,11 @@ export default function enregistrerRoutesPages ({
 				return res.redirect(302, '/')
 			}
 			const [padsCreesBrut, padsCorbeilleBrut, padsRejointsBrut, padsAdminsBrut, padsFavorisBrut] = await recupererDonneesUtilisateur(identifiant, req.session)
-			let padsCrees = nettoyerPads(padsCreesBrut)
-			let padsCorbeille = nettoyerPads(padsCorbeilleBrut)
-			let padsRejoints = nettoyerPads(padsRejointsBrut)
-			let padsAdmins = nettoyerPads(padsAdminsBrut)
-			let padsFavoris = nettoyerPads(padsFavorisBrut)
+			let padsCrees = nettoyerPads(padsCreesBrut, identifiant)
+			let padsCorbeille = nettoyerPads(padsCorbeilleBrut, identifiant)
+			let padsRejoints = nettoyerPads(padsRejointsBrut, identifiant)
+			let padsAdmins = nettoyerPads(padsAdminsBrut, identifiant)
+			let padsFavoris = nettoyerPads(padsFavorisBrut, identifiant)
 			const idsCorbeille = new Set(padsCorbeille.map(p => p.id))
 			const idsAdmins = new Set(padsAdmins.map(p => p.id))
 			// Filtrer les favoris supprimés
@@ -307,16 +307,13 @@ export default function enregistrerRoutesPages ({
 			const statut = req.session.statut
 			const pads = req.session.pads
 			if (!verifierIdentifiantPad(id)) return res.redirect(302, '/')
-			let donneesPad = {}
 			const padExiste = await db.EXISTS('pads:' + id)
-			if (padExiste === 1) {
-				donneesPad = await db.HGETALL('pads:' + id)
-				donneesPad = donneesPad ? { ...donneesPad } : {}
-			} else if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + id + '.json'))) {
-				donneesPad = await recupererDonneesPadJSON(id)
-			}
+			if (padExiste !== 1) return res.redirect(302, '/')
+			let donneesPad = await db.HGETALL('pads:' + id)
+			donneesPad = donneesPad ? { ...donneesPad } : {}
 			const donneesBlocs = await recupererDonneesBlocs(id, token, identifiant, statut, pads)
 			if (typeof donneesBlocs !== 'object' || !donneesBlocs) return res.redirect(302, '/')
+			if (!donneesBlocs.accesLecture) return res.redirect(302, '/p/' + id + '/' + token)
 			const titre = donneesPad.titre
 			const lien = hote + '/p/' + id + '/' + token
 			const langue = req.session.langue || langueParDefaut
