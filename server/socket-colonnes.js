@@ -33,6 +33,7 @@ export default function creerGestionnairesColonnes ({
 		acquerirVerrouColonnes,
 		libererVerrouColonnes,
 		supprimerBlocs,
+		realignerACLFichiers,
 		verifierEspaceDisque,
 		annulerDupliquerBloc,
 		dupliquerBloc,
@@ -67,6 +68,7 @@ export default function creerGestionnairesColonnes ({
 				const affichageColonnes = normaliserAffichageColonnes(colonnes, parseJSON(donneesPad.affichageColonnes, null))
 				if (!Number.isInteger(indexColonne) || indexColonne < 0 || indexColonne > colonnes.length) return socket.emit('erreur')
 				if (!verifierTitreColonne(titre)) return socket.emit('erreur')
+				titre = titre.trim()
 				if (!verifierTitreColonneDisponible(colonnes, titre)) return socket.emit('titrecolonneexistant')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
@@ -174,6 +176,7 @@ export default function creerGestionnairesColonnes ({
 				pipeline.HINCRBY('pads:' + pad, 'activite', 1)
 				pipeline.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, identifiant: identifiant, titre: titre, date: date, type: 'colonne-dupliquee', ...(affichageColonnes[indexColonne] === false ? { masquee: true } : {}) }) }])
 				await pipeline.exec()
+				await realignerACLFichiers(pad, donneesPad.acces, duplications.flatMap((duplication) => duplication.contenu.fichiersCrees))
 				contenusANettoyer.length = 0
 				const blocsDupliques = duplications.map((duplication) => {
 					const { nouveauBloc, contenu, donneesBloc, blocId } = duplication
@@ -217,6 +220,7 @@ export default function creerGestionnairesColonnes ({
 				const affichageColonnes = normaliserAffichageColonnes(colonnes, parseJSON(donneesPad.affichageColonnes, null))
 				if (typeof index !== 'number' || index < 0 || index > colonnes.length) return socket.emit('erreur')
 				if (!verifierTitreColonne(titre)) return socket.emit('erreur')
+				titre = titre.trim()
 				if (!verifierTitreColonneDisponible(colonnes, titre, index)) return socket.emit('titrecolonneexistant')
 				const ancienTitre = colonnes[index]
 				if (ancienTitre !== titre && affichageColonnes[index] === false) {
@@ -320,6 +324,8 @@ export default function creerGestionnairesColonnes ({
 		socket.on('vidercolonne', async (pad, titre, colonne, identifiant, nom) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			const verrouColonne = await acquerirVerrouColonnes(pad)
+			if (!verrouColonne) return socket.emit('colonnesverrouillees')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
@@ -360,6 +366,8 @@ export default function creerGestionnairesColonnes ({
 			} catch (err) {
 				console.error(err.stack)
 				socket.emit('erreur')
+			} finally {
+				await libererVerrouColonnes(pad, verrouColonne)
 			}
 		})
 
@@ -434,7 +442,7 @@ export default function creerGestionnairesColonnes ({
 			}
 		})
 
-		socket.on('deplacercolonne', async (pad, titre, affichage, direction, colonne, identifiant, nom) => {
+		socket.on('deplacercolonne', async (pad, titre, direction, colonne, identifiant, nom) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			const verrouColonne = await acquerirVerrouColonnes(pad)

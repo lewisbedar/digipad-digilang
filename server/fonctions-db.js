@@ -1395,6 +1395,28 @@ export default function creerFonctions ({
 		return terminer({ traites, echecs, interrompue: false })
 	}
 
+	async function realignerACLFichiers (pad, acces, fichiers = null) {
+		if (stockage !== 's3') return
+		const noms = Array.isArray(fichiers) ? [...new Set(fichiers.filter((fichier) => typeof fichier === 'string' && fichier !== '' && !/[/\\]/.test(fichier) && !fichier.includes('..')))] : null
+		if (noms !== null && noms.length === 0) return
+		const accesActuel = await db.HGET('pads:' + pad, 'acces').catch(() => null)
+		if (!accesActuel || accesActuel === acces) return
+		if (noms === null) {
+			await modifierACLFichiers(pad, accesActuel)
+			return
+		}
+		const cible = accesActuel === 'public' ? 'public-read' : 'private'
+		const resultats = await executerTransactions(noms, (fichier) => {
+			return s3Client.send(new PutObjectAclCommand({ Bucket: bucket, Key: pad + '/' + fichier, ACL: cible })).then(() => true).catch((err) => {
+				console.error('Realignement ACL ' + pad + '/' + fichier + ' : ' + err.message)
+				return false
+			})
+		}, tailleLotACL)
+		const clesCache = noms.flatMap((fichier) => definirClesCacheUrl(pad + '/' + fichier))
+		if (clesCache.length > 0) await db.UNLINK(clesCache).catch(() => {})
+		if (resultats.some((resultat) => resultat === false)) await db.SADD(cleFileACL, String(pad)).catch(() => {})
+	}
+
 	async function resynchroniserACLEnAttente () {
 		if (stockage !== 's3') return { pads: 0, resolus: 0 }
 		const pads = await db.SMEMBERS(cleFileACL)
@@ -1920,6 +1942,7 @@ export default function creerFonctions ({
 		verifierFichierAutorise,
 		definirUrlFond,
 		modifierACLFichiers,
+		realignerACLFichiers,
 		resynchroniserACLEnAttente,
 		purgerFichiersTemporairesS3,
 		purgerFichiersTemporairesLocaux,

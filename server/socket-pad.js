@@ -1,6 +1,8 @@
 import path from 'path'
 import { etat } from './etat.js'
 import {
+	genererCodeAcces,
+	limitesTailleInput,
 	definirSalonUtilisateur,
 	definirSalonAdmin,
 	nombreMaxAdmins,
@@ -20,6 +22,7 @@ export default function creerGestionnairesPad ({
 	const {
 		verifierAdmin,
 		supprimerFichierSansEchec,
+		realignerACLFichiers,
 		definirUrlFond,
 		modifierACLFichiers,
 		televerserFichierTemp,
@@ -28,8 +31,34 @@ export default function creerGestionnairesPad ({
 	} = fonctions
 
 	const accesPossibles = ['public', 'prive', 'code']
+	const valeursParametres = {
+		contributions: ['ouvertes', 'modifiables', 'moderees', 'fermees'],
+		affichage: ['mur', 'flux-vertical', 'colonnes'],
+		ordre: ['croissant', 'decroissant'],
+		largeur: ['normale', 'large'],
+		fondRepete: ['active', 'desactive'],
+		registreActivite: ['active', 'desactive'],
+		conversation: ['activee', 'desactivee'],
+		listeUtilisateurs: ['activee', 'desactivee'],
+		editionNom: ['activee', 'desactivee'],
+		fichiers: ['actives', 'desactives'],
+		enregistrements: ['actives', 'desactives'],
+		liens: ['actives', 'desactives'],
+		documents: ['actives', 'desactives'],
+		commentaires: ['actives', 'desactives'],
+		evaluations: ['activees', 'desactivees'],
+		visibiliteCommentaires: ['tous', 'admin'],
+		accesCommentaires: ['tous', 'admin'],
+		commentairesModeration: ['activee', 'desactivee'],
+		visibiliteEvaluations: ['tous', 'admin'],
+		accesEvaluations: ['tous', 'admin'],
+		verrouillage: ['active', 'desactive'],
+		epinglage: ['active', 'desactive'],
+		copieBloc: ['activee', 'desactivee']
+	}
 	const delaiAttenteOuvertureACL = 10000
 	const delaiAttenteFermetureACL = 30000
+	const delaiAvertissementACL = 1000
 	const tentativesEvacuation = 3
 	const delaiEntreTentativesEvacuation = 1000
 
@@ -66,7 +95,7 @@ export default function creerGestionnairesPad ({
 		return true
 	}
 
-	async function synchroniserACL (pad, acces, delaiAttente) {
+	async function synchroniserACL (pad, acces, delaiAttente, avertir) {
 		let terminee = false
 		const synchronisation = modifierACLFichiers(pad, acces).catch((err) => {
 			console.error('Synchronisation ACL du pad ' + pad + ' : ' + err.stack)
@@ -75,7 +104,11 @@ export default function creerGestionnairesPad ({
 			terminee = true
 			return resultat
 		})
-		await Promise.race([synchronisation, temporiser(delaiAttente)])
+		await Promise.race([synchronisation, temporiser(delaiAvertissementACL)])
+		if (!terminee) {
+			if (typeof avertir === 'function') avertir()
+			await Promise.race([synchronisation, temporiser(delaiAttente - delaiAvertissementACL)])
+		}
 		if (terminee) return synchronisation
 		const salonAdmin = definirSalonAdmin(pad)
 		synchronisation.then((resultat) => {
@@ -95,6 +128,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (typeof titre !== 'string' || titre.length > limitesTailleInput.titre) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'titre', titre)
 				io.to('pad-' + pad).emit('modifiertitre', titre, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -131,6 +165,9 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (typeof code !== 'string') return socket.emit('erreur')
+				code = code.trim()
+				if (code === '' || code.length > limitesTailleInput.code) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'code', code)
 				const salonAdmin = definirSalonAdmin(pad)
 				io.to(salonAdmin).emit('modifiercodeacces', code, identifiant)
@@ -175,7 +212,7 @@ export default function creerGestionnairesPad ({
 				// La liste des admins n'est diffusée qu'aux admins
 				io.to(salonAdmin).emit('modifieradmins', nouveauxAdmins, identifiant)
 				adminsAjoutes.forEach((adminAjoute) => {
-					io.to(definirSalonUtilisateur(pad, adminAjoute)).emit('modifieradmins', nouveauxAdmins, identifiant)
+					io.to(definirSalonUtilisateur(pad, adminAjoute)).except(salonAdmin).emit('modifieradmins', nouveauxAdmins, identifiant)
 				})
 				adminsRetires.forEach((adminRetire) => {
 					io.to(definirSalonUtilisateur(pad, adminRetire)).emit('modifieradmins', [], identifiant)
@@ -201,14 +238,14 @@ export default function creerGestionnairesPad ({
 				if (donneesPad.hasOwnProperty('code') && donneesPad.code !== '') {
 					code = donneesPad.code
 				} else {
-					code = Math.floor(100000 + Math.random() * 900000)
+					code = genererCodeAcces()
 				}
 				const accesPrecedent = donneesPad.acces
 				await db.HSET('pads:' + pad, ['acces', acces, 'code', code])
 				const changementAcces = accesPrecedent !== acces
 				let synchronisation = null
 				if (changementAcces && acces === 'public') {
-					synchronisation = await synchroniserACL(pad, acces, delaiAttenteOuvertureACL)
+					synchronisation = await synchroniserACL(pad, acces, delaiAttenteOuvertureACL, () => socket.emit('synchronisationfichiers', acces))
 				}
 				const salonAdmin = definirSalonAdmin(pad)
 				io.to(salonAdmin).emit('modifieracces', acces, code)
@@ -218,11 +255,9 @@ export default function creerGestionnairesPad ({
 				await sauvegarderSession(req)
 				if (!evacuation) socket.emit('erreurevacuation')
 				if (changementAcces && acces !== 'public') {
-					synchronisation = await synchroniserACL(pad, acces, delaiAttenteFermetureACL)
+					synchronisation = await synchroniserACL(pad, acces, delaiAttenteFermetureACL, () => socket.emit('synchronisationfichiers', acces))
 				}
-				if (synchronisation === 'encours') {
-					socket.emit('synchronisationfichiers', acces)
-				} else if (synchronisation) {
+				if (synchronisation && synchronisation !== 'encours') {
 					signalerSynchronisationACL(pad, synchronisation, (nombre) => socket.emit('erreurfichiers', nombre))
 				}
 			} catch (err) {
@@ -239,6 +274,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.contributions.includes(contributions)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'contributions', contributions)
 				io.to('pad-' + pad).emit('modifiercontributions', contributions, contributionsPrecedentes, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -257,6 +293,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.affichage.includes(affichage)) return socket.emit('erreur')
 				
 				let colonnes = null
 				let affichageColonnes = null
@@ -285,6 +322,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.ordre.includes(ordre)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'ordre', ordre)
 				io.to('pad-' + pad).emit('modifierordre', ordre, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -303,6 +341,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.largeur.includes(largeur)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'largeur', largeur)
 				io.to('pad-' + pad).emit('modifierlargeur', largeur, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -325,6 +364,7 @@ export default function creerGestionnairesPad ({
 				await db.HSET('pads:' + pad, ['fond', fond, 'fondRepete', 'desactive'])
 				if (typeof fond === 'string' && fond !== '' && !fond.includes('/img/') && fond.substring(0, 1) !== '#') {
 					await televerserFichierTemp(path.basename(fond), pad, donneesPad.acces)
+					await realignerACLFichiers(pad, donneesPad.acces, [path.basename(fond)])
 				}
 				const fondUrl = await definirUrlFond(pad, fond, donneesPad.acces)
 				io.to('pad-' + pad).emit('modifierfond', fond, identifiant, fondUrl)
@@ -369,6 +409,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.fondRepete.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'fondRepete', statut)
 				io.to('pad-' + pad).emit('modifierfondrepete', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -387,6 +428,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.registreActivite.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'registreActivite', statut)
 				io.to('pad-' + pad).emit('modifieractivite', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -430,6 +472,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.conversation.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'conversation', statut)
 				io.to('pad-' + pad).emit('modifierconversation', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -448,6 +491,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.listeUtilisateurs.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'listeUtilisateurs', statut)
 				io.to('pad-' + pad).emit('modifierlisteutilisateurs', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -466,6 +510,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.editionNom.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'editionNom', statut)
 				io.to('pad-' + pad).emit('modifiereditionnom', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -484,6 +529,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.fichiers.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'fichiers', statut)
 				io.to('pad-' + pad).emit('modifierfichiers', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -502,6 +548,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.enregistrements.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'enregistrements', statut)
 				io.to('pad-' + pad).emit('modifierenregistrements', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -520,6 +567,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.liens.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'liens', statut)
 				io.to('pad-' + pad).emit('modifierliens', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -538,6 +586,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.documents.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'documents', statut)
 				io.to('pad-' + pad).emit('modifierdocuments', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -556,6 +605,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.commentaires.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'commentaires', statut)
 				io.to('pad-' + pad).emit('modifiercommentaires', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -574,6 +624,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.evaluations.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'evaluations', statut)
 				io.to('pad-' + pad).emit('modifierevaluations', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -593,6 +644,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.visibiliteCommentaires.includes(visibilite)) return socket.emit('erreur')
 				if (visibilite === 'admin') {
 					await db.HSET('pads:' + pad, ['visibiliteCommentaires', visibilite, 'accesCommentaires', 'admin'])
 				} else {
@@ -616,6 +668,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.accesCommentaires.includes(acces)) return socket.emit('erreur')
 				if (acces === 'tous' && donneesPad.visibiliteCommentaires === 'admin') return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'accesCommentaires', acces)
 				io.to('pad-' + pad).emit('modifieraccescommentaires', acces, identifiant)
@@ -636,6 +689,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.commentairesModeration.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'commentairesModeration', statut)
 				io.to('pad-' + pad).emit('modifiermoderationcommentaires', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
@@ -655,6 +709,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.visibiliteEvaluations.includes(visibilite)) return socket.emit('erreur')
 				if (visibilite === 'admin') {
 					await db.HSET('pads:' + pad, ['visibiliteEvaluations', visibilite, 'accesEvaluations', 'admin'])
 				} else {
@@ -678,6 +733,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.accesEvaluations.includes(acces)) return socket.emit('erreur')
 				if (acces === 'tous' && donneesPad.visibiliteEvaluations === 'admin') return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'accesEvaluations', acces)
 				io.to('pad-' + pad).emit('modifieraccesevaluations', acces, identifiant)
@@ -697,6 +753,7 @@ export default function creerGestionnairesPad ({
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.copieBloc.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'copieBloc', statut)
 				io.to('pad-' + pad).emit('modifiercopiebloc', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)

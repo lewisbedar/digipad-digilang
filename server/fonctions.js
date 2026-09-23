@@ -11,12 +11,12 @@ import 'dayjs/locale/it.js'
 import localizedFormat from 'dayjs/plugin/localizedFormat.js'
 import { promises as dnsPromises } from 'dns'
 import { URL } from 'url'
-import { createHash, createHmac, timingSafeEqual } from 'crypto'
+import { createHash, createHmac, randomInt, timingSafeEqual } from 'crypto'
 
 dayjs.extend(localizedFormat)
 
 // Pour validation des chaînes dans ajouterbloc et modifierbloc
-const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250 }
+const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250, code: 18 }
 
 // Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
 const tailleLotTransaction = 10
@@ -73,8 +73,19 @@ function verifierTitreColonneDisponible (colonnes, titre, indexIgnore = -1) {
 	return !colonnes.some((el, index) => index !== indexIgnore && el === titre)
 }
 
+function genererCodeAcces () {
+	return randomInt(10000000, 100000000)
+}
+function verifierTitre (titre) {
+	return typeof titre === 'string' && titre.trim() !== '' && titre.length <= limitesTailleInput.titre
+}
+
+function verifierMotDePasseSaisi (motdepasse) {
+	return typeof motdepasse === 'string' && motdepasse.trim() !== ''
+}
+
 function verifierTitreColonne (titre) {
-	return typeof titre === 'string' && titre.length <= limitesTailleInput.titre
+	return typeof titre === 'string' && titre.trim() !== '' && titre.length <= limitesTailleInput.titre
 }
 
 function definirTitreColonne (titre, suffixe) {
@@ -679,6 +690,13 @@ function verifierJetonFichier (secret, jeton, pad, fichier) {
 	return typeof donnees.exp === 'number' && donnees.exp > Date.now()
 }
 
+function verifierFichierAudio (buffer, nomFichier, mimetype) {
+	if (!buffer || buffer.length < 3 || typeof nomFichier !== 'string' || typeof mimetype !== 'string') return false
+	if (path.extname(nomFichier).toLowerCase() !== '.mp3') return false
+	if (!['audio/mpeg', 'audio/mp3'].includes(mimetype.split(';')[0].trim().toLowerCase())) return false
+	return buffer.subarray(0, 3).toString('binary') === 'ID3' || (buffer[0] === 0xFF && (buffer[1] & 0xE0) === 0xE0)
+}
+
 function verifierContenuFichier (buffer, mimetype) {
 	if (!buffer || buffer.length < 4) return false
 	const b = buffer
@@ -691,6 +709,16 @@ function verifierContenuFichier (buffer, mimetype) {
 	}
 	if (type === 'image/webp') return b.slice(0, 4).toString('binary') === 'RIFF' && b.length >= 12 && b.slice(8, 12).toString('binary') === 'WEBP'
 	if (type === 'application/pdf') return b.slice(0, 4).toString('ascii') === '%PDF'
+	const categorie = type.split('/')[0]
+	if (categorie === 'audio' || categorie === 'video') {
+		const debut = b.slice(0, 4).toString('binary')
+		if (b.slice(0, 3).toString('binary') === 'ID3') return true
+		if (b[0] === 0xFF && (b[1] & 0xE0) === 0xE0) return true
+		if (b.length >= 8 && b.slice(4, 8).toString('binary') === 'ftyp') return true
+		if (debut === 'OggS' || debut === 'fLaC') return true
+		if (debut === 'RIFF' && b.length >= 12 && ['WAVE', 'AVI '].includes(b.slice(8, 12).toString('binary'))) return true
+		return b[0] === 0x1A && b[1] === 0x45 && b[2] === 0xDF && b[3] === 0xA3
+	}
 	return true
 }
 
@@ -753,6 +781,9 @@ export {
 	normaliserAffichageColonnes,
 	validerIndexColonne,
 	reduireColonnesMasquees,
+	genererCodeAcces,
+	verifierTitre,
+	verifierMotDePasseSaisi,
 	verifierTitreColonne,
 	verifierTitreColonneDisponible,
 	definirTitreColonneDisponible,
@@ -814,5 +845,6 @@ export {
 	genererJetonFichier,
 	verifierJetonFichier,
 	verifierContenuFichier,
+	verifierFichierAudio,
 	formaterDate
 }

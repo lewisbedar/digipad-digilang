@@ -8,8 +8,11 @@ import { ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { fileURLToPath } from 'url'
 import { etat } from './etat.js'
 import {
+	genererCodeAcces,
 	tailleLotTransaction,
 	verifierIdentifiantPad,
+	verifierTitre,
+	verifierMotDePasseSaisi,
 	definirModeration,
 	definirParametresModeration,
 	champsPadsClient,
@@ -19,6 +22,8 @@ import {
 	definirCheminFichiers,
 	extraireArchive,
 	supprimerArchives,
+	assainirHTML,
+	assainirIframe,
 	assainirTexteAlternatif,
 	executerTransactions,
 	parseJSON,
@@ -61,6 +66,7 @@ export default function enregistrerRoutesPads ({
 		definirVignettePersonnalisee,
 		definirUrlFond,
 		copierFichiersPad,
+		realignerACLFichiers,
 		definirParametresSupprimerS3,
 		televerserFichierArchive,
 		verifierEspaceDisque,
@@ -116,6 +122,7 @@ export default function enregistrerRoutesPads ({
 			if (!Number.isInteger(nombrePads)) return res.status(500).send('erreur_creation')
 			if (nombrePads >= limitePadsParCompte) return res.status(403).json({ message: 'limite_atteinte', limite: limitePadsParCompte })
 			const titre = req.body.titre
+			if (!verifierTitre(titre)) return res.status(400).send('titre_invalide')
 			const token = Math.random().toString(16).slice(2)
 			const date = dayjs().format()
 			const destination = req.body.dossier
@@ -132,6 +139,8 @@ export default function enregistrerRoutesPads ({
 	app.post('/api/creer-pad-sans-compte', limitePadSansCompte, async (req, res) => {
 		if (etat.maintenance === true) return res.status(503).send('maintenance')
 		if (creationPadSansCompte !== 1) return res.status(401).send('non_connecte')
+		if (!verifierTitre(req.body.titre)) return res.status(400).send('titre_invalide')
+		if (!verifierMotDePasseSaisi(req.body.motdepasse)) return res.status(400).send('motdepasse_invalide')
 		let identifiant, nom
 		if (!req.session.identifiant || !/^u[0-9a-f]{8,13}$/.test(req.session.identifiant)) {
 			identifiant = 'u' + Math.random().toString(16).slice(3)
@@ -381,7 +390,7 @@ export default function enregistrerRoutesPads ({
 			const nId = await db.INCR('pad')
 			const date = dayjs().format()
 			const token = Math.random().toString(16).slice(2)
-			const code = Math.floor(100000 + Math.random() * 900000)
+			const code = genererCodeAcces()
 			if (donneesPadSource.hasOwnProperty('fond') && typeof donneesPadSource.fond === 'string' && donneesPadSource.fond !== '' && !donneesPadSource.fond.includes('/img/') && donneesPadSource.fond.substring(0, 1) !== '#') {
 				donneesPadSource.fond = path.basename(donneesPadSource.fond)
 			}
@@ -432,6 +441,7 @@ export default function enregistrerRoutesPads ({
 				.exec()
 			// Copie des fichiers
 			await copierFichiersPad(padSource, nId, donneesPadSource.acces)
+			await realignerACLFichiers(nId, donneesPadSource.acces)
 			if (dossierDestination !== '') {
 				let infosUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 				infosUtilisateur = infosUtilisateur ? { ...infosUtilisateur } : {}
@@ -531,12 +541,12 @@ export default function enregistrerRoutesPads ({
 						const visibilite = bloc.visibilite || 'visible'
 						const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 						const pipelineBloc = db.multi()
-						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						pipelineBloc.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						if (parametres.commentaires === true && Array.isArray(bloc.listeCommentaires)) {
 							bloc.listeCommentaires.forEach(commentaire => {
 								if (commentaire.hasOwnProperty('id') && commentaire.hasOwnProperty('identifiant') && commentaire.hasOwnProperty('date') && commentaire.hasOwnProperty('texte')) {
-									pipelineBloc.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify(commentaire) }])
+									pipelineBloc.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify({ ...commentaire, texte: assainirHTML(commentaire.texte) }) }])
 									if (commentaire.visibilite === 'masquee') {
 										pipelineBloc.ZADD('commentaires-masques:' + blocId, [{ score: commentaire.id, value: commentaire.id + ':' + commentaire.identifiant }])
 									}
@@ -563,7 +573,7 @@ export default function enregistrerRoutesPads ({
 					// Métadonnées du pad
 					const token = Math.random().toString(16).slice(2)
 					const date = dayjs().format()
-					const code = Math.floor(100000 + Math.random() * 900000)
+					const code = genererCodeAcces()
 					const registreActivite = donnees.pad.registreActivite || 'active'
 					const conversation = donnees.pad.conversation || 'desactivee'
 					const listeUtilisateurs = donnees.pad.listeUtilisateurs || 'activee'

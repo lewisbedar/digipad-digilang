@@ -10,6 +10,7 @@ import creerGestionnairesActivite from './socket-activite.js'
 export default function initialiserSocket ({
 	io,
 	db,
+	langues,
 	dureeSession,
 	dureeTransfertPropriete,
 	salonMaintenance,
@@ -19,6 +20,7 @@ export default function initialiserSocket ({
 	const enregistrerConnexion = creerGestionnairesConnexion({
 		io,
 		db,
+		langues,
 		dureeSession,
 		salonMaintenance,
 		trustProxy,

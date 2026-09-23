@@ -163,7 +163,7 @@
 	"pageWeb": "Página web",
 	"supprimerPad": "Borrar el pad",
 	"supprimerCompte": "Eliminar la cuenta",
-	"confirmationSupprimerCompte": "¿Desea realmente borrar su cuenta?<br>Todo su contenido será borrado. Esta acción será irreversible.",
+	"texteSuppressionCompte": "Indique su contraseña actual para borrar su cuenta. Todo su contenido será borrado. Esta acción es irreversible.",
 	"motDePassePad": "Contraseña del pad",
 	"infoMotDePassePad": "La contraseña del pad le permite acceder a los parámetros de administrador. Es imporante conservarla bien, ya que no tendrá la oportunidad de recuperarla posteriormente.",
 	"padDebloque": "Pad desbloqueado.",

@@ -54,6 +54,7 @@ export default function enregistrerRoutesComptes ({
 			const identifiant = req.body.identifiant
 			if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return res.status(400).send('identifiant_invalide')
 			const motdepasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse.trim() : ''
+			if (motdepasse === '') return res.status(400).send('motdepasse_invalide')
 			const emailBrut = req.body.email
 			if (typeof emailBrut !== 'string' || !verifierFormatEmail(emailBrut)) return res.status(400).send('erreur')
 			const email = emailBrut.trim().toLowerCase()

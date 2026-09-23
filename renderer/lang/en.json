@@ -163,7 +163,7 @@
 	"pageWeb": "Web page",
 	"supprimerPad": "Delete the pad",
 	"supprimerCompte": "Delete the account",
-	"confirmationSupprimerCompte": "Do you really want to delete your account?<br>All your content will be deleted. This action is irreversible.",
+	"texteSuppressionCompte": "Enter your current password to delete your account. All your content will be deleted. This action is irreversible.",
 	"motDePassePad": "Pad password",
 	"infoMotDePassePad": "The pad password allows you to access the administration settings. It is important to keep it safe, as you will have no way to retrieve it later.",
 	"padDebloque": "Pad unlocked.",

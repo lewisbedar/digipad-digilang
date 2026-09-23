@@ -7,13 +7,17 @@ import { randomBytes } from 'crypto'
 import { URL } from 'url'
 import { fileURLToPath } from 'url'
 import {
+	genererCodeAcces,
 	tailleLotTransaction,
 	verifierIdentifiantPad,
+	verifierTitre,
+	verifierMotDePasseSaisi,
 	definirParametresModeration,
 	definirCheminFichiers,
 	extraireArchive,
 	supprimerArchives,
-	verifierURL,
+	assainirHTML,
+	assainirIframe,
 	assainirTexteAlternatif,
 	executerTransactions,
 	parseJSON,
@@ -43,6 +47,7 @@ export default function enregistrerRoutesLadigitale ({
 		verifierAutorisationApi,
 		definirVignettePersonnalisee,
 		copierFichiersPad,
+		realignerACLFichiers,
 		televerserFichierArchive,
 		verifierEspaceDisque,
 		extraireIdentifiantEtherpad,
@@ -54,7 +59,7 @@ export default function enregistrerRoutesLadigitale ({
 		const domaine = req.headers.host
 		const lienCible = req.body.lien
 		const actionRequise = req.body.action
-		if (production && !verifierURL(lienCible, ['https'])) return res.status(500).send('erreur')
+		if (!verifierLienApi(lienCible)) return res.status(500).send('erreur')
 		const urlCible = new URL(lienCible)
 		const hoteCible = urlCible.hostname.toLowerCase()
 		if (verifierHoteBloque(hoteCible)) return res.status(500).send('erreur')
@@ -76,6 +81,7 @@ export default function enregistrerRoutesLadigitale ({
 				}
 				const titre = req.body.nom
 				const motdepasse = req.body.motdepasse
+				if (!verifierTitre(titre) || !verifierMotDePasseSaisi(motdepasse)) return res.status(400).send('erreur')
 				const hash = await bcrypt.hash(motdepasse, 10)
 				const token = Math.random().toString(16).slice(10)
 				const date = dayjs().format()
@@ -92,10 +98,18 @@ export default function enregistrerRoutesLadigitale ({
 			else if (actionRequise === 'modifier-titre') {
 				const pad = req.body.id
 				const titre = req.body.titre
+				if (!verifierTitre(titre)) return res.status(400).send('erreur')
+				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + pad)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
-					await recupererDonneesPadJSON(pad)
+					donneesPad = await recupererDonneesPadJSON(pad)
+				} else if (padExiste === 1) {
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
+				if (!donneesPad || Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
+				const autorisation = await verifierAutorisationApi(donneesPad, req.body.identifiant, req.body.motdepasse)
+				if (!autorisation) return res.status(403).send('non_autorise')
 				await db.HSET('pads:' + pad, 'titre', titre)
 				return res.status(200).send('contenu_modifie')
 			}
@@ -106,6 +120,7 @@ export default function enregistrerRoutesLadigitale ({
 				const identifiant = req.body.identifiant
 				const ancienmotdepasse = req.body.ancienmotdepasse
 				const nouveaumotdepasse = req.body.motdepasse
+				if (!verifierTitre(titre) || !verifierMotDePasseSaisi(ancienmotdepasse) || !verifierMotDePasseSaisi(nouveaumotdepasse)) return res.status(400).send('erreur')
 				let donneesPad = {}
 				const padExiste = await db.EXISTS('pads:' + pad)
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
@@ -115,7 +130,7 @@ export default function enregistrerRoutesLadigitale ({
 				    donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
-				const autorisation = (ancienmotdepasse.trim() !== '' && donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '' && donneesPad.identifiant === identifiant && await bcrypt.compare(ancienmotdepasse, donneesPad.motdepasse))
+				const autorisation = (donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '' && donneesPad.identifiant === identifiant && await bcrypt.compare(ancienmotdepasse, donneesPad.motdepasse))
 				if (!autorisation) return res.status(403).send('non_autorise')
 				const hash = await bcrypt.hash(nouveaumotdepasse, 10)
 				await db.HSET('pads:' + pad, ['titre', titre, 'motdepasse', hash])
@@ -196,7 +211,7 @@ export default function enregistrerRoutesLadigitale ({
 				const token = Math.random().toString(16).slice(10)
 				const hash = await bcrypt.hash(nouveaumotdepasse, 10)
 				const date = dayjs().format()
-				const code = Math.floor(100000 + Math.random() * 900000)
+				const code = genererCodeAcces()
 				const colonnesDupliquees = JSON.stringify(normaliserTitresColonnes(parseJSON(donneesPad.colonnes, [])))
 				const affichageColonnes = normaliserAffichageColonnes(parseJSON(donneesPad.colonnes, []), parseJSON(donneesPad.affichageColonnes, null))
 				if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
@@ -252,6 +267,7 @@ export default function enregistrerRoutesLadigitale ({
 				await pipelineBlocs.exec()
 				// Copie des fichiers
 				await copierFichiersPad(padSource, padId, donneesPad.acces)
+				await realignerACLFichiers(padId, donneesPad.acces)
 				return res.status(200).send(padId + '/' + token)
 			}
 			// ACTION : EXPORTER
@@ -307,11 +323,13 @@ export default function enregistrerRoutesLadigitale ({
 		televerserTemp(req, res, async (err) => {
 			if (err) return res.status(500).send('erreur')
 			if (!req.file) return res.status(500).send('erreur')
+			const source = path.join(__dirname, '..', '/static/temp/' + req.file.filename)
+			const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + randomBytes(16).toString('hex'))
 			try {
 				const tokenApi = req.body.token
 				const domaine = req.headers.host
 				const lienCible = req.body.lien
-				if (production && !verifierURL(lienCible, ['https'])) return res.status(500).send('erreur')
+				if (!verifierLienApi(lienCible)) return res.status(500).send('erreur')
 				const urlCible = new URL(lienCible)
 				const hoteCible = urlCible.hostname.toLowerCase()
 				if (verifierHoteBloque(hoteCible)) return res.status(500).send('erreur')
@@ -328,13 +346,12 @@ export default function enregistrerRoutesLadigitale ({
 				}
 				const titre = req.body.titre
 				const motdepasse = req.body.motdepasse
+				if (!verifierTitre(titre) || !verifierMotDePasseSaisi(motdepasse)) return res.status(400).send('erreur')
 				const hash = await bcrypt.hash(motdepasse, 10)
 				let langue = langueParDefaut
 				if (req.session.hasOwnProperty('langue') && req.session.langue !== '') {
 					langue = req.session.langue
 				}
-				const source = path.join(__dirname, '..', '/static/temp/' + req.file.filename)
-				const dossierTemporaire = path.join(__dirname, '..', '/static/temp/archive-' + randomBytes(16).toString('hex'))
 				await extraireArchive(source, dossierTemporaire)
 				const donnees = await fs.readJson(path.normalize(dossierTemporaire + '/donnees.json'))
 				const parametres = JSON.parse(req.body.parametres)
@@ -342,12 +359,10 @@ export default function enregistrerRoutesLadigitale ({
 				const clesRequisesBlocs = ['id', 'bloc', 'titre', 'texte', 'media', 'iframe', 'type', 'source', 'vignette', 'identifiant', 'commentaires', 'evaluations', 'colonne', 'listeCommentaires', 'listeEvaluations']
 				const structureValide = donnees.hasOwnProperty('pad') && donnees.hasOwnProperty('blocs') && donnees.hasOwnProperty('activite') && clesRequisesPad.every(cle => donnees.pad.hasOwnProperty(cle))
 				if (!structureValide) {
-					await supprimerArchives(source, dossierTemporaire)
 					return res.status(400).send('donnees_corrompues')
 				}
 				const id = await db.INCR('pad')
 				if (!await verifierEspaceDisque()) {
-					await supprimerArchives(source, dossierTemporaire)
 					return res.status(500).send('erreur')
 				}
 				const dossierDestination = path.join(__dirname, '..', '/static' + definirCheminFichiers() + '/' + id)
@@ -368,14 +383,14 @@ export default function enregistrerRoutesLadigitale ({
 					const visibilite = bloc.hasOwnProperty('visibilite') ? bloc.visibilite : 'visible'
 					const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 					await db.multi()
-						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						.exec()
 					// Gestion des commentaires
 					if (parametres.commentaires === true && Array.isArray(bloc.listeCommentaires)) {
 						for (const commentaire of bloc.listeCommentaires) {
 							if (commentaire.hasOwnProperty('id') && commentaire.hasOwnProperty('identifiant') && commentaire.hasOwnProperty('date') && commentaire.hasOwnProperty('texte')) {
-								await db.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify(commentaire) }])
+								await db.ZADD('commentaires:' + blocId, [{ score: commentaire.id, value: JSON.stringify({ ...commentaire, texte: assainirHTML(commentaire.texte) }) }])
 								if (commentaire.visibilite === 'masquee') {
 									await db.ZADD('commentaires-masques:' + blocId, [{ score: commentaire.id, value: commentaire.id + ':' + commentaire.identifiant }])
 								}
@@ -400,7 +415,7 @@ export default function enregistrerRoutesLadigitale ({
 				}, tailleLotTransaction)
 				const token = Math.random().toString(16).slice(2)
 				const date = dayjs().format()
-				const code = Math.floor(100000 + Math.random() * 900000)
+				const code = genererCodeAcces()
 				const colonnesImportees = JSON.stringify(normaliserTitresColonnes(parseJSON(donnees.pad.colonnes, [])))
 				const affichageColonnes = normaliserAffichageColonnes(parseJSON(donnees.pad.colonnes, []), parseJSON(donnees.pad.affichageColonnes, null))
 				const activiteId = parametres.activite === true ? donnees.pad.activite : 0
@@ -434,17 +449,30 @@ export default function enregistrerRoutesLadigitale ({
 						}
 					}
 				}
-				await supprimerArchives(source, dossierTemporaire)
 				res.status(200).send(id + '/' + token)
 			} catch (err) {
 				console.error(err.stack)
-				try {
-					if (req.file && req.file.filename) {
-						await fs.remove(path.join(__dirname, '..', '/static/temp/' + req.file.filename))
-					}
-				} catch {}
 				res.status(500).send('erreur')
+			} finally {
+				await supprimerArchives(source, dossierTemporaire)
 			}
 		})
 	})
+}
+
+function verifierLienApi (lien) {
+	let url
+	try {
+		url = new URL(lien)
+	} catch {
+		return false
+	}
+	const domaines = (process.env.AUTHORIZED_DOMAINS || '').split(',').map(d => d.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')).filter(d => d !== '')
+	if (!production && (domaines.length === 0 || domaines.includes('*'))) {
+		return url.protocol === 'https:' || url.protocol === 'http:'
+	}
+	if (url.protocol !== 'https:' && !(url.protocol === 'http:' && !production)) {
+		return false
+	}
+	return domaines.includes(url.hostname.toLowerCase())
 }

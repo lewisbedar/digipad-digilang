@@ -16,6 +16,7 @@ import {
 	verifierIdentifiantPad,
 	verifierURL,
 	verifierContenuFichier,
+	verifierFichierAudio,
 	genererJetonTeleversement,
 	genererJetonFichier
 } from './fonctions.js'
@@ -292,6 +293,7 @@ export default function enregistrerRoutesFichiers ({
 		if (!identifiant) return res.status(401).send('non_connecte')
 		const buffersAudio = []
 		let nomFichier
+		let mimetypeAudio
 		const donneesFormulaire = new Map()
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
@@ -301,6 +303,7 @@ export default function enregistrerRoutesFichiers ({
 		})
 		busboy.on('file', (champ, fichier, meta) => {
 			nomFichier = definirNomFichier(meta.filename)
+			mimetypeAudio = meta.mimeType
 			fichier.on('data', (donnees) => {
 				buffersAudio.push(donnees)
 			})
@@ -318,6 +321,7 @@ export default function enregistrerRoutesFichiers ({
 			if (fichierTropVolumineux) return res.status(413).send('fichier_trop_volumineux')
 			const bufferAudio = Buffer.concat(buffersAudio)
 			if (!bufferAudio || !nomFichier) return res.status(422).send('erreur_televersement')
+			if (!verifierFichierAudio(bufferAudio, nomFichier, mimetypeAudio)) return res.status(422).send('erreur_televersement')
 			const padId = donneesFormulaire.get('pad')
 			try {
 				const donneesPad = await recupererPadAutorise(padId, req.session)

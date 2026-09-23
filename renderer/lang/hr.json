@@ -163,7 +163,7 @@
 	"pageWeb": "Web-stranica",
 	"supprimerPad": "Delete the pad",
 	"supprimerCompte": "Izbrišite korisnički račun",
-	"confirmationSupprimerCompte": "Želite li stvarno izbrisati svoj račun?<br>Sav vaš sadržaj bit će izbrisan. Ova akcija je nepovratna.",
+	"texteSuppressionCompte": "Unesite svoju trenutnu lozinku kako biste izbrisali svoj račun. Sav vaš sadržaj bit će izbrisan. Ova radnja je nepovratna.",
 	"motDePassePad": "Lozinka digitalne podloge",
 	"infoMotDePassePad": "Lozinka vam omogućuje pristup postavkama administracije. Važno je da ga čuvate na sigurnom, jer ga kasnije nećete moći dohvatiti.",
 	"padDebloque": "Digitalna podloga je otključana.",

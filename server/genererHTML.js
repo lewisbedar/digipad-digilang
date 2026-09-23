@@ -445,7 +445,7 @@ function genererHTML (pad, blocs, langue) {
 										iconfont: 'material-icons',
 										closeOnEscape: true,
 										border: '4px solid ' + item.couleur,
-										headerTitle: item.titre,
+										headerTitle: this.echapperAttribut(item.titre),
 										position: 'center',
 										maximizedMargin: 0,
 										syncMargins: true,

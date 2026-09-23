@@ -51,7 +51,7 @@
 					<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleTransfererCompte">{{ $t('transfererProprieteCompte') }}</button>
 				</div>
 				<div class="conteneur conteneur-bouton">
-					<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherModaleConfirmation($event, '', 'supprimer-compte')">{{ $t('supprimerCompte') }}</button>
+					<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherModaleSupprimerCompte">{{ $t('supprimerCompte') }}</button>
 				</div>
 			</div>
 		</div>
@@ -413,6 +413,27 @@
 				</div>
 			</div>
 		</div>
+		<div class="conteneur-modale" v-else-if="modale === 'supprimer-compte'">
+			<div id="suppression-compte" class="modale" role="dialog" aria-modal="true" :aria-label="$t('supprimerCompte')">
+				<div class="en-tete">
+					<span class="titre">{{ $t('supprimerCompte') }}</span>
+					<button type="button" class="fermer" :disabled="disabledModale || chargementModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleSupprimerCompte"><i class="material-icons" aria-hidden="true">close</i></button>
+				</div>
+				<div class="conteneur">
+					<div class="contenu">
+						<div class="message" v-html="$t('texteSuppressionCompte')" />
+						<label for="champ-motdepasse-suppression-compte">{{ $t('motDePasseActuel') }}</label>
+						<input id="champ-motdepasse-suppression-compte" type="password" maxlength="48" :value="motDePasseCompte" :disabled="disabledModale" @input="motDePasseCompte = $event.target.value" @keydown.enter="supprimerCompte">
+						<div class="actions">
+							<button type="button" class="bouton" :disabled="disabledModale" @click="supprimerCompte" v-if="!chargementModale">{{ $t('valider') }}</button>
+							<div class="conteneur-chargement" v-else>
+								<div class="chargement" />
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 
 		<div class="conteneur-modale" v-else-if="modale === 'importer-pad'">
 			<div id="import" class="modale" role="dialog" aria-modal="true" :aria-label="$t('importerPad')">
@@ -522,7 +543,6 @@
 						<div class="message" v-html="$t('confirmationExporterPadWeb')" v-else-if="modaleConfirmation === 'exporter-web'" />
 						<div class="message" v-html="$t('confirmationSupprimerPad')" v-else-if="modaleConfirmation === 'supprimer'" />
 						<div class="message" v-html="$t('confirmationSupprimerPadAdmin')" v-else-if="modaleConfirmation === 'supprimer-admin'" />
-						<div class="message" v-html="$t('confirmationSupprimerCompte')" v-else-if="modaleConfirmation === 'supprimer-compte'" />
 						<div class="message" v-html="$t('confirmationSupprimerDossier')" v-else-if="modaleConfirmation === 'supprimer-dossier'" />
 						<div class="message" v-html="$t('confirmationViderCorbeille')" v-else-if="modaleConfirmation === 'vider-corbeille'" />
 						<div class="actions">
@@ -532,7 +552,6 @@
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="exporterPad('web')" v-else-if="modaleConfirmation === 'exporter-web'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="modaleConfirmation === 'supprimer'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerPad" v-else-if="modaleConfirmation === 'supprimer-admin'">{{ $t('oui') }}</button>
-							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerCompte" v-else-if="modaleConfirmation === 'supprimer-compte'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="supprimerDossier" v-else-if="modaleConfirmation === 'supprimer-dossier'">{{ $t('oui') }}</button>
 							<button type="button" class="bouton" :disabled="disabledConfirmation" @click="viderCorbeille" v-else-if="modaleConfirmation === 'vider-corbeille'">{{ $t('oui') }}</button>
 						</div>
@@ -809,7 +828,8 @@ export default {
 			}
 		},
 		creerPad () {
-			if (this.titre !== '') {
+			const titre = this.titre.trim()
+			if (titre !== '') {
 				this.chargementModale = true
 				const onglets = ['pads-crees', 'pads-rejoints', 'pads-admins', 'pads-favoris', 'pads-corbeille']
 				let dossierId = ''
@@ -817,7 +837,7 @@ export default {
 					dossierId = this.onglet
 				}
 				axios.post(this.hote + '/api/creer-pad', {
-					titre: this.titre,
+					titre: titre,
 					identifiant: this.identifiant,
 					dossier: dossierId
 				}).then((reponse) => {
@@ -827,6 +847,8 @@ export default {
 					this.chargementModale = false
 					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
+					} else if (err.response?.data === 'titre_invalide') {
+						this.message = this.$t('remplirChamps')
 					} else if (err.response?.data === 'erreur_creation') {
 						this.message = this.$t('erreurCreationPad')
 					} else if (err.response?.data?.message === 'limite_atteinte') {
@@ -835,6 +857,8 @@ export default {
 						this.message = this.definirMessageErreur(err)
 					}
 				})
+			} else {
+				this.message = this.$t('remplirChamps')
 			}
 		},
 		fermerModaleCreerPad () {
@@ -983,9 +1007,7 @@ export default {
 		afficherModaleConfirmation (event, id, type) {
 			event.preventDefault()
 			event.stopPropagation()
-			if (type === 'supprimer-compte') {
-				this.fermerMenu()
-			} else if (type === 'supprimer-dossier') {
+			if (type === 'supprimer-dossier') {
 				this.dossierId = id
 			} else {
 				this.padId = id
@@ -1233,7 +1255,7 @@ export default {
 			this.menu = false
 			this.identifiantDestinationCompte = ''
 			this.motDePasseCompte = ''
-			this.elementPrecedent = (document.activeElement || document.body)
+			this.elementPrecedent = document.querySelector('#compte')
 			this.modale = 'transferer-compte'
 			this.$nextTick(() => {
 				document.querySelector('.modale input')?.focus()
@@ -1242,6 +1264,20 @@ export default {
 		fermerModaleTransfererCompte () {
 			this.modale = ''
 			this.identifiantDestinationCompte = ''
+			this.motDePasseCompte = ''
+			this.gererFocus()
+		},
+		afficherModaleSupprimerCompte () {
+			this.menu = false
+			this.motDePasseCompte = ''
+			this.elementPrecedent = document.querySelector('#compte')
+			this.modale = 'supprimer-compte'
+			this.$nextTick(() => {
+				document.querySelector('.modale input')?.focus()
+			})
+		},
+		fermerModaleSupprimerCompte () {
+			this.modale = ''
 			this.motDePasseCompte = ''
 			this.gererFocus()
 		},
@@ -1854,25 +1890,31 @@ export default {
 			})
 		},
 		supprimerCompte () {
-			this.chargement = true
-			this.modaleConfirmation = ''
-			const identifiant = this.identifiant
-			axios.post(this.hote + '/api/supprimer-compte', {
-				identifiant: identifiant,
-				admin: ''
-			}).then(() => {
-				this.$socket.emit('deconnexion', identifiant)
-				window.location.replace('/')
-			}).catch((err) => {
-				this.chargement = false
-				if (err.response?.data === 'non_autorise') {
-					this.message = this.$t('actionNonAutorisee')
-				} else if (err.response?.data === 'suppression_incomplete') {
-					this.message = this.$t('suppressionIncomplete')
-				} else {
-					this.message = this.definirMessageErreur(err)
-				}
-			})
+			const motdepasse = this.motDePasseCompte.trim()
+			if (motdepasse !== '') {
+				this.chargementModale = true
+				const identifiant = this.identifiant
+				axios.post(this.hote + '/api/supprimer-compte', {
+					identifiant: identifiant,
+					motdepasse: motdepasse,
+					admin: ''
+				}).then(() => {
+					this.$socket.emit('deconnexion', identifiant)
+					window.location.replace('/')
+				}).catch((err) => {
+					this.chargementModale = false
+					this.fermerModaleSupprimerCompte()
+					if (err.response?.data === 'non_autorise') {
+						this.message = this.$t('actionNonAutorisee')
+					} else if (err.response?.data === 'motdepasse_incorrect') {
+						this.message = this.$t('motDePasseActuelPasCorrect')
+					} else if (err.response?.data === 'suppression_incomplete') {
+						this.message = this.$t('suppressionIncomplete')
+					} else {
+						this.message = this.definirMessageErreur(err)
+					}
+				})
+			}
 		},
 		deconnexion () {
 			this.chargement = true
@@ -1896,6 +1938,8 @@ export default {
 				this.fermerModaleTransferer()
 			} else if (this.modale === 'transferer-compte') {
 				this.fermerModaleTransfererCompte()
+			} else if (this.modale === 'supprimer-compte') {
+				this.fermerModaleSupprimerCompte()
 			} else if (this.modale === 'importer-pad') {
 				this.fermerModaleImporterPad()
 			} else if (this.modale === 'ajouter-pad') {
@@ -2609,7 +2653,8 @@ export default {
 }
 
 #transfert-propriete .message,
-#transfert-propriete-compte .message {
+#transfert-propriete-compte .message,
+#suppression-compte .message {
 	margin-bottom: 20px;
 }
 

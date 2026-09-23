@@ -338,6 +338,9 @@ export default function enregistrerRoutesPages ({
 		}
 		const pageContextInit = {
 			urlOriginal: req.originalUrl,
+			params: req.query,
+			hote: hote,
+			langues: langues,
 			langue: langue
 		}
 		const pageContext = await renderPage(pageContextInit)

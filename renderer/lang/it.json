@@ -163,7 +163,7 @@
 	"pageWeb": "Pagina web",
 	"supprimerPad": "Elimina il pad",
 	"supprimerCompte": "Elimina l'account",
-	"confirmationSupprimerCompte": "Vuoi eliminare veramente il tuo account?<br>Tutto il tuo contenuto sarà eliminato. Questa azione è irreversibile.",
+	"texteSuppressionCompte": "Indica la tua password attuale per eliminare il tuo account. Tutto il tuo contenuto sarà eliminato. Questa azione è irreversibile.",
 	"motDePassePad": "Password del pad",
 	"infoMotDePassePad": "La password del pad ti permette di accedere ai parametri di amministrazione. È importante conservarla perchè non è possibile il recupero.",
 	"padDebloque": "Pad sbloccato.",

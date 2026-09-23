@@ -169,6 +169,10 @@
     background: rgba(0, 0, 0, 0.5);
 }
 
+.organiser #blocs.colonnes .bloc.haut .menu-colonne {
+	display: block;
+}
+
 .organiser #blocs.colonnes .bloc.haut .menu-colonne .bouton {
 	font-size: 24px;
 	color: #fff;
@@ -249,6 +253,10 @@
 
 #blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button svg {
 	margin-right: 0.8rem;
+}
+
+#blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button.supprimer i {
+	color: #ff6259;
 }
 
 #blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button:hover {

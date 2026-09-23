@@ -510,29 +510,29 @@
 		</div>
 	</div>
 
-	<div id="pad" aria-live="polite" :class="{'fond-personnalise': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active', 'organiser': action === 'organiser'}" :style="definirFond(pad.fond)" v-if="Object.keys(pad).length > 0 && (pad.acces !== 'code' || (pad.acces === 'code' && accesAutorise))">
+	<div id="pad" aria-live="polite" :inert="disabledAlt || null" :class="{'fond-personnalise': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active', 'organiser': action === 'organiser'}" :style="definirFond(pad.fond)" v-if="Object.keys(pad).length > 0 && (pad.acces !== 'code' || (pad.acces === 'code' && accesAutorise))">
 		<!-- Affichage mur // sans recherche -->
 		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-if="pad.affichage === 'mur' && action !== 'organiser' && !recherche">
 			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage mur // avec recherche -->
 		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-else-if="pad.affichage === 'mur' && action !== 'organiser' && recherche">
 			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage flux vertical // sans recherche -->
 		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && !recherche">
 			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage flux vertical // avec recherche -->
 		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && recherche">
 			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage colonne // sans recherche -->
@@ -553,13 +553,13 @@
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="dupliquerColonne(indexCol)"><i class="material-icons" aria-hidden="true">content_copy</i>{{ $t('dupliquerColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherViderColonne(indexCol)"><i class="material-icons" aria-hidden="true">radio_button_unchecked</i>{{ $t('viderColonne') }}</button>
-								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i>{{ $t('supprimerColonne') }}</button>
+								<button type="button" class="supprimer" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherSupprimerColonne(indexCol)" v-if="pad.colonnes.length > 1"><i class="material-icons" aria-hidden="true">delete</i>{{ $t('supprimerColonne') }}</button>
 							</div>
 						</div>
 					</div>
 					<div class="conteneur-colonne ascenseur" v-if="colonnes[indexCol].length > 0">
 						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 						</div>
 					</div>
 					<div class="ajouter" v-if="accesAutorise && (admin || pad.contributions !== 'fermees')">
@@ -588,7 +588,7 @@
 					</div>
 					<div class="conteneur-colonne ascenseur">
 						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
-							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 						</div>
 					</div>
 				</section>
@@ -597,7 +597,7 @@
 		<!-- Mode Organiser // Affichage mur et flux vertical -->
 		<draggable id="blocs" :class="{'mur': pad.affichage === 'mur', 'flux-vertical': pad.affichage === 'flux-vertical', 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-model="blocs" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" @start="demarrerDeplacerBloc" @end="deplacerBloc" v-else-if="(pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && action === 'organiser'">
 			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
-				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</draggable>
 		<!-- Mode Organiser // Affichage colonnes -->
@@ -614,7 +614,7 @@
 				</div>
 				<draggable class="conteneur-colonne ascenseur" v-model="colonnes[indexCol]" group="colonne" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" :data-index="indexCol" @start="demarrerDeplacerBloc" @end="deplacerBloc">
 					<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
-						<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="disabled" :disabledAlt="disabledAlt" :action="action" />
+						<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 					</div>
 				</draggable>
 			</section>

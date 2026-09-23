@@ -163,7 +163,7 @@
 	"pageWeb": "Webseite",
 	"supprimerPad": "Das Pad löschen",
 	"supprimerCompte": "Das Konto löschen",
-	"confirmationSupprimerCompte": "Wollen Sie Ihr Konto wirklich löschen?<br>Alle Ihre Inhalte werden gelöscht. Diese Aktion ist irreversibel.",
+	"texteSuppressionCompte": "Geben Sie Ihr aktuelles Passwort ein, um Ihr Konto zu löschen. Alle Ihre Inhalte werden gelöscht. Diese Aktion ist unwiderruflich.",
 	"motDePassePad": "Pad-Passwort",
 	"infoMotDePassePad": "Das Pad-Passwort ermöglicht Ihnen den Zugang zu den Verwaltungseinstellungen. Es ist wichtig, es sicher aufzubewahren, da Sie es später nicht wiederherstellen können.",
 	"padDebloque": "Pad entsperrt.",

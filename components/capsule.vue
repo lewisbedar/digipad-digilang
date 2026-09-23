@@ -1,43 +1,43 @@
 <template>
 	<div class="contenu">
-		<div class="titre" v-if="item.titre !== ''" :style="{'background': parent.eclaircirCouleur(item.couleur)}">
+		<div class="titre" v-if="item.titre !== ''" :style="{'background': couleurEclaircie}">
 			<span>{{ item.titre }}</span>
 			<i class="material-icons" aria-hidden="true" v-if="action === 'organiser'">drag_indicator</i>
 		</div>
 		<div class="texte" v-if="item.texte" v-html="item.texte" />
 		<div class="media" v-if="item.media && action !== 'organiser'">
-			<button type="button" class="bouton-image" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-if="item.type === 'image'" @click="parent.afficherVisionneuse(item)"><img :src="parent.stockage === 's3' && item.mediaUrl ? item.mediaUrl : parent.definirCheminFichiers() + '/' + pad.id + '/' + item.media" loading="lazy" :alt="parent.definirTexteAlternatif(item)" @error="parent.rafraichirUrlFichier(item, 'media')"></button>
-			<button type="button" class="bouton-image" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'lien-image'" @click="parent.afficherVisionneuse(item)"><img :src="item.media" loading="lazy" :alt="parent.definirTexteAlternatif(item)"></button>
-			<button type="button" :disabled="disabledAlt" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'audio' || item.type === 'video' || (item.type === 'document' && visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && visionneuse !== '') || item.type === 'embed'" @click="parent.afficherVisionneuse(item)"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></button>
-			<a :href="item.media" target="_blank" :title="$t('ouvrirLienNouvelOnglet')" :aria-label="$t('ouvrirLienNouvelOnglet')" v-else-if="item.type === 'lien'"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></a>
-			<a :href="parent.definirLienTelechargement(pad.id, item)" :title="$t('telecharger')" :aria-label="$t('telecharger')" download v-else @click="parent.telechargerFichier($event, pad.id, item)"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></a>
+			<button type="button" class="bouton-image" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-if="item.type === 'image'" @click="parent.afficherVisionneuse(item)"><img :src="parent.stockage === 's3' && item.mediaUrl ? item.mediaUrl : cheminFichiers + '/' + pad.id + '/' + item.media" loading="lazy" :alt="texteAlternatif" @error="parent.rafraichirUrlFichier(item, 'media')"></button>
+			<button type="button" class="bouton-image" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'lien-image'" @click="parent.afficherVisionneuse(item)"><img :src="item.media" loading="lazy" :alt="texteAlternatif"></button>
+			<button type="button" :title="$t('afficherDansVisionneuse')" :aria-label="$t('afficherDansVisionneuse')" v-else-if="item.type === 'audio' || item.type === 'video' || (item.type === 'document' && visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && visionneuse !== '') || item.type === 'embed'" @click="parent.afficherVisionneuse(item)"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" :alt="nomVignette" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></button>
+			<a :href="item.media" target="_blank" :title="$t('ouvrirLienNouvelOnglet')" :aria-label="$t('ouvrirLienNouvelOnglet')" v-else-if="item.type === 'lien'"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" :alt="nomVignette" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></a>
+			<a :href="lienTelechargement" :title="$t('telecharger')" :aria-label="$t('telecharger')" download v-else @click="parent.telechargerFichier($event, pad.id, item)"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" :alt="nomVignette" loading="lazy" @error="parent.rafraichirUrlFichier(item, 'vignette')"></a>
 		</div>
 		<div class="media" v-else-if="item.media && action === 'organiser'">
-			<img v-if="item.type === 'image'" :src="parent.stockage === 's3' && item.mediaUrl ? item.mediaUrl : parent.definirCheminFichiers() + '/' + pad.id + '/' + item.media" loading="lazy" :alt="parent.definirTexteAlternatif(item)" @error="parent.rafraichirUrlFichier(item, 'media')">
-			<img v-else-if="item.type === 'lien-image'" :src="item.media" loading="lazy" :alt="parent.definirTexteAlternatif(item)">
-			<span v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'document' || item.type === 'pdf' || item.type === 'office' || item.type === 'embed'"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" loading="lazy" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
-			<span v-else-if="item.type === 'lien'"><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" loading="lazy" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
-			<span v-else><img :class="{'vignette': parent.definirVignette(item).substring(0, 5) !== '/img/'}" :src="parent.definirVignette(item)" loading="lazy" :alt="parent.definirNomLienFichier(parent.definirVignette(item))" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
+			<img v-if="item.type === 'image'" :src="parent.stockage === 's3' && item.mediaUrl ? item.mediaUrl : cheminFichiers + '/' + pad.id + '/' + item.media" loading="lazy" :alt="texteAlternatif" @error="parent.rafraichirUrlFichier(item, 'media')">
+			<img v-else-if="item.type === 'lien-image'" :src="item.media" loading="lazy" :alt="texteAlternatif">
+			<span v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'document' || item.type === 'pdf' || item.type === 'office' || item.type === 'embed'"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" loading="lazy" :alt="nomVignette" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
+			<span v-else-if="item.type === 'lien'"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" loading="lazy" :alt="nomVignette" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
+			<span v-else><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" loading="lazy" :alt="nomVignette" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
 		</div>
 		<div class="evaluation" v-if="pad.evaluations === 'activees' && item.evaluations && parent.evaluationsVisibles">
 			<span class="etoiles" :title="definirEtoiles(item.evaluations)">
-				<i class="material-icons" aria-hidden="true" :class="{'evalue': parent.verifierUtilisateurEvaluation(item.evaluations) === true}" v-for="etoile in parent.definirEvaluationCapsule(item.evaluations)" :key="'etoilepleine_' + etoile">star</i>
-				<i class="material-icons" aria-hidden="true" :class="{'evalue': parent.verifierUtilisateurEvaluation(item.evaluations) === true}" v-for="etoile in Math.max(0, 5 - parent.definirEvaluationCapsule(item.evaluations))" :key="'etoilevide_' + etoile">star_outline</i>
+				<i class="material-icons" aria-hidden="true" :class="{'evalue': capsuleEvalueeParUtilisateur === true}" v-for="etoile in evaluationCapsule" :key="'etoilepleine_' + etoile">star</i>
+				<i class="material-icons" aria-hidden="true" :class="{'evalue': capsuleEvalueeParUtilisateur === true}" v-for="etoile in Math.max(0, 5 - evaluationCapsule)" :key="'etoilevide_' + etoile">star_outline</i>
 				<span>({{ item.evaluations.length }})</span>
 			</span>
 			<div class="actions-evaluation">
-				<button type="button" class="bouton" :disabled="disabled" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="parent.ouvrirModaleEvaluations(item.bloc, item.titre, '')" v-if="parent.verifierUtilisateurEvaluation(item.evaluations) === false && action !== 'organiser' && parent.evaluationsAutorisees"><i class="material-icons" aria-hidden="true">add_comment</i></button>
-				<button type="button" class="bouton" :disabled="disabled" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="parent.ouvrirModaleEvaluations(item.bloc, item.titre, item.evaluations)" v-else-if="parent.verifierUtilisateurEvaluation(item.evaluations) === true && action !== 'organiser'"><i class="material-icons" aria-hidden="true">rate_review</i></button>
+				<button type="button" class="bouton" :disabled="disabled" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="parent.ouvrirModaleEvaluations(item.bloc, item.titre, '')" v-if="capsuleEvalueeParUtilisateur === false && action !== 'organiser' && parent.evaluationsAutorisees"><i class="material-icons" aria-hidden="true">add_comment</i></button>
+				<button type="button" class="bouton" :disabled="disabled" :title="$t('evaluerCapsule')" :aria-label="$t('evaluerCapsule')" @click="parent.ouvrirModaleEvaluations(item.bloc, item.titre, item.evaluations)" v-else-if="capsuleEvalueeParUtilisateur === true && action !== 'organiser'"><i class="material-icons" aria-hidden="true">rate_review</i></button>
 				<button type="button" class="bouton" :disabled="disabled" :title="$t('listeEvaluations')" :aria-label="$t('listeEvaluations')" @click="parent.ouvrirModaleListeEvaluations(item.bloc)" v-if="admin && action !== 'organiser'"><i class="material-icons" aria-hidden="true">format_list_bulleted</i></button>
 			</div>
 		</div>
 		<div class="action" :style="{'color': item.couleur}">
 			<button type="button" class="bouton" :disabled="disabled" :title="$t('commenterCapsule')" :aria-label="$t('commenterCapsule')" @click="parent.ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && parent.commentairesVisibles"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
-			<button type="button" class="bouton info" :disabled="disabled" :title="$t('informationsCapsule')" :aria-label="$t('informationsCapsule')" :data-description="parent.definirDescription(item)"><i class="material-icons" aria-hidden="true">info</i></button>
-			<span class="media-type" v-if="item.media"><i class="material-icons" aria-hidden="true">{{ parent.definirIconeMedia(item) }}</i></span>
+			<button type="button" class="bouton info" :disabled="disabled" :title="$t('informationsCapsule')" :aria-label="$t('informationsCapsule')" :data-description="description"><i class="material-icons" aria-hidden="true">info</i></button>
+			<span class="media-type" v-if="item.media"><i class="material-icons" aria-hidden="true">{{ iconeMedia }}</i></span>
 			<div class="menu-deroulant menu-deroulant-capsule" :data-menu-capsule="item.bloc" v-if="menuDisponible">
-				<button type="button" class="bouton-menu" :id="'bouton-menu-capsule-' + item.bloc" :disabled="disabled" :title="$t('parametresCapsule')" :aria-label="$t('parametresCapsule')" aria-haspopup="true" :aria-expanded="parent.menuCapsule === item.bloc" @click="parent.gererMenuCapsule(item.bloc)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
-				<div :id="'menu-capsule-' + item.bloc" class="contenu-menu-deroulant" role="menu" :aria-labelledby="'bouton-menu-capsule-' + item.bloc" @keydown="parent.gererClavierMenu($event, 'menu-capsule-' + item.bloc)" v-show="parent.menuCapsule === item.bloc">
+				<button type="button" class="bouton-menu" :id="'bouton-menu-capsule-' + item.bloc" :disabled="disabled" :title="$t('parametresCapsule')" :aria-label="$t('parametresCapsule')" aria-haspopup="true" :aria-expanded="menuOuvert" @click="parent.gererMenuCapsule(item.bloc)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
+				<div :id="'menu-capsule-' + item.bloc" class="contenu-menu-deroulant" role="menu" :aria-labelledby="'bouton-menu-capsule-' + item.bloc" @keydown="parent.gererClavierMenu($event, 'menu-capsule-' + item.bloc)" v-if="menuOuvert">
 					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.ouvrirModaleBloc('edition', item, indexCol)" v-if="modificationAutorisee"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierCapsule') }}</button>
 					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.dupliquerBloc(item.bloc)" v-if="duplicationAutorisee"><i class="material-icons" aria-hidden="true">content_copy</i>{{ $t('dupliquerCapsule') }}</button>
 					<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="parent.afficherEnvoyerBloc(item.bloc, item.titre)" v-if="copieAutorisee"><i class="material-icons" aria-hidden="true">send</i>{{ $t('copierCapsule') }}</button>
@@ -59,6 +59,19 @@
 export default {
 	name: 'DigipadCapsule',
 	inject: ['parent'],
+	data () {
+		return {
+			menuOuvert: false
+		}
+	},
+	watch: {
+		'parent.menuCapsule' (bloc) {
+			this.menuOuvert = (bloc === this.item.bloc)
+		},
+		'item.bloc' (bloc) {
+			this.menuOuvert = (this.parent.menuCapsule === bloc)
+		}
+	},
 	props: {
 		admin: Boolean,
 		identifiant: String,
@@ -66,13 +79,42 @@ export default {
 		pad: Object,
 		indexCol: Number,
 		disabled: Boolean,
-		disabledAlt: Boolean,
 		action: String,
 		statut: String,
 		viaDigidrive: Boolean,
 		visionneuse: String
 	},
 	computed: {
+		vignette () {
+			return this.parent.definirVignette(this.item)
+		},
+		nomVignette () {
+			return this.parent.definirNomLienFichier(this.vignette)
+		},
+		description () {
+			return this.parent.definirDescription(this.item)
+		},
+		iconeMedia () {
+			return this.parent.definirIconeMedia(this.item)
+		},
+		texteAlternatif () {
+			return this.parent.definirTexteAlternatif(this.item)
+		},
+		cheminFichiers () {
+			return this.parent.definirCheminFichiers()
+		},
+		evaluationCapsule () {
+			return this.parent.definirEvaluationCapsule(this.item.evaluations)
+		},
+		couleurEclaircie () {
+			return this.parent.eclaircirCouleur(this.item.couleur)
+		},
+		capsuleEvalueeParUtilisateur () {
+			return this.parent.verifierUtilisateurEvaluation(this.item.evaluations)
+		},
+		lienTelechargement () {
+			return this.parent.definirLienTelechargement(this.pad.id, this.item)
+		},
 		modificationAutorisee () {
 			return (this.item.identifiant === this.identifiant || this.admin || (this.pad.contributions === 'modifiables' && this.item.visibilite !== 'masquee' && this.item.visibilite !== 'privee')) && this.action !== 'organiser'
 		},

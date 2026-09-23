@@ -163,7 +163,7 @@
 	"pageWeb": "Page Web",
 	"supprimerPad": "Supprimer le pad",
 	"supprimerCompte": "Supprimer le compte",
-	"confirmationSupprimerCompte": "Souhaitez-vous vraiment supprimer votre compte&nbsp;?<br>Tout votre contenu sera supprimé. Cette action est irréversible.",
+	"texteSuppressionCompte": "Indiquez votre mot de passe actuel pour supprimer votre compte. Tout votre contenu sera supprimé. Cette action est irréversible.",
 	"motDePassePad": "Mot de passe du pad",
 	"infoMotDePassePad": "Le mot de passe du pad vous permet d'accéder aux paramètres d'administration. Il est important de bien le conserver, car vous n'aurez aucun moyen de le récupérer par la suite.",
 	"padDebloque": "Pad débloqué.",

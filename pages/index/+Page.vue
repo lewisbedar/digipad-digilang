@@ -285,6 +285,8 @@ export default {
 					this.chargement = false
 					if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
+					} else if (err.response?.data === 'titre_invalide' || err.response?.data === 'motdepasse_invalide') {
+						this.message = this.$t('remplirChamps')
 					} else if (err.response?.data === 'erreur_creation') {
 						this.message = this.$t('erreurCreationPad')
 					} else {

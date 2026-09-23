@@ -313,13 +313,19 @@ export default function enregistrerRoutesAdmin ({
 			if (!admin) {
 				const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
 				if (!motdepasseCorrect) return res.status(403).send('non_autorise')
+				const motdepasse = req.body.motdepasse
+				if (typeof motdepasse !== 'string' || motdepasse.trim() === '' || donneesUtilisateur.motdepasse.trim() === '' || !await bcrypt.compare(motdepasse.trim(), donneesUtilisateur.motdepasse)) return res.status(401).send('motdepasse_incorrect')
 			}
 			const email = donneesUtilisateur.hasOwnProperty('email') ? donneesUtilisateur.email.toLowerCase() : ''
 			// Suppression des pads créés
 			const listePadsCrees = await db.SMEMBERS('pads-crees:' + identifiant)
 			if (listePadsCrees === null) return res.status(500).send('erreur')
+			const listePadsCorbeille = await db.SMEMBERS('pads-supprimes:' + identifiant)
+			if (listePadsCorbeille === null) return res.status(500).send('erreur')
+			const proprietairesCorbeille = await Promise.all(listePadsCorbeille.map((pad) => db.HGET('pads:' + pad, 'identifiant')))
+			const listePadsASupprimer = [...new Set(listePadsCrees.concat(listePadsCorbeille.filter((pad, index) => proprietairesCorbeille[index] === identifiant)))]
 			// Traitement par lots de la suppression de chaque pad créé
-			const resultatsPadsCrees = await executerTransactions(listePadsCrees, async (pad) => {
+			const resultatsPadsCrees = await executerTransactions(listePadsASupprimer, async (pad) => {
 				try {
 					const padExiste = await db.EXISTS('pads:' + pad)
 					if (padExiste === 1) {

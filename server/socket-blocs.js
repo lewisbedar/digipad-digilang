@@ -29,6 +29,7 @@ export default function creerGestionnairesBlocs ({
 	const {
 		diffuserAdmin,
 		diffuserBloc,
+		recupererNomUtilisateur,
 		diffuserBlocsDeplaces,
 		notifierAdminsAbsents,
 		recupererCommentairesMasques,
@@ -36,6 +37,7 @@ export default function creerGestionnairesBlocs ({
 		verifierAccesLecturePad,
 		definirVignettePersonnalisee,
 		supprimerFichierSansEchec,
+		realignerACLFichiers,
 		televerserFichierTemp,
 		copierFichier,
 		verifierEspaceDisque,
@@ -95,10 +97,13 @@ export default function creerGestionnairesBlocs ({
 				// Entrée d'activité enregistrée que si la capsule n'est pas privée
 				const activiteEnregistree = (visibilite === 'visible' || visibilite === 'masquee')
 				if (activiteEnregistree) {
-					await db.multi()
+					const transactionActivite = db.multi()
 						.HINCRBY('pads:' + pad, 'activite', 1)
 						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: titre, date: date, type: 'bloc-ajoute' }) }])
-						.exec()
+					if (visibilite === 'masquee') {
+						transactionActivite.HSET('pad-' + pad + ':' + bloc, 'activitePublication', activiteId)
+					}
+					await transactionActivite.exec()
 				}
 				if (media !== '' && type !== 'embed' && type !== 'lien') {
 					await televerserFichierTemp(media, pad, donneesPad.acces)
@@ -106,6 +111,7 @@ export default function creerGestionnairesBlocs ({
 				if (vignettePersonnalisee) {
 					await televerserFichierTemp(vignette, pad, donneesPad.acces)
 				}
+				await realignerACLFichiers(pad, donneesPad.acces, [media, vignettePersonnalisee ? vignette : ''])
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
@@ -143,7 +149,7 @@ export default function creerGestionnairesBlocs ({
 			}
 		})
 
-		socket.on('modifierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, colonne, privee, identifiant, nom, alt) => {
+		socket.on('modifierbloc', async (bloc, pad, token, titre, texte, media, iframe, type, source, vignette, couleur, privee, identifiant, nom, alt) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			if (typeof titre !== 'string' || titre.length > limitesTailleInput.titre) return socket.emit('erreur')
@@ -209,6 +215,7 @@ export default function creerGestionnairesBlocs ({
 				if (vignettePersonnalisee && vignetteModifiee) {
 					await televerserFichierTemp(vignette, pad, donneesPad.acces)
 				}
+				await realignerACLFichiers(pad, donneesPad.acces, [media, vignettePersonnalisee ? vignette : ''])
 				const colonneStockee = definirColonneBloc(donneesBloc.colonne, parseJSON(donneesPad.colonnes, []).length)
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, type, source, identifiant, nom, modifie: date, couleur, colonne: colonneStockee, ...(activiteEnregistree ? { activiteId } : {}) }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
@@ -264,6 +271,7 @@ export default function creerGestionnairesBlocs ({
 					.HSET('pads:' + pad, 'bloc', blocId)
 					.HSET('dates-pads:' + pad, 'date', date)
 					.exec()
+				await realignerACLFichiers(pad, donneesPad.acces, contenu.fichiersCrees)
 				contenusANettoyer.length = 0
 				// Ajout dans le registre d'activité, seulement si la capsule n'est pas privée
 				const activiteEnregistree = (visibilite === 'visible' || visibilite === 'masquee')
@@ -337,6 +345,7 @@ export default function creerGestionnairesBlocs ({
 				if (vignettePersonnalisee && vignette !== '') {
 					await copierFichier(padOrigine, pad, vignette, 'vignette', donneesPad.acces)
 				}
+				await realignerACLFichiers(pad, donneesPad.acces, [media, (vignettePersonnalisee && vignette !== '') ? vignette : ''])
 				const blocDiffuse = definirBlocDiffuse({ bloc, titre, identifiant, nom, date, couleur, commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne, ...(activiteEnregistree ? { activiteId } : {}), type, source }, visibilite, { texte, media, alt, iframe, vignette }, donneesPad.contributions)
 				await ajouterUrlsFichiers(pad, blocDiffuse.complet, donneesPad.acces)
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonne)
@@ -362,55 +371,58 @@ export default function creerGestionnairesBlocs ({
 				if (!padValide) return socket.emit('erreur')
 				const autorisation = (donneesPad.id === pad && donneesPad.token === token && await verifierAdmin(pad, donneesPad, req.session) === true)
 				if (!autorisation) return socket.emit('nonautorise')
-				const blocExiste = await db.EXISTS('pad-' + pad + ':' + item.bloc)
-				if (blocExiste !== 1) return socket.emit('erreur')
-				const colonneBloc = definirColonneBloc(await db.HGET('pad-' + pad + ':' + item.bloc, 'colonne'), parseJSON(donneesPad.colonnes, []).length)
-				if (typeof item.titre === 'string' && item.titre.length > limitesTailleInput.titre) return socket.emit('erreur')
-				if (typeof item.texte === 'string' && item.texte.length > limitesTailleInput.texte) return socket.emit('erreur')
-				if (typeof item.iframe === 'string' && item.iframe.length > limitesTailleInput.iframe) return socket.emit('erreur')
-				if (typeof item.alt === 'string' && item.alt.length > limitesTailleInput.alt) return socket.emit('erreur')
+				if (!item || typeof item.bloc !== 'string') return socket.emit('erreur')
+				if (moderation !== 'privee' && moderation !== 'moderee') return socket.emit('erreur')
+				const bloc = item.bloc
+				let donneesBloc = await db.HGETALL('pad-' + pad + ':' + bloc)
+				donneesBloc = donneesBloc ? { ...donneesBloc } : {}
+				if (!donneesBloc.hasOwnProperty('bloc') || donneesBloc.bloc !== bloc) return socket.emit('erreur')
+				const visibiliteAttendue = (moderation === 'privee') ? 'privee' : 'masquee'
+				if (donneesBloc.visibilite !== visibiliteAttendue) return socket.emit('erreur')
+				const colonneBloc = definirColonneBloc(donneesBloc.colonne, parseJSON(donneesPad.colonnes, []).length)
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
-				if (item.hasOwnProperty('modifie')) {
-					await db.HDEL('pad-' + pad + ':' + item.bloc, 'modifie')
-				}
-				let nomUtilisateur
+				const nomAuteur = await recupererNomUtilisateur(donneesBloc.identifiant)
+				const activitePublication = parseInt(donneesBloc.activitePublication, 10)
+				const transaction = db.multi()
+					.HDEL('pad-' + pad + ':' + bloc, ['modifie', 'activitePublication'])
 				if (moderation === 'privee') {
-					await db.multi()
-						.HSET('pad-' + pad + ':' + item.bloc, ['visibilite', 'visible', 'date', date])
+					transaction
+						.HSET('pad-' + pad + ':' + bloc, ['visibilite', 'visible', 'date', date])
 						.HSET('dates-pads:' + pad, 'date', date)
 					// Enregistrer entrée du registre d'activité
 						.HINCRBY('pads:' + pad, 'activite', 1)
-						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: item.bloc, identifiant: item.identifiant, titre: item.titre, date: date, type: 'bloc-ajoute' }) }])
-						.exec()
-					nomUtilisateur = item.nom
+						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: donneesBloc.identifiant, titre: donneesBloc.titre, date: date, type: 'bloc-ajoute' }) }])
 				} else {
-					await db.multi()
-						.HSET('pad-' + pad + ':' + item.bloc, 'visibilite', 'visible')
+					transaction
+						.HSET('pad-' + pad + ':' + bloc, 'visibilite', 'visible')
 					// Enregistrer entrée du registre d'activité
 						.HINCRBY('pads:' + pad, 'activite', 1)
-						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: item.bloc, identifiant: identifiant, titre: item.titre, date: date, type: 'bloc-valide' }) }])
-						.exec()
-					nomUtilisateur = nom
+						.ZADD('activite:' + pad, [{ score: activiteId, value: JSON.stringify({ id: activiteId, bloc: bloc, identifiant: identifiant, titre: donneesBloc.titre, date: date, type: 'bloc-valide' }) }])
 				}
+				await transaction.exec()
 				const [commentairesMasques, evaluationsBrutes] = await Promise.all([
-					recupererCommentairesMasques(item.bloc),
-					db.ZRANGE('evaluations:' + item.bloc, 0, -1)
+					recupererCommentairesMasques(bloc),
+					db.ZRANGE('evaluations:' + bloc, 0, -1)
 				])
 				if (commentairesMasques === null) return socket.emit('erreur')
 				const commentairesAdmin = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, true, null)
 				const commentairesVisibles = recupererNombreCommentaires(commentairesMasques.totalCommentaires, commentairesMasques.identifiantsMasques, false, null, donneesPad.visibiliteCommentaires !== 'admin')
 				const listeEvaluations = (evaluationsBrutes || []).map(ev => parseJSON(ev, null)).filter(e => e !== null)
 				const evaluationsVisibles = (donneesPad.visibiliteEvaluations === 'admin') ? [] : listeEvaluations
-				const donneesBlocAutoriseBase = { bloc: item.bloc, titre: item.titre, texte: assainirHTML(item.texte), media: item.media, alt: item.alt || '', iframe: assainirIframe(item.iframe), type: item.type, source: item.source, vignette: item.vignette, identifiant: item.identifiant, nom: nomUtilisateur, date, couleur: item.couleur, colonne: colonneBloc, visibilite: 'visible', activiteId, moderation, admin: identifiant, indexBloc, indexBlocColonne }
+				let vignette = donneesBloc.vignette || ''
+				if (vignette !== '' && definirVignettePersonnalisee(vignette) === true) {
+					vignette = path.basename(vignette)
+				}
+				const donneesBlocAutoriseBase = { bloc, titre: donneesBloc.titre, texte: assainirHTML(donneesBloc.texte || ''), media: donneesBloc.media || '', alt: donneesBloc.alt || '', iframe: assainirIframe(donneesBloc.iframe || ''), type: donneesBloc.type, source: donneesBloc.source, vignette, identifiant: donneesBloc.identifiant, nom: nomAuteur, date, couleur: donneesBloc.couleur, colonne: colonneBloc, visibilite: 'visible', activiteId, moderation, admin: identifiant, nomAdmin: nom, indexBloc, indexBlocColonne }
 				await ajouterUrlsFichiers(pad, donneesBlocAutoriseBase, donneesPad.acces)
-				if (moderation === 'moderee' && item.activiteId) {
-					donneesBlocAutoriseBase.publication = { activiteId: item.activiteId, date: item.date, identifiant: item.identifiant, nom: item.nom }
+				if (moderation === 'moderee' && Number.isInteger(activitePublication)) {
+					donneesBlocAutoriseBase.publication = { activiteId: activitePublication, date: donneesBloc.date, identifiant: donneesBloc.identifiant, nom: nomAuteur }
 				}
 				const donneesBlocAutoriseAdmin = { ...donneesBlocAutoriseBase, ...commentairesAdmin, evaluations: listeEvaluations }
 				const donneesBlocAutorise = { ...donneesBlocAutoriseBase, ...commentairesVisibles, evaluations: evaluationsVisibles }
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), colonneBloc)
-				diffuserAdmin(pad, 'autoriserbloc', donneesBlocAutoriseAdmin, donneesBlocAutorise, { identifiantAuteur: item.identifiant, diffusionRestreinte: colonneMasquee })
+				diffuserAdmin(pad, 'autoriserbloc', donneesBlocAutoriseAdmin, donneesBlocAutorise, { identifiantAuteur: donneesBloc.identifiant, diffusionRestreinte: colonneMasquee })
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -488,7 +500,7 @@ export default function creerGestionnairesBlocs ({
 			}
 		})
 
-		socket.on('supprimerbloc', async (bloc, pad, token, titre, colonne, identifiant, nom) => {
+		socket.on('supprimerbloc', async (bloc, pad, token, titre, identifiant, nom) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {

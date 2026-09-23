@@ -138,7 +138,7 @@ async function demarrerServeur () {
 	const sessionMiddleware = session(sessionOptions)
 
 	if (production && process.env.AUTHORIZED_DOMAINS && process.env.AUTHORIZED_DOMAINS !== null && process.env.AUTHORIZED_DOMAINS !== '') {
-		domainesAutorises = process.env.AUTHORIZED_DOMAINS.split(',')
+		domainesAutorises = process.env.AUTHORIZED_DOMAINS.split(',').map(d => d.trim()).filter(d => d !== '')
 	} else {
 		domainesAutorises = '*'
 	}
@@ -573,6 +573,7 @@ async function demarrerServeur () {
 	initialiserSocket({
 		io,
 		db,
+		langues,
 		dureeSession,
 		dureeTransfertPropriete,
 		salonMaintenance,

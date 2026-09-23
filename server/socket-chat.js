@@ -22,6 +22,7 @@ export default function creerGestionnairesChat ({
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			try {
 				if (!await verifierAccesLecturePad(pad, req.session)) return socket.emit('nonautorise')
+				if (await db.HGET('pads:' + pad, 'conversation') !== 'activee') return socket.emit('nonautorise')
 				const date = dayjs().format()
 				io.to('pad-' + pad).emit('message', { texte: texte, identifiant: identifiant, nom: nom, date: date })
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)

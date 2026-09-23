@@ -12,6 +12,7 @@ import {
 export default function creerGestionnairesConnexion ({
 	io,
 	db,
+	langues,
 	dureeSession,
 	salonMaintenance,
 	trustProxy,
@@ -185,19 +186,20 @@ export default function creerGestionnairesConnexion ({
 			}
 		})
 
-		socket.on('modifiernom', async (pad, nom, statut, identifiant) => {
+		socket.on('modifiernom', async (pad, nom, identifiant) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
 			if (typeof nom !== 'string' || nom.length > 100) return socket.emit('erreur')
 			try {
 				if (!await verifierAccesLecturePad(pad, req.session)) return socket.emit('nonautorise')
-				if (statut === 'invite') {
+				if (await db.HGET('pads:' + pad, 'editionNom') !== 'activee') return socket.emit('nonautorise')
+				if (req.session.statut === 'invite') {
 					await db.HSET('noms:' + identifiant, 'nom', nom)
 					io.to('pad-' + pad).emit('modifiernom', nom, identifiant)
 					req.session.nom = nom
 					req.session.cookie.expires = new Date(Date.now() + dureeSession)
 					await sauvegarderSession(req)
-				} else if (statut === 'auteur') {
+				} else if (req.session.statut === 'auteur') {
 					await db.HSET('utilisateurs:' + identifiant, 'nom', nom)
 					io.to('pad-' + pad).emit('modifiernom', nom, identifiant)
 					req.session.nom = nom
@@ -211,6 +213,7 @@ export default function creerGestionnairesConnexion ({
 		})
 
 		socket.on('modifierlangue', async (langue) => {
+			if (typeof langue !== 'string' || !langues.includes(langue)) return socket.emit('erreur')
 			try {
 				req.session.langue = langue
 				await sauvegarderSession(req)

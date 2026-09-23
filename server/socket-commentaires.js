@@ -37,6 +37,7 @@ export default function creerGestionnairesCommentaires ({
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
+				if (donneesPad.commentaires !== 'actives') return socket.emit('nonautorise')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if ((donneesPad.accesCommentaires === 'admin' || donneesPad.visibiliteCommentaires === 'admin') && !admin) return socket.emit('nonautorise')
@@ -201,17 +202,22 @@ export default function creerGestionnairesCommentaires ({
 				if (donneesPad.visibiliteCommentaires === 'admin' && !admin) return socket.emit('nonautorise')
 				if (commentaireJSON.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
 				const date = dayjs().format()
+				const activitePublication = parseInt(commentaireJSON.activiteId, 10)
+				const publicationASupprimer = (commentaireJSON.visibilite === 'masquee' && Number.isInteger(activitePublication)) ? activitePublication : null
 				const pipelineSuppression = db.multi()
 					.ZREMRANGEBYSCORE('commentaires:' + bloc, id, id)
 					.HSET('dates-pads:' + pad, 'date', date)
 				if (commentaireJSON.visibilite === 'masquee') {
 					pipelineSuppression.ZREMRANGEBYSCORE('commentaires-masques:' + bloc, id, id)
 				}
+				if (publicationASupprimer !== null) {
+					pipelineSuppression.ZREMRANGEBYSCORE('activite:' + pad, publicationASupprimer, publicationASupprimer)
+				}
 				await pipelineSuppression.exec()
 				const commentairesMasques = await recupererCommentairesMasques(bloc)
 				if (commentairesMasques === null) return socket.emit('erreur')
 				const capsuleLisible = verifierCapsuleLisible(donneesPad, donneesBloc, false, null)
-				diffuserCommentaires(pad, 'supprimercommentaire', { id, bloc }, commentairesMasques, commentaireJSON.identifiant, null, donneesPad.visibiliteCommentaires !== 'admin', null, !capsuleLisible, donneesBloc.identifiant)
+				diffuserCommentaires(pad, 'supprimercommentaire', { id, bloc, ...(publicationASupprimer !== null ? { activitePublication: publicationASupprimer } : {}) }, commentairesMasques, commentaireJSON.identifiant, null, donneesPad.visibiliteCommentaires !== 'admin', null, !capsuleLisible, donneesBloc.identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {
@@ -253,10 +259,12 @@ export default function creerGestionnairesCommentaires ({
 		socket.on('evaluerbloc', async (bloc, pad, titre, etoiles, identifiant, nom) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!Number.isInteger(etoiles) || etoiles < 1 || etoiles > 5) return socket.emit('erreur')
 			try {
 				let donneesPad = await db.HGETALL('pads:' + pad)
 				donneesPad = donneesPad ? { ...donneesPad } : {}
 				if (!donneesPad.hasOwnProperty('activite')) return socket.emit('erreur')
+				if (donneesPad.evaluations !== 'activees') return socket.emit('nonautorise')
 				const admin = await verifierAdmin(pad, donneesPad, req.session)
 				if (!definirAccesLecture(pad, donneesPad, admin, req.session)) return socket.emit('nonautorise')
 				if ((donneesPad.accesEvaluations === 'admin' || donneesPad.visibiliteEvaluations === 'admin') && !admin) return socket.emit('nonautorise')
@@ -266,6 +274,9 @@ export default function creerGestionnairesCommentaires ({
 				const blocMasque = (donneesBloc.visibilite === 'masquee' || donneesBloc.visibilite === 'privee')
 				const colonneMasquee = verifierColonneMasquee(donneesPad, parseJSON(donneesPad.affichageColonnes, null), donneesBloc.colonne)
 				if ((blocMasque || colonneMasquee) && donneesBloc.identifiant !== identifiant && !admin) return socket.emit('nonautorise')
+				const evaluationsExistantes = await db.ZRANGE('evaluations:' + bloc, 0, -1)
+				if (evaluationsExistantes === null) return socket.emit('erreur')
+				if (evaluationsExistantes.some((ev) => parseJSON(ev, {}).identifiant === identifiant)) return socket.emit('erreur')
 				const date = dayjs().format()
 				const activiteId = parseInt(donneesPad.activite, 10) + 1
 				const evaluationId = parseInt(donneesBloc.evaluations, 10) + 1
@@ -298,6 +309,7 @@ export default function creerGestionnairesCommentaires ({
 		socket.on('modifierevaluation', async (bloc, pad, id, etoiles, identifiant) => {
 			if (etat.maintenance === true) return socket.emit('maintenance')
 			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			if (!Number.isInteger(etoiles) || etoiles < 1 || etoiles > 5) return socket.emit('erreur')
 			try {
 				let [entrees, donneesPad, donneesBloc] = await Promise.all([db.ZRANGEBYSCORE('evaluations:' + bloc, id, id), db.HGETALL('pads:' + pad), db.HGETALL('pad-' + pad + ':' + bloc)])
 				const evaluationJSON = parseJSON(entrees[0], false)

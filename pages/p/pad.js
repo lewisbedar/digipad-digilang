@@ -186,6 +186,9 @@ export default {
 		disabledAlt () {
 			return this.modale === '' && this.message === '' && !this.modaleConfirmation && !this.modaleDiaporama && !this.transcodage && !this.progressionEnregistrement ? false : true
 		},
+		panneauOuvert () {
+			return this.panneaux.length > 0
+		},
 		disabledModale () {
 			return this.message === '' && !this.modaleConfirmation && !this.transcodage && !this.progressionEnregistrement ? false : true
 		},
@@ -928,14 +931,20 @@ export default {
 		},
 		ajouterColonne (indexColonne) {
 			let titre = ''
-			if ((this.modale === 'colonne' && this.titreColonne === '') || (this.modale === '' && this.menuColonne === null)) {
+			if ((this.modale === 'colonne' && this.titreColonne.trim() === '') || (this.modale === '' && this.menuColonne === null)) {
 				return
 			}
 			if (this.menuColonne !== null) {
 				this.menuColonne = null
-				titre = this.$t('colonneSansTitre')
+				const titreParDefaut = this.$t('colonneSansTitre')
+				titre = titreParDefaut
+				let compteur = 2
+				while (this.pad.colonnes.includes(titre)) {
+					titre = titreParDefaut + ' (' + compteur + ')'
+					compteur++
+				}
 			} else {
-				titre = this.titreColonne
+				titre = this.titreColonne.trim()
 			}
 			this.chargement = true
 			this.$socket.emit('ajoutercolonne', this.pad.id, titre, indexColonne, this.identifiant, this.nom)
@@ -944,9 +953,9 @@ export default {
 			}
 		},
 		modifierColonne () {
-			if (this.titreColonne !== '') {
+			if (this.titreColonne.trim() !== '') {
 				this.chargement = true
-				this.$socket.emit('modifiertitrecolonne', this.pad.id, this.titreColonne, this.colonne, this.identifiant)
+				this.$socket.emit('modifiertitrecolonne', this.pad.id, this.titreColonne.trim(), this.colonne, this.identifiant)
 				this.fermerModaleColonne()
 			}
 		},
@@ -1019,7 +1028,7 @@ export default {
 		},
 		deplacerColonne (direction, colonne) {
 			this.chargement = true
-			this.$socket.emit('deplacercolonne', this.pad.id, this.pad.colonnes[colonne], this.pad.affichageColonnes[colonne], direction, colonne, this.identifiant, this.nom)
+			this.$socket.emit('deplacercolonne', this.pad.id, this.pad.colonnes[colonne], direction, colonne, this.identifiant, this.nom)
 		},
 		definirLargeurCapsules () {
 			switch (this.pad.largeur) {
@@ -1282,6 +1291,9 @@ export default {
 										this.chargementMedia = false
 									})
 								})
+								video.addEventListener('error', () => {
+									this.chargementMedia = false
+								})
 							})
 							break
 						case 'audio':
@@ -1291,6 +1303,9 @@ export default {
 									imagesLoaded('#vignette', () => {
 										this.chargementMedia = false
 									})
+								})
+								audio.addEventListener('error', () => {
+									this.chargementMedia = false
 								})
 							})
 							break
@@ -1402,7 +1417,7 @@ export default {
 				if (this.mode === 'creation') {
 					this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
 				} else {
-					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
+					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt)
 				}
 				this.progressionEnregistrement = false
 			}).catch((err) => {
@@ -1787,7 +1802,7 @@ export default {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
-				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
+				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1905,7 +1920,7 @@ export default {
 		supprimerBloc () {
 			this.modaleConfirmation = false
 			this.chargement = true
-			this.$socket.emit('supprimerbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.colonne, this.identifiant, this.nom)
+			this.$socket.emit('supprimerbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.identifiant, this.nom)
 		},
 		fermerModaleConfirmation () {
 			this.modaleConfirmation = false
@@ -2125,7 +2140,7 @@ export default {
 							iconfont: 'material-icons',
 							closeOnEscape: true,
 							border: '4px solid ' + item.couleur,
-							headerTitle: item.titre,
+							headerTitle: this.echapperHTML(item.titre),
 							position: position,
 							maximizedMargin: 0,
 							syncMargins: true,
@@ -2655,6 +2670,9 @@ export default {
 						audio.addEventListener('loadedmetadata', () => {
 							contenuCharge()
 						})
+						audio.addEventListener('error', () => {
+							contenuCharge()
+						})
 						if (audio.readyState >= 2) {
 							contenuCharge()
 						}
@@ -2664,6 +2682,9 @@ export default {
 					this.$nextTick(() => {
 						const video = document.querySelector('#diapositive video')
 						video.addEventListener('loadedmetadata', () => {
+							contenuCharge()
+						})
+						video.addEventListener('error', () => {
 							contenuCharge()
 						})
 						if (video.readyState >= 2) {
@@ -3679,7 +3700,7 @@ export default {
 		modifierNom () {
 			const nom = this.nomUtilisateur
 			if (nom !== '') {
-				this.$socket.emit('modifiernom', this.pad.id, nom, this.statut, this.identifiant)
+				this.$socket.emit('modifiernom', this.pad.id, nom, this.identifiant)
 				this.chargement = true
 				this.fermerModaleModifierNom()
 			}
@@ -4793,7 +4814,7 @@ export default {
 					if (donnees.publication && !this.activite.some((entree) => { return entree.id === donnees.publication.activiteId && entree.type === 'bloc-ajoute' })) {
 						this.activite.unshift({ id: donnees.publication.activiteId, bloc: donnees.bloc, identifiant: donnees.publication.identifiant, nom: donnees.publication.nom, titre: donnees.titre, date: donnees.publication.date, type: 'bloc-ajoute' })
 					}
-					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.admin, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-valide' })
+					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.admin, nom: donnees.nomAdmin, titre: donnees.titre, date: donnees.date, type: 'bloc-valide' })
 				} else {
 					this.activite.unshift({ id: donnees.activiteId, bloc: donnees.bloc, identifiant: donnees.identifiant, nom: donnees.nom, titre: donnees.titre, date: donnees.date, type: 'bloc-ajoute' })
 				}
@@ -4915,6 +4936,9 @@ export default {
 
 			this.$socket.on('supprimercommentaire', (donnees) => {
 				this.synchroniserCommentaires(donnees.bloc, donnees.commentaires, donnees.commentairesEnAttente)
+				if (donnees.activitePublication) {
+					this.activite = this.activite.filter((entree) => entree.id !== donnees.activitePublication)
+				}
 				if (!this.verifierModaleCommentaires(donnees.bloc)) return
 				const commentaires = this.commentaires
 				const indexCommentaire = commentaires.findIndex(commentaire => commentaire.id === donnees.id)
@@ -5079,7 +5103,7 @@ export default {
 
 			this.$socket.on('synchronisationfichiers', (acces) => {
 				this.chargement = false
-				this.empilerMessage(acces === 'public' ? this.$t('synchronisationFichiersEnCours') : this.$t('synchronisationFichiersFermetureEnCours'))
+				this.notification = acces === 'public' ? this.$t('synchronisationFichiersEnCours') : this.$t('synchronisationFichiersFermetureEnCours')
 			})
 
 			this.$socket.on('erreurfichiers', (nombre) => {
@@ -5568,6 +5592,11 @@ export default {
 				}
 				if (this.admin && this.identifiant === donnees.identifiant) {
 					this.notification = this.$t('colonneDeplacee')
+					const indexDeplacee = donnees.direction === 'gauche' ? colonne - 1 : colonne + 1
+					this.$nextTick(() => {
+						const menu = document.querySelectorAll('.menu-colonne')[indexDeplacee]
+						if (menu) (menu.querySelector('.' + donnees.direction) || menu.querySelector('.bouton'))?.focus()
+					})
 				} else {
 					if (this.modale === 'bloc' && parseInt(this.colonne, 10) === colonne && donnees.direction === 'gauche') {
 						this.colonne = colonne - 1
