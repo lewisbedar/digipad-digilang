@@ -14,7 +14,9 @@ import {
 	verifierDomaineEmail,
 	comparerHash,
 	verifierIdentifiantPad,
-	verifierNouveauMotDePasse
+	verifierNouveauMotDePasse,
+	verifierAffichageCompte,
+	verifierClassementCompte
 } from './fonctions.js'
 
 // Comptes utilisateurs : inscription, activation, connexion, profil, préférences et dossiers
@@ -543,6 +545,7 @@ export default function enregistrerRoutesComptes ({
 			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
 			if (!motdepasseCorrect) return res.status(401).send('non_connecte')
 			const affichage = req.body.affichage
+			if (!verifierAffichageCompte(affichage)) return res.status(400).send('affichage_invalide')
 			await db.HSET('utilisateurs:' + identifiant, 'affichage', affichage)
 			res.status(200).send('affichage_modifie')
 		} catch (err) {
@@ -565,6 +568,7 @@ export default function enregistrerRoutesComptes ({
 			const motdepasseCorrect = comparerHash(req.session.motdepasse, donneesUtilisateur.motdepasse)
 			if (!motdepasseCorrect) return res.status(401).send('non_connecte')
 			const classement = req.body.classement
+			if (!verifierClassementCompte(classement)) return res.status(400).send('classement_invalide')
 			await db.HSET('utilisateurs:' + identifiant, 'classement', classement)
 			req.session.classement = classement
 			res.status(200).send('classement_modifie')
