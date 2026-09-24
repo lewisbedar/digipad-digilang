@@ -95,6 +95,29 @@ function verifierNouveauMotDePasse (motdepasse) {
 	return typeof motdepasse === 'string' && motdepasse.trim().length >= longueurMinMotDePasse
 }
 
+const valeursAffichageCompte = ['liste', 'mosaique']
+const valeursClassementCompte = ['date-asc', 'date-desc', 'alpha-asc', 'alpha-desc']
+
+function verifierAffichageCompte (affichage) {
+	return valeursAffichageCompte.includes(affichage)
+}
+
+function verifierClassementCompte (classement) {
+	return valeursClassementCompte.includes(classement)
+}
+
+const champsSecretsMasques = ['motdepasse', 'motdepassetemp']
+const masqueSecret = '*****'
+
+function masquerSecrets (donnees) {
+	if (!donnees || typeof donnees !== 'object') return donnees
+	const copie = { ...donnees }
+	for (const champ of champsSecretsMasques) {
+		if (Object.hasOwn(copie, champ) && copie[champ] !== '') copie[champ] = masqueSecret
+	}
+	return copie
+}
+
 function verifierTitreColonne (titre) {
 	return typeof titre === 'string' && titre.trim() !== '' && titre.length <= limitesTailleInput.titre
 }
@@ -726,8 +749,9 @@ const extensionsTeleversementParDefaut = '.jpg,.jpeg,.png,.gif,.mp4,.m4v,.mp3,.m
 function normaliserExtensions (liste) {
 	return new Set(String(liste || '')
 		.split(',')
-		.map((extension) => extension.trim().toLowerCase().replace(/^\./, ''))
-		.filter((extension) => extension !== ''))
+		.map((extension) => extension.trim().toLowerCase())
+		.map((extension) => extension.substring(extension.lastIndexOf('.') + 1))
+		.filter((extension) => /^[a-z0-9]+$/.test(extension)))
 }
 
 function definirExtensionsAutorisees (liste) {
@@ -838,6 +862,12 @@ export {
 	verifierMotDePasseSaisi,
 	verifierNouveauMotDePasse,
 	longueurMinMotDePasse,
+	verifierAffichageCompte,
+	verifierClassementCompte,
+	valeursAffichageCompte,
+	valeursClassementCompte,
+	masquerSecrets,
+	masqueSecret,
 	verifierTitreColonne,
 	verifierTitreColonneDisponible,
 	definirTitreColonneDisponible,
