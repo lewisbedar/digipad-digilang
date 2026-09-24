@@ -664,7 +664,7 @@
 }
 
 #media .supprimer {
-	margin-top: 1.5rem;
+	margin-top: 15px;
 	background: #ff6259;
 }
 
@@ -673,8 +673,8 @@
 }
 
 #media .supprimer + .convertir {
-	margin-top: 1.5rem;
-	margin-left: 1.5rem;
+	margin-top: 15px;
+	margin-left: 15px;
 }
 
 #media .info {
@@ -683,7 +683,7 @@
 }
 
 #vignette {
-	margin-bottom: 1.5rem;
+	margin-bottom: 15px;
 }
 
 #vignette img {
@@ -694,10 +694,14 @@
 	text-align: left;
 }
 
+#recherche {
+	margin-bottom: 20px;
+}
+
 #recherche #resultats {
 	width: 100%;
 	overflow: hidden;
-	margin-top: 2rem;
+	margin-top: 20px;
 }
 
 #recherche #resultats .item {
@@ -1617,28 +1621,6 @@
 	}
 }
 
-@media screen and (max-width: 399px) {
-	.televerser.vignette .bouton,
-	#media .supprimer,
-	#media .convertir {
-		width: 100%;
-		margin-left: 0!important;
-	}
-
-	#media .supprimer {
-		margin-bottom: 1.5rem;
-	}
-
-	#media .supprimer,
-	#media .convertir {
-		width: 100%;
-	}
-
-	#media .supprimer + .convertir {
-		margin-top: 0;
-	}
-}
-
 @media screen and (orientation: landscape) and (max-height: 479px) {
 	#modale-motdepasse {
 		height: 90%;
@@ -1652,6 +1634,18 @@
 		height: 100%;
 		max-height: 100%;
 		border-radius: 0;
+	}
+
+	.televerser.vignette .bouton,
+	#media .supprimer,
+	#media .convertir {
+		width: 100%;
+		margin-left: 0!important;
+	}
+
+	#media .supprimer,
+	#media .convertir {
+		width: 100%;
 	}
 }
 
