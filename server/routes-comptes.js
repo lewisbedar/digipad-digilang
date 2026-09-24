@@ -13,7 +13,8 @@ import {
 	verifierFormatEmail,
 	verifierDomaineEmail,
 	comparerHash,
-	verifierIdentifiantPad
+	verifierIdentifiantPad,
+	verifierNouveauMotDePasse
 } from './fonctions.js'
 
 // Comptes utilisateurs : inscription, activation, connexion, profil, préférences et dossiers
@@ -55,6 +56,7 @@ export default function enregistrerRoutesComptes ({
 			if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return res.status(400).send('identifiant_invalide')
 			const motdepasse = typeof req.body.motdepasse === 'string' ? req.body.motdepasse.trim() : ''
 			if (motdepasse === '') return res.status(400).send('motdepasse_invalide')
+			if (!verifierNouveauMotDePasse(motdepasse)) return res.status(400).send('motdepasse_trop_court')
 			const emailBrut = req.body.email
 			if (typeof emailBrut !== 'string' || !verifierFormatEmail(emailBrut)) return res.status(400).send('erreur')
 			const email = emailBrut.trim().toLowerCase()
@@ -414,6 +416,7 @@ export default function enregistrerRoutesComptes ({
 			if (!donneesUtilisateur.hasOwnProperty('motdepasse')) return res.status(500).send('erreur')
 			const motdepasse = req.body.motdepasse
 			const nouveaumotdepasse = req.body.nouveaumotdepasse
+			if (!verifierNouveauMotDePasse(nouveaumotdepasse)) return res.status(400).send('motdepasse_trop_court')
 			if (motdepasse.trim() !== '' && nouveaumotdepasse.trim() !== '' && donneesUtilisateur.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse.trim(), donneesUtilisateur.motdepasse)) {
 				const hash = await bcrypt.hash(nouveaumotdepasse.trim(), 10)
 				await db.HSET('utilisateurs:' + identifiant, 'motdepasse', hash)

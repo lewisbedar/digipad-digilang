@@ -44,6 +44,7 @@
 						<input id="champ-titre-pad" type="text" maxlength="48" :value="titre" :disabled="disabledModale" @input="titre = $event.target.value">
 						<label for="champ-motdepasse-pad">{{ $t('motDePassePad') }}</label>
 						<p class="information">{{ $t('infoMotDePassePad') }}</p>
+						<p class="information">{{ $t('infoMotDePasse') }}</p>
 						<div class="conteneur-motdepasse">
 							<input id="champ-motdepasse-pad" type="password" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-if="!motDePasseVisible">
 							<input id="champ-motdepasse-pad-texte" type="text" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-else>
@@ -273,6 +274,10 @@ export default {
 			})
 		},
 		creerPad () {
+			if (this.titre.trim() !== '' && this.motDePassePad.trim() !== '' && this.motDePassePad.trim().length < 8) {
+				this.message = this.$t('motDePasseTropCourt')
+				return
+			}
 			if (this.titre.trim() !== '' && this.motDePassePad.trim() !== '') {
 				this.chargement = true
 				axios.post(this.hote + '/api/creer-pad-sans-compte', {
@@ -285,6 +290,8 @@ export default {
 					this.chargement = false
 					if (err.response?.status === 429) {
 						this.message = this.$t('erreurTentativesNombreuses')
+					} else if (err.response?.data === 'motdepasse_trop_court') {
+						this.message = this.$t('motDePasseTropCourt')
 					} else if (err.response?.data === 'titre_invalide' || err.response?.data === 'motdepasse_invalide') {
 						this.message = this.$t('remplirChamps')
 					} else if (err.response?.data === 'erreur_creation') {
@@ -348,6 +355,10 @@ export default {
 			const identifiant = this.identifiant.trim()
 			const motdepasse = this.motDePasse.trim()
 			const email = this.email.trim()
+			if (identifiant !== '' && motdepasse !== '' && motdepasse.length < 8) {
+				this.message = this.$t('motDePasseTropCourt')
+				return
+			}
 			if (identifiant !== '' && this.verifierIdentifiant(identifiant) === true && motdepasse !== '' && motdepasse === this.confirmationMotDePasse.trim() && email !== '' && this.$verifierEmail(email) === true) {
 				this.chargement = true
 				axios.post(this.hote + '/api/inscription', {
@@ -373,6 +384,8 @@ export default {
 						this.message = this.$t('identifiantExisteDeja', { identifiant: identifiant })
 					} else if (err.response?.data === 'email_existe_deja') {
 						this.message = this.$t('emailExisteDeja', { email: email })
+					} else if (err.response?.data === 'motdepasse_trop_court') {
+						this.message = this.$t('motDePasseTropCourt')
 					} else if (err.response?.data === 'identifiant_invalide') {
 						this.message = this.$t('identifiantNonConforme')
 					} else if (err.response?.data === 'email_invalide') {

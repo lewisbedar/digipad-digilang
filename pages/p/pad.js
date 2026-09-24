@@ -3769,6 +3769,10 @@ export default {
 		modifierMotDePasse () {
 			const motDePasse = this.motDePasse
 			const nouveauMotDePasse = this.nouveauMotDePasse
+			if (nouveauMotDePasse !== '' && nouveauMotDePasse.length < 8) {
+				this.message = this.$t('motDePasseTropCourt')
+				return
+			}
 			if (motDePasse !== '' && nouveauMotDePasse !== '') {
 				this.modale = ''
 				this.chargement = true
@@ -3785,6 +3789,8 @@ export default {
 					this.chargement = false
 					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
+					} else if (err.response?.data === 'motdepasse_trop_court') {
+						this.message = this.$t('motDePasseTropCourt')
 					} else if (err.response?.data === 'motdepasse_incorrect') {
 						this.message = this.$t('motDePasseActuelPasCorrect')
 					} else {

@@ -13,6 +13,7 @@ import {
 	verifierIdentifiantPad,
 	verifierTitre,
 	verifierMotDePasseSaisi,
+	verifierNouveauMotDePasse,
 	definirModeration,
 	definirParametresModeration,
 	champsPadsClient,
@@ -141,6 +142,7 @@ export default function enregistrerRoutesPads ({
 		if (creationPadSansCompte !== 1) return res.status(401).send('non_connecte')
 		if (!verifierTitre(req.body.titre)) return res.status(400).send('titre_invalide')
 		if (!verifierMotDePasseSaisi(req.body.motdepasse)) return res.status(400).send('motdepasse_invalide')
+		if (!verifierNouveauMotDePasse(req.body.motdepasse)) return res.status(400).send('motdepasse_trop_court')
 		let identifiant, nom
 		if (!req.session.identifiant || !/^u[0-9a-f]{8,13}$/.test(req.session.identifiant)) {
 			identifiant = 'u' + Math.random().toString(16).slice(3)
@@ -272,6 +274,7 @@ export default function enregistrerRoutesPads ({
 			}
 			const motdepasse = req.body.motdepasse
 			const nouveaumotdepasse = req.body.nouveaumotdepasse
+			if (!verifierNouveauMotDePasse(nouveaumotdepasse)) return res.status(400).send('motdepasse_trop_court')
 			if (motdepasse.trim() !== '' && nouveaumotdepasse.trim() !== '' && donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '' && await bcrypt.compare(motdepasse, donneesPad.motdepasse)) {
 				const hash = await bcrypt.hash(nouveaumotdepasse, 10)
 				await db.HSET('pads:' + pad, 'motdepasse', hash)

@@ -421,9 +421,9 @@
 				</div>
 				<div class="conteneur">
 					<div class="contenu">
-						<div class="message" v-html="$t('texteSuppressionCompte')" />
-						<label for="champ-motdepasse-suppression-compte">{{ $t('motDePasseActuel') }}</label>
-						<input id="champ-motdepasse-suppression-compte" type="password" maxlength="48" :value="motDePasseCompte" :disabled="disabledModale" @input="motDePasseCompte = $event.target.value" @keydown.enter="supprimerCompte">
+						<div class="message" v-html="$t('texteSuppressionCompte')" v-if="!chargementModale" />
+						<label for="champ-motdepasse-suppression-compte" v-if="!chargementModale">{{ $t('motDePasseActuel') }}</label>
+						<input id="champ-motdepasse-suppression-compte" type="password" maxlength="48" :value="motDePasseCompte" :disabled="disabledModale" @input="motDePasseCompte = $event.target.value" @keydown.enter="supprimerCompte" v-if="!chargementModale">
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="supprimerCompte" v-if="!chargementModale">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
@@ -1704,6 +1704,10 @@ export default {
 			const motDePasse = this.motDePasse
 			const nouveauMotDePasse = this.nouveauMotDePasse.trim()
 			const confirmationNouveauMotDePasse = this.confirmationNouveauMotDePasse.trim()
+			if (nouveauMotDePasse !== '' && nouveauMotDePasse.length < 8) {
+				this.message = this.$t('motDePasseTropCourt')
+				return
+			}
 			if (nouveauMotDePasse === confirmationNouveauMotDePasse && nouveauMotDePasse !== '') {
 				this.modale = ''
 				this.chargement = true
@@ -1720,6 +1724,8 @@ export default {
 					this.fermerModaleMotDePasse()
 					if (err.response?.data === 'non_connecte') {
 						window.location.replace('/')
+					} else if (err.response?.data === 'motdepasse_trop_court') {
+						this.message = this.$t('motDePasseTropCourt')
 					} else if (err.response?.data === 'motdepasse_incorrect') {
 						this.message = this.$t('motDePasseActuelPasCorrect')
 					} else {

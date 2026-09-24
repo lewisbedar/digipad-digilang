@@ -24,6 +24,9 @@ const tailleLotTransaction = 10
 // Nombre maximum d'administrateurs d'un pad
 const nombreMaxAdmins = 50
 
+// Longueur minimale d'un nouveau mot de passe de compte ou de pad
+const longueurMinMotDePasse = 8
+
 function obtenirCleEchecConnexion (identifiant, ip) {
 	if (typeof identifiant !== 'string' || !identifiant.match(/^[\w-]+$/)) return null
 	const adresse = typeof ip === 'string' && ip !== '' ? ip : 'inconnu'
@@ -82,6 +85,10 @@ function verifierTitre (titre) {
 
 function verifierMotDePasseSaisi (motdepasse) {
 	return typeof motdepasse === 'string' && motdepasse.trim() !== ''
+}
+
+function verifierNouveauMotDePasse (motdepasse) {
+	return typeof motdepasse === 'string' && motdepasse.trim().length >= longueurMinMotDePasse
 }
 
 function verifierTitreColonne (titre) {
@@ -784,6 +791,8 @@ export {
 	genererCodeAcces,
 	verifierTitre,
 	verifierMotDePasseSaisi,
+	verifierNouveauMotDePasse,
+	longueurMinMotDePasse,
 	verifierTitreColonne,
 	verifierTitreColonneDisponible,
 	definirTitreColonneDisponible,
