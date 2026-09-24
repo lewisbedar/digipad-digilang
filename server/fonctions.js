@@ -18,6 +18,9 @@ dayjs.extend(localizedFormat)
 // Pour validation des chaînes dans ajouterbloc et modifierbloc
 const limitesTailleInput = { titre: 100, texte: 10_000, iframe: 2000, alt: 250, code: 18 }
 
+// Limites appliquées aux étiquettes d'une capsule
+const limitesEtiquettes = { nombre: 10, nom: 32 }
+
 // Nombre maximum d'opérations asynchrones simultanées dans executerTransactions
 const tailleLotTransaction = 10
 
@@ -41,6 +44,7 @@ function definirBlocDiffuse (champsBase, visibilite, contenu, contributions) {
 	}
 	const blocReduit = { ...champsBase, visibilite }
 	delete blocReduit.titre
+	delete blocReduit.etiquettes
 	delete blocReduit.type
 	delete blocReduit.source
 	delete blocReduit.identifiant
@@ -209,7 +213,7 @@ function definirIndicesColonnesExport (pad) {
 }
 
 function definirDonneesPadExport (pad) {
-	const champs = ['titre', 'affichage', 'ordre', 'largeur', 'colonnes', 'fond', 'fondRepete', 'commentaires', 'evaluations']
+	const champs = ['titre', 'affichage', 'ordre', 'largeur', 'colonnes', 'fond', 'fondRepete', 'commentaires', 'evaluations', 'etiquettes']
 	const donneesPadExport = {}
 	champs.forEach((champ) => {
 		if (pad.hasOwnProperty(champ)) donneesPadExport[champ] = pad[champ]
@@ -237,7 +241,7 @@ function definirFichiersExport (blocs) {
 function definirBlocsExport (blocs, pad) {
 	const commentairesVisibles = pad.visibiliteCommentaires !== 'admin'
 	const evaluationsVisibles = pad.visibiliteEvaluations !== 'admin'
-	const champs = ['bloc', 'titre', 'texte', 'media', 'alt', 'iframe', 'type', 'source', 'vignette', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
+	const champs = ['bloc', 'titre', 'texte', 'media', 'alt', 'iframe', 'type', 'source', 'vignette', 'etiquettes', 'colonne', 'couleur', 'identifiant', 'nom', 'info']
 	const indicesColonnes = definirIndicesColonnesExport(pad)
 	const nombreColonnes = parseJSON(pad.colonnes, []).length
 	const colonneMasquee = creerFiltreColonneMasquee(pad, pad.affichageColonnes)
@@ -622,6 +626,25 @@ function assainirIframe (html) {
 	return html.replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '').replace(/src\s*=\s*(?:"(javascript|vbscript|data):[^"]*"|'(javascript|vbscript|data):[^']*'|(javascript|vbscript|data):[^\s>]*)/gi, '')
 }
 
+function assainirEtiquettes (etiquettes) {
+	if (typeof etiquettes === 'string') etiquettes = parseJSON(etiquettes, [])
+	if (!Array.isArray(etiquettes)) return []
+	const liste = []
+	const nomsUtilises = new Set()
+	etiquettes.forEach((etiquette) => {
+		if (!etiquette || typeof etiquette !== 'object') return
+		if (typeof etiquette.nom !== 'string' || typeof etiquette.couleur !== 'string') return
+		const nom = etiquette.nom.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().substring(0, limitesEtiquettes.nom)
+		const couleur = etiquette.couleur.trim().toLowerCase()
+		if (nom === '' || !/^#[0-9a-f]{6}$/.test(couleur)) return
+		const cle = nom.toLowerCase()
+		if (nomsUtilises.has(cle)) return
+		nomsUtilises.add(cle)
+		liste.push({ nom, couleur })
+	})
+	return liste.slice(0, limitesEtiquettes.nombre)
+}
+
 function assainirTexteAlternatif (alt) {
 	if (!alt || typeof alt !== 'string') return ''
 	return alt.replace(/[<>]/g, '').trim().substring(0, limitesTailleInput.alt)
@@ -846,6 +869,8 @@ export {
 	assainirHTML,
 	assainirIframe,
 	assainirTexteAlternatif,
+	assainirEtiquettes,
+	limitesEtiquettes,
 	executerTransactions,
 	parseJSON,
 	comparerHash,

@@ -14,6 +14,7 @@ import genererHTML from './genererHTML.js'
 import { etat } from './etat.js'
 import {
 	assainirTexteAlternatif,
+	assainirEtiquettes,
 	comparerHash,
 	definirAccesLecture,
 	definirBlocsDeplaces,
@@ -106,7 +107,7 @@ export default function creerFonctions ({
 
 	async function creerPad (id, token, titre, date, identifiant, destination, donneesUtilisateur) {
 		await db.multi()
-			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0, ...definirParametresModeration()])
+			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'etiquettes', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'admins', JSON.stringify([]), 'vues', 0, 'digidrive', 0, ...definirParametresModeration()])
 			.SADD('pads-crees:' + identifiant, id.toString())
 			.SADD('utilisateurs-pads:' + id, identifiant)
 			.HSET('dates-pads:' + id, 'date', date)
@@ -126,7 +127,7 @@ export default function creerFonctions ({
 				await db.HSET('utilisateurs:' + identifiant, 'dossiers', JSON.stringify(dossiers))
 			} catch {}
 		}
-		return { id, token, titre, identifiant, fond: '/img/fond1.png', acces: 'public', contributions: 'ouvertes', affichage: 'mur', registreActivite: 'active', conversation: 'desactivee', listeUtilisateurs: 'activee', editionNom: 'desactivee', fichiers: 'actives', enregistrements: 'desactives', liens: 'actives', documents: 'desactives', commentaires: 'desactives', evaluations: 'desactivees', copieBloc: 'desactivee', ordre: 'croissant', largeur: 'normale', date, colonnes: [], affichageColonnes: [], bloc: 0, activite: 0, admins: [], vues: 0, ...definirModeration() }
+		return { id, token, titre, identifiant, fond: '/img/fond1.png', acces: 'public', contributions: 'ouvertes', affichage: 'mur', registreActivite: 'active', conversation: 'desactivee', listeUtilisateurs: 'activee', editionNom: 'desactivee', fichiers: 'actives', enregistrements: 'desactives', liens: 'actives', documents: 'desactives', commentaires: 'desactives', evaluations: 'desactivees', etiquettes: 'desactivees', copieBloc: 'desactivee', ordre: 'croissant', largeur: 'normale', date, colonnes: [], affichageColonnes: [], bloc: 0, activite: 0, admins: [], vues: 0, ...definirModeration() }
 	}
 
 	async function creerPadSansCompte (id, token, titre, hash, date, identifiant, nom, langue, type) {
@@ -135,7 +136,7 @@ export default function creerFonctions ({
 			digidrive = 1
 		}
 		await db.multi()
-			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'vues', 0, 'digidrive', digidrive, ...definirParametresModeration()])
+			.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', '/img/fond1.png', 'acces', 'public', 'contributions', 'ouvertes', 'affichage', 'mur', 'registreActivite', 'active', 'conversation', 'desactivee', 'listeUtilisateurs', 'activee', 'editionNom', 'desactivee', 'fichiers', 'actives', 'enregistrements', 'desactives', 'liens', 'actives', 'documents', 'desactives', 'commentaires', 'desactives', 'evaluations', 'desactivees', 'etiquettes', 'desactivees', 'copieBloc', 'desactivee', 'ordre', 'croissant', 'largeur', 'normale', 'date', date, 'colonnes', JSON.stringify([]), 'affichageColonnes', JSON.stringify([]), 'bloc', 0, 'activite', 0, 'vues', 0, 'digidrive', digidrive, ...definirParametresModeration()])
 			.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
 			.exec()
 		if (type === 'api') {
@@ -160,7 +161,7 @@ export default function creerFonctions ({
 			if (!clesRequisesBloc.every(cle => bloc.hasOwnProperty(cle))) continue
 			const visibilite = bloc.visibilite ?? 'visible'
 			const cleRedisBloc = 'pad-' + id + ':' + bloc.bloc
-			const donneesBloc = ['id', bloc.id, 'bloc', bloc.bloc, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', bloc.date, 'identifiant', bloc.identifiant, 'commentaires', bloc.commentaires, 'evaluations', bloc.evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite]
+			const donneesBloc = ['id', bloc.id, 'bloc', bloc.bloc, 'titre', bloc.titre, 'texte', bloc.texte, 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', bloc.iframe, 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'etiquettes', JSON.stringify(assainirEtiquettes(bloc.etiquettes)), 'date', bloc.date, 'identifiant', bloc.identifiant, 'commentaires', bloc.commentaires, 'evaluations', bloc.evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite]
 			pipeline.HSET(cleRedisBloc, donneesBloc)
 			pipeline.ZADD('blocs:' + id, [{ score: indexBloc, value: bloc.bloc }])
 			if (Array.isArray(bloc.listeCommentaires)) {
@@ -189,6 +190,7 @@ export default function creerFonctions ({
 		const largeur = donnees.pad.largeur ?? 'normale'
 		const enregistrements = donnees.pad.enregistrements ?? 'desactives'
 		const copieBloc = donnees.pad.copieBloc ?? 'desactivee'
+		const etiquettes = donnees.pad.etiquettes ?? 'desactivees'
 		const vues = donnees.pad.vues ?? 0
 		const digidrive = donnees.pad.digidrive ?? 0
 		// Correction bug update 0.9.0 : admins corrompus
@@ -200,7 +202,7 @@ export default function creerFonctions ({
 		}
 		const colonnesImportees = JSON.stringify(normaliserTitresColonnes(parseJSON(donnees.pad.colonnes, [])))
 		const affichageColonnes = JSON.stringify(normaliserAffichageColonnes(parseJSON(donnees.pad.colonnes, []), parseJSON(donnees.pad.affichageColonnes, null)))
-		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', colonnesImportees, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'activiteColonne', 0, 'vues', vues, 'digidrive', digidrive, ...definirParametresModeration(donnees.pad)]
+		const champsPad = ['id', id, 'token', donnees.pad.token, 'titre', donnees.pad.titre, 'identifiant', donnees.pad.identifiant, 'fond', donnees.pad.fond, 'acces', donnees.pad.acces, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'etiquettes', etiquettes, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', donnees.pad.date, 'colonnes', colonnesImportees, 'affichageColonnes', affichageColonnes, 'bloc', donnees.pad.bloc, 'activite', donnees.pad.activite, 'admins', admins, 'activiteColonne', 0, 'vues', vues, 'digidrive', digidrive, ...definirParametresModeration(donnees.pad)]
 		if (donnees.pad.hasOwnProperty('motdepasse')) {
 			champsPad.push('motdepasse', donnees.pad.motdepasse)
 		}
@@ -337,6 +339,7 @@ export default function creerFonctions ({
 		// Valeurs par défaut et compatibilité
 		if (!pad.hasOwnProperty('digidrive')) pad.digidrive = 0
 		if (!pad.hasOwnProperty('fondRepete')) pad.fondRepete = 'desactive'
+		if (!pad.hasOwnProperty('etiquettes')) pad.etiquettes = 'desactivees'
 		if (!pad.hasOwnProperty('ordre')) pad.ordre = 'croissant'
 		if (!pad.hasOwnProperty('largeur')) pad.largeur = 'normale'
 		if (!pad.hasOwnProperty('enregistrements')) pad.enregistrements = 'desactives'
@@ -390,6 +393,7 @@ export default function creerFonctions ({
 					if (!bloc.hasOwnProperty('couleur') || bloc.couleur === null || typeof bloc.couleur !== 'string') {
 						bloc.couleur = '#242f3d'
 					}
+					bloc.etiquettes = (pad.etiquettes === 'activees') ? parseJSON(bloc.etiquettes, []) : []
 					let html = bloc.texte || ''
 					html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 					html = html.replace(/style=".*?"/mg, '').replace(/class=".*?"/mg, '')
@@ -482,6 +486,7 @@ export default function creerFonctions ({
 		// Valeurs par défaut et compatibilité
 		if (!pad.hasOwnProperty('digidrive')) pad.digidrive = 0
 		if (!pad.hasOwnProperty('fondRepete')) pad.fondRepete = 'desactive'
+		if (!pad.hasOwnProperty('etiquettes')) pad.etiquettes = 'desactivees'
 		if (!pad.hasOwnProperty('ordre')) pad.ordre = 'croissant'
 		if (!pad.hasOwnProperty('largeur')) pad.largeur = 'normale'
 		if (!pad.hasOwnProperty('enregistrements')) pad.enregistrements = 'desactives'
@@ -526,6 +531,7 @@ export default function creerFonctions ({
 				if (!bloc.hasOwnProperty('couleur') || bloc.couleur === null || typeof bloc.couleur !== 'string') {
 					bloc.couleur = '#242f3d'
 				}
+				bloc.etiquettes = (pad.etiquettes === 'activees') ? parseJSON(bloc.etiquettes, []) : []
 				let html = bloc.texte || ''
 				html = v.stripTags(html, ['b', 'i', 'u', 'strike', 'a', 'br', 'div', 'font', 'ul', 'ol', 'li'])
 				html = html.replace(/style=".*?"/mg, '').replace(/class=".*?"/mg, '')
@@ -829,6 +835,7 @@ export default function creerFonctions ({
 					}
 					bloc.evaluations = listeEvaluations.length
 					bloc.listeEvaluations = listeEvaluations
+					bloc.etiquettes = parseJSON(bloc.etiquettes, [])
 					const nomUtilisateur = await recupererNomUtilisateur(bloc.identifiant, nomsUtilisateurs)
 					bloc.nom = nomUtilisateur || genererPseudo()
 					bloc.info = formaterDate(bloc, langue)

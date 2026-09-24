@@ -26,6 +26,7 @@ import {
 	assainirHTML,
 	assainirIframe,
 	assainirTexteAlternatif,
+	assainirEtiquettes,
 	executerTransactions,
 	parseJSON,
 	normaliserAffichageColonnes,
@@ -421,7 +422,7 @@ export default function enregistrerRoutesPads ({
 					infosBloc.vignette = path.basename(infosBloc.vignette)
 				}
 				const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
-				const champsBloc = ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'alt', assainirTexteAlternatif(infosBloc.alt), 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d']
+				const champsBloc = ['id', infosBloc.id, 'bloc', blocId, 'titre', infosBloc.titre, 'texte', infosBloc.texte, 'media', infosBloc.media, 'alt', assainirTexteAlternatif(infosBloc.alt), 'iframe', infosBloc.iframe, 'type', infosBloc.type, 'source', infosBloc.source, 'vignette', infosBloc.vignette || '', 'etiquettes', JSON.stringify(assainirEtiquettes(infosBloc.etiquettes)), 'date', date, 'identifiant', infosBloc.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', infosBloc.colonne, 'visibilite', infosBloc.visibilite || 'visible', 'couleur', infosBloc.couleur || '#242f3d']
 				return { index, blocId, champsBloc }
 			}, tailleLotTransaction)
 			const pipelineBlocsDupliques = db.multi()
@@ -432,7 +433,7 @@ export default function enregistrerRoutesPads ({
 			}
 			await pipelineBlocsDupliques.exec()
 			// Création des métadonnées du pad
-			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
+			const champsPad = ['id', nId, 'token', token, 'titre', 'Copie de ' + donneesPadSource.titre, 'identifiant', identifiant, 'fond', donneesPadSource.fond, 'acces', donneesPadSource.acces, 'contributions', donneesPadSource.contributions, 'affichage', donneesPadSource.affichage, 'registreActivite', donneesPadSource.registreActivite || 'active', 'conversation', donneesPadSource.conversation || 'desactivee', 'listeUtilisateurs', donneesPadSource.listeUtilisateurs || 'activee', 'editionNom', donneesPadSource.editionNom || 'desactivee', 'fichiers', donneesPadSource.fichiers, 'enregistrements', donneesPadSource.enregistrements || 'desactives', 'liens', donneesPadSource.liens, 'documents', donneesPadSource.documents, 'commentaires', donneesPadSource.commentaires, 'evaluations', donneesPadSource.evaluations, 'etiquettes', donneesPadSource.etiquettes || 'desactivees', 'copieBloc', donneesPadSource.copieBloc || 'desactivee', 'ordre', donneesPadSource.ordre || 'croissant', 'largeur', donneesPadSource.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPadSource.bloc, 'activite', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donneesPadSource)]
 			// Ajout du code d'accès seulement s'il existait dans l'original
 			if (donneesPadSource.hasOwnProperty('code')) {
 				champsPad.push('code', code)
@@ -457,7 +458,7 @@ export default function enregistrerRoutesPads ({
 					}
 				}
 			}
-			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, fondUrl: await definirUrlFond(nId, donneesPadSource.fond, donneesPadSource.acces), acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
+			return res.status(200).json(filtrerChamps({ id: nId, token, titre: 'Copie de ' + donneesPadSource.titre, identifiant, fond: donneesPadSource.fond, fondUrl: await definirUrlFond(nId, donneesPadSource.fond, donneesPadSource.acces), acces: donneesPadSource.acces, code: donneesPadSource.hasOwnProperty('code') ? code : undefined, contributions: donneesPadSource.contributions, affichage: donneesPadSource.affichage, registreActivite: donneesPadSource.registreActivite || 'active', conversation: donneesPadSource.conversation || 'desactivee', listeUtilisateurs: donneesPadSource.listeUtilisateurs || 'activee', editionNom: donneesPadSource.editionNom || 'desactivee', fichiers: donneesPadSource.fichiers, enregistrements: donneesPadSource.enregistrements || 'desactives', liens: donneesPadSource.liens, documents: donneesPadSource.documents, commentaires: donneesPadSource.commentaires, evaluations: donneesPadSource.evaluations, etiquettes: donneesPadSource.etiquettes || 'desactivees', copieBloc: donneesPadSource.copieBloc || 'desactivee', ordre: donneesPadSource.ordre || 'croissant', largeur: donneesPadSource.largeur || 'normale', date, bloc: donneesPadSource.bloc, activite: 0, vues: 0, ...definirModeration(donneesPadSource) }, champsPadsClient))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur_duplication')
@@ -544,7 +545,7 @@ export default function enregistrerRoutesPads ({
 						const visibilite = bloc.visibilite || 'visible'
 						const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 						const pipelineBloc = db.multi()
-						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						pipelineBloc.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', bloc.vignette, 'etiquettes', JSON.stringify(assainirEtiquettes(bloc.etiquettes)), 'date', date, 'identifiant', bloc.identifiant, 'commentaires', nombreCommentaires, 'evaluations', nombreEvaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						pipelineBloc.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						if (parametres.commentaires === true && Array.isArray(bloc.listeCommentaires)) {
 							bloc.listeCommentaires.forEach(commentaire => {
@@ -594,7 +595,7 @@ export default function enregistrerRoutesPads ({
 					await Promise.all([
 						promesseFond,
 						db.multi()
-							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'activiteColonne', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donnees.pad)])
+							.HSET('pads:' + id, ['id', id, 'token', token, 'titre', donnees.pad.titre, 'identifiant', identifiant, 'fond', fondPad, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', registreActivite, 'conversation', conversation, 'listeUtilisateurs', listeUtilisateurs, 'editionNom', editionNom, 'fichiers', donnees.pad.fichiers, 'enregistrements', enregistrements, 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'etiquettes', donnees.pad.etiquettes || 'desactivees', 'copieBloc', copieBloc, 'ordre', ordre, 'largeur', largeur, 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'admins', JSON.stringify([]), 'activiteColonne', 0, 'vues', 0, 'digidrive', 0, ...definirParametresModeration(donnees.pad)])
 							.SADD('pads-crees:' + identifiant, id.toString())
 							.SADD('utilisateurs-pads:' + id, identifiant)
 							.exec()
@@ -619,7 +620,7 @@ export default function enregistrerRoutesPads ({
 						await pipelineActivite.exec()
 					}
 					await supprimerArchives(source, dossierTemporaire)
-					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, fondUrl: await definirUrlFond(id, fondPad, donnees.pad.acces), acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, copieBloc, ordre, largeur, date, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
+					res.status(200).json(filtrerChamps({ id, token, titre: donnees.pad.titre, identifiant, fond: fondPad, fondUrl: await definirUrlFond(id, fondPad, donnees.pad.acces), acces: donnees.pad.acces, code, contributions: donnees.pad.contributions, affichage: donnees.pad.affichage, registreActivite, conversation, listeUtilisateurs, editionNom, fichiers: donnees.pad.fichiers, enregistrements, liens: donnees.pad.liens, documents: donnees.pad.documents, commentaires: donnees.pad.commentaires, evaluations: donnees.pad.evaluations, etiquettes: donnees.pad.etiquettes || 'desactivees', copieBloc, ordre, largeur, date, bloc: donnees.pad.bloc, activite: activiteId, admins: [], vues: 0, ...definirModeration(donnees.pad) }, champsPadsClient))
 				} catch (err) {
 					console.error(err.stack)
 					// Nettoyage en cas d'erreur pendant le traitement

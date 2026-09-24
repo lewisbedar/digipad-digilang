@@ -19,6 +19,7 @@ import {
 	assainirHTML,
 	assainirIframe,
 	assainirTexteAlternatif,
+	assainirEtiquettes,
 	executerTransactions,
 	parseJSON,
 	normaliserAffichageColonnes,
@@ -217,7 +218,7 @@ export default function enregistrerRoutesLadigitale ({
 				if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
 	                donneesPad.fond = path.basename(donneesPad.fond)
 				}
-				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
+				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'etiquettes', donneesPad.etiquettes || 'desactivees', 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
 				if (donneesPad.hasOwnProperty('code')) {
 					champsPad.push('code', code)
 				}
@@ -256,7 +257,7 @@ export default function enregistrerRoutesLadigitale ({
 							media = etherpad + '/p/' + destinationId
 						}
 					}
-					const champsBloc = ['id', blocSource.id, 'bloc', nouveauBlocId, 'titre', blocSource.titre, 'texte', blocSource.texte, 'media', media, 'alt', assainirTexteAlternatif(blocSource.alt), 'iframe', iframe, 'type', blocSource.type, 'source', blocSource.source, 'vignette', vignette, 'date', date, 'identifiant', blocSource.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', blocSource.colonne, 'visibilite', blocSource.visibilite]
+					const champsBloc = ['id', blocSource.id, 'bloc', nouveauBlocId, 'titre', blocSource.titre, 'texte', blocSource.texte, 'media', media, 'alt', assainirTexteAlternatif(blocSource.alt), 'iframe', iframe, 'type', blocSource.type, 'source', blocSource.source, 'vignette', vignette, 'etiquettes', JSON.stringify(assainirEtiquettes(blocSource.etiquettes)), 'date', date, 'identifiant', blocSource.identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', blocSource.colonne, 'visibilite', blocSource.visibilite]
 					return { index, nouveauBlocId, champsBloc }
 				}, tailleLotTransaction)
 				const pipelineBlocs = db.multi()
@@ -383,7 +384,7 @@ export default function enregistrerRoutesLadigitale ({
 					const visibilite = bloc.hasOwnProperty('visibilite') ? bloc.visibilite : 'visible'
 					const blocId = 'bloc-id-' + Date.now() + randomBytes(8).toString('hex')
 					await db.multi()
-						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
+						.HSET('pad-' + id + ':' + blocId, ['id', bloc.id, 'bloc', blocId, 'titre', bloc.titre, 'texte', assainirHTML(bloc.texte), 'media', bloc.media, 'alt', assainirTexteAlternatif(bloc.alt), 'iframe', assainirIframe(bloc.iframe), 'type', bloc.type, 'source', bloc.source, 'vignette', vignette, 'etiquettes', JSON.stringify(assainirEtiquettes(bloc.etiquettes)), 'date', date, 'identifiant', bloc.identifiant, 'commentaires', commentaires, 'evaluations', evaluations, 'colonne', bloc.colonne, 'visibilite', visibilite])
 						.ZADD('blocs:' + id, [{ score: indexBloc, value: blocId }])
 						.exec()
 					// Gestion des commentaires
@@ -424,7 +425,7 @@ export default function enregistrerRoutesLadigitale ({
 					await televerserFichierArchive(dossierTemporaire, dossierDestination, path.basename(fond), id, donnees.pad.acces)
 				}
 				await db.multi()
-					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'activiteColonne', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])
+					.HSET('pads:' + id, ['id', id, 'token', token, 'titre', titre, 'identifiant', identifiant, 'motdepasse', hash, 'fond', fond, 'acces', donnees.pad.acces, 'code', code, 'contributions', donnees.pad.contributions, 'affichage', donnees.pad.affichage, 'registreActivite', donnees.pad.registreActivite ?? 'active', 'conversation', donnees.pad.conversation ?? 'desactivee', 'listeUtilisateurs', donnees.pad.listeUtilisateurs ?? 'activee', 'editionNom', donnees.pad.editionNom ?? 'desactivee', 'fichiers', donnees.pad.fichiers, 'enregistrements', donnees.pad.enregistrements ?? 'desactives', 'liens', donnees.pad.liens, 'documents', donnees.pad.documents, 'commentaires', donnees.pad.commentaires, 'evaluations', donnees.pad.evaluations, 'etiquettes', donnees.pad.etiquettes || 'desactivees', 'copieBloc', donnees.pad.copieBloc ?? 'desactivee', 'ordre', donnees.pad.ordre ?? 'croissant', 'largeur', donnees.pad.largeur ?? 'normale', 'date', date, 'colonnes', colonnesImportees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donnees.pad.bloc, 'activite', activiteId, 'activiteColonne', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donnees.pad)])
 					.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
 					.SADD('pads-crees:' + identifiant, id.toString())
 					.exec()

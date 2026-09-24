@@ -19,6 +19,9 @@
 			<span v-else-if="item.type === 'lien'"><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" loading="lazy" :alt="nomVignette" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
 			<span v-else><img :class="{'vignette': vignette.substring(0, 5) !== '/img/'}" :src="vignette" loading="lazy" :alt="nomVignette" @error="parent.rafraichirUrlFichier(item, 'vignette')"></span>
 		</div>
+		<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
+			<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': parent.eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
+		</div>
 		<div class="evaluation" v-if="pad.evaluations === 'activees' && item.evaluations && parent.evaluationsVisibles">
 			<span class="etoiles" :title="definirEtoiles(item.evaluations)">
 				<i class="material-icons" aria-hidden="true" :class="{'evalue': capsuleEvalueeParUtilisateur === true}" v-for="etoile in evaluationCapsule" :key="'etoilepleine_' + etoile">star</i>

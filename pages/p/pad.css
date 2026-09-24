@@ -127,6 +127,83 @@
 	margin-top: 20px;
 }
 
+#liste-etiquettes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+#liste-etiquettes .etiquette {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.5rem 0.75rem 0.5rem 1.2rem;
+	border: 1px solid;
+	border-radius: 1.5rem;
+	line-height: 1.2;
+}
+
+#liste-etiquettes .etiquette .nom {
+	padding-right: 0.8rem;
+}
+
+#liste-etiquettes .etiquette .supprimer {
+	display: inline-flex;
+	cursor: pointer;
+}
+
+#liste-etiquettes .etiquette .supprimer i {
+	font-size: 18px;
+}
+
+#ajouter-etiquette {
+	display: flex;
+	align-items: center;
+	margin-bottom: 1.5rem;
+}
+
+#ajouter-etiquette input[type="text"] {
+	display: block;
+	width: calc(100% - 74px);
+	margin-right: 10px;
+	margin-bottom: 0;
+}
+
+#ajouter-etiquette input[type="color"] {
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: none;
+	outline: none;
+	margin-right: 10px;
+	cursor: pointer;
+}
+
+#ajouter-etiquette input[type="color"]::-moz-color-swatch {
+	border: none;
+	border-radius: 50%;
+}
+
+#ajouter-etiquette input[type="color"]::-webkit-color-swatch {
+	border: none;
+	border-radius: 50%;
+}
+
+#ajouter-etiquette input[type="color"]::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+#ajouter-etiquette button i {
+	font-size: 24px;
+	height: 24px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+#ajouter-etiquette button:active i {
+	opacity: 0.5;
+}
+
 #liste-admins {
 	display: flex;
 	flex-wrap: wrap;
@@ -720,6 +797,27 @@
 	border-radius: 1rem;
 }
 
+#diapositive .conteneur-etiquettes {
+	padding-top: 2rem;
+	border-top: 1px dotted #ddd;
+}
+
+#diapositive .conteneur-etiquettes .etiquettes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+}
+
+#diapositive .conteneur-etiquettes .etiquette {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.5rem 1.2rem;
+	border: 1px solid;
+	border-radius: 1.5rem;
+	font-size: 1.6rem;
+	line-height: 1.2;
+}
+
 #diapositive .conteneur-evaluations {
 	padding-top: 2rem;
 	border-top: 1px dotted #ddd;
@@ -730,8 +828,11 @@
 	border-top: 1px dotted #ddd;
 }
 
+#diapositive .contenu > .conteneur-etiquettes:first-of-type,
 #diapositive .contenu > .conteneur-evaluations:first-of-type,
 #diapositive .contenu > .conteneur-commentaires:first-of-type,
+#diapositive .conteneur-etiquettes + .conteneur-evaluations,
+#diapositive .conteneur-etiquettes + .conteneur-commentaires,
 #diapositive .conteneur-evaluations + .conteneur-commentaires {
 	padding-top: 0;
 	border-top: none;

@@ -47,6 +47,7 @@ export default function creerGestionnairesPad ({
 		documents: ['actives', 'desactives'],
 		commentaires: ['actives', 'desactives'],
 		evaluations: ['activees', 'desactivees'],
+		etiquettes: ['activees', 'desactivees'],
 		visibiliteCommentaires: ['tous', 'admin'],
 		accesCommentaires: ['tous', 'admin'],
 		commentairesModeration: ['activee', 'desactivee'],
@@ -627,6 +628,25 @@ export default function creerGestionnairesPad ({
 				if (!valeursParametres.evaluations.includes(statut)) return socket.emit('erreur')
 				await db.HSET('pads:' + pad, 'evaluations', statut)
 				io.to('pad-' + pad).emit('modifierevaluations', statut, identifiant)
+				req.session.cookie.expires = new Date(Date.now() + dureeSession)
+				await sauvegarderSession(req)
+			} catch (err) {
+				console.error(err.stack)
+				socket.emit('erreur')
+			}
+		})
+
+		socket.on('modifieretiquettes', async (pad, statut, identifiant) => {
+			if (etat.maintenance === true) return socket.emit('maintenance')
+			if (!identifiant || req.session.identifiant !== identifiant) return socket.emit('deconnecte')
+			try {
+				let donneesPad = await db.HGETALL('pads:' + pad)
+				donneesPad = donneesPad ? { ...donneesPad } : {}
+				const admin = await verifierAdmin(pad, donneesPad, req.session)
+				if (!admin) return socket.emit('nonautorise')
+				if (!valeursParametres.etiquettes.includes(statut)) return socket.emit('erreur')
+				await db.HSET('pads:' + pad, 'etiquettes', statut)
+				io.to('pad-' + pad).emit('modifieretiquettes', statut, identifiant)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {

@@ -52,6 +52,9 @@ function genererHTML (pad, blocs, langue) {
 										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 									</div>
+									<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
+										<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
+									</div>
 									<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 										<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">
 											<i class="material-icons" aria-hidden="true" v-for="etoile in definirEvaluationCapsule(item.listeEvaluations)" :key="'etoilepleine_' + etoile">star</i>
@@ -82,6 +85,9 @@ function genererHTML (pad, blocs, langue) {
 										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+									</div>
+									<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
+										<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
 									</div>
 									<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 										<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">
@@ -120,6 +126,9 @@ function genererHTML (pad, blocs, langue) {
 												<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
 												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 												<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+											</div>
+											<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
+												<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
 											</div>
 											<div class="evaluation" v-if="pad.evaluations === 'activees' && definirEvaluationCapsule(item.listeEvaluations) > 0">
 												<span class="etoiles" :title="definirEtoiles(item.listeEvaluations)">

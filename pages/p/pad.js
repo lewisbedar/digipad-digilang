@@ -94,6 +94,9 @@ export default {
 			utilisateur: '',
 			nomUtilisateur: '',
 			couleur: '#242f3d',
+			etiquettes: [],
+			couleurEtiquette: '#1c7ed6',
+			limiteEtiquettes: 10,
 			couleurs: ['#f76707', '#f59f00', '#74b816', '#37b24d', '#0ca678', '#1098ad', '#1c7ed6', '#4263eb', '#7048e8', '#ae3ec9', '#d6336c', '#f03e3e', '#495057'],
 			panneaux: [],
 			fonds: ['fond1.png', 'fond2.png', 'fond3.png', 'fond4.png', 'fond5.png', 'fond6.png', 'fond7.png', 'fond8.png', 'fond9.png', 'fond10.png', 'fond11.png'],
@@ -256,7 +259,7 @@ export default {
 			default:
 				blocs = this.blocs.filter((element) => {
 					const requete = this.requete.toLowerCase()
-					return (element.titre || '').toLowerCase().includes(requete) || (element.texte || '').toLowerCase().includes(requete) || (element.media || '').toLowerCase().includes(requete) || (element.iframe || '').toLowerCase().includes(requete) || (element.source || '').toLowerCase().includes(requete)
+					return (element.titre || '').toLowerCase().includes(requete) || (element.texte || '').toLowerCase().includes(requete) || (element.media || '').toLowerCase().includes(requete) || (element.iframe || '').toLowerCase().includes(requete) || (element.source || '').toLowerCase().includes(requete) || this.verifierEtiquettesRecherche(element, requete)
 				})
 			}
 			if (this.pad.affichage === 'colonnes') {
@@ -1063,6 +1066,7 @@ export default {
 				if (item.hasOwnProperty('couleur')) {
 					this.couleur = item.couleur
 				}
+				this.etiquettes = Array.isArray(item.etiquettes) ? JSON.parse(JSON.stringify(item.etiquettes)) : []
 				if (item.hasOwnProperty('vignette') && item.vignette !== '' && typeof item.vignette === 'string') {
 					this.vignette = item.vignette
 					this.vignetteDefaut = this.vignette
@@ -1415,9 +1419,9 @@ export default {
 				this.modale = ''
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
 				if (this.mode === 'creation') {
-					this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
+					this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt, this.etiquettes)
 				} else {
-					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt)
+					this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), donnees, iframe, 'audio', this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt, this.etiquettes)
 				}
 				this.progressionEnregistrement = false
 			}).catch((err) => {
@@ -1788,7 +1792,7 @@ export default {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
-				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt)
+				this.$socket.emit('ajouterbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.colonne, this.visibilite, this.identifiant, this.nom, this.alt, this.etiquettes)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1802,7 +1806,7 @@ export default {
 			if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type !== 'enregistrement') {
 				this.chargement = true
 				const iframe = DOMPurify.sanitize(this.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] })
-				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt)
+				this.$socket.emit('modifierbloc', this.bloc, this.pad.id, this.pad.token, this.titre, this.formaterHTML(this.texte), this.media, iframe, this.type, this.source, this.vignette, this.couleur, this.visibilite, this.identifiant, this.nom, this.alt, this.etiquettes)
 				this.modale = ''
 			} else if (((this.titre !== '' || this.texte !== '' || this.media !== '') && !this.enregistrement) && this.type === 'enregistrement') {
 				this.ajouterAudio()
@@ -1887,6 +1891,8 @@ export default {
 			this.source = ''
 			this.media = ''
 			this.alt = ''
+			this.etiquettes = []
+			this.couleurEtiquette = '#1c7ed6'
 			this.lien = ''
 			this.progressionFichier = 0
 			this.progressionVignette = 0
@@ -2044,7 +2050,7 @@ export default {
 					this.chargement = true
 					const randomHex = crypto.getRandomValues(new Uint8Array(8)).reduce((hex, byte) => hex + byte.toString(16).padStart(2, '0'), '')
 					const id = 'bloc-id-' + Date.now() + randomHex
-					this.$socket.emit('copierbloc', id, this.padDestination, token, donneesBloc.titre, donneesBloc.texte, donneesBloc.media, donneesBloc.iframe, donneesBloc.type, donneesBloc.source, donneesBloc.vignette, donneesBloc.couleur, colonneDestination, donneesBloc.visibilite, this.identifiant, this.nom, this.pad.id, donneesBloc.alt)
+					this.$socket.emit('copierbloc', id, this.padDestination, token, donneesBloc.titre, donneesBloc.texte, donneesBloc.media, donneesBloc.iframe, donneesBloc.type, donneesBloc.source, donneesBloc.vignette, donneesBloc.couleur, colonneDestination, donneesBloc.visibilite, this.identifiant, this.nom, this.pad.id, donneesBloc.alt, donneesBloc.etiquettes)
 					this.fermerModaleCopieBloc()
 				}
 			}
@@ -3628,6 +3634,36 @@ export default {
 			}
 			this.chargement = true
 		},
+		ajouterEtiquette () {
+			const champ = document.querySelector('#ajouter-etiquette input[type="text"]')
+			if (champ === null) return
+			const nom = champ.value.replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().substring(0, 32)
+			if (nom === '' || this.etiquettes.length >= this.limiteEtiquettes) return
+			if (this.etiquettes.some((etiquette) => etiquette.nom.toLowerCase() === nom.toLowerCase())) {
+				this.message = this.$t('etiquetteExistante')
+				return
+			}
+			this.etiquettes.push({ nom: nom, couleur: this.couleurEtiquette })
+			champ.value = ''
+			champ.focus()
+		},
+		supprimerEtiquette (index) {
+			if (index >= 0 && index < this.etiquettes.length) {
+				this.etiquettes.splice(index, 1)
+			}
+		},
+		verifierEtiquettesRecherche (item, requete) {
+			if (this.pad.etiquettes !== 'activees' || !Array.isArray(item.etiquettes)) return false
+			return item.etiquettes.some((etiquette) => (etiquette.nom || '').toLowerCase().includes(requete))
+		},
+		modifierEtiquettes (event) {
+			if (event.target.checked === true) {
+				this.$socket.emit('modifieretiquettes', this.pad.id, 'activees', this.identifiant)
+			} else {
+				this.$socket.emit('modifieretiquettes', this.pad.id, 'desactivees', this.identifiant)
+			}
+			this.chargement = true
+		},
 		modifierEvaluations (event) {
 			if (event.target.checked) {
 				this.$socket.emit('modifierevaluations', this.pad.id, 'activees', this.identifiant)
@@ -4712,7 +4748,7 @@ export default {
 							if (donnees.visibilite === 'privee' && !this.admin) {
 								this.colonnes[indexColonne].splice(indexBlocColonne, 1)
 							} else {
-								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
+								this.colonnes[indexColonne][indexBlocColonne] = { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, etiquettes: donneesCompletes ? donnees.etiquettes : item.etiquettes, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId }
 							}
 						}
 					}
@@ -4723,7 +4759,7 @@ export default {
 						if (donnees.visibilite === 'privee' && !this.admin) {
 							this.blocs.splice(indexBloc, 1)
 						} else {
-							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
+							this.blocs.splice(indexBloc, 1, { bloc: donnees.bloc, identifiant: item.identifiant, nom: item.nom, titre: donneesCompletes ? donnees.titre : item.titre, texte: donneesCompletes ? donnees.texte : item.texte, media: donneesCompletes ? donnees.media : item.media, mediaUrl: donneesCompletes ? donnees.mediaUrl : item.mediaUrl, alt: donneesCompletes ? donnees.alt : item.alt, iframe: donneesCompletes ? donnees.iframe : item.iframe, type: donneesCompletes ? donnees.type : item.type, source: donneesCompletes ? donnees.source : item.source, vignette: donneesCompletes ? donnees.vignette : item.vignette, vignetteUrl: donneesCompletes ? donnees.vignetteUrl : item.vignetteUrl, date: item.date, modifie: donnees.modifie, couleur: donnees.couleur, etiquettes: donneesCompletes ? donnees.etiquettes : item.etiquettes, commentaires: item.commentaires, commentairesEnAttente: item.commentairesEnAttente, evaluations: item.evaluations, colonne: item.colonne, visibilite: donnees.visibilite, activiteId: item.activiteId })
 						}
 					}
 					if (donnees.hasOwnProperty('activiteId')) {
@@ -4750,6 +4786,7 @@ export default {
 					item.iframe = donnees.iframe
 					item.vignette = donnees.vignette
 					item.vignetteUrl = donnees.vignetteUrl
+					if (donnees.hasOwnProperty('etiquettes')) item.etiquettes = donnees.etiquettes
 				}
 				this.mettreAJourBloc(donnees.bloc, verifierBloc)
 				if (this.modaleDiaporama && this.donneesBloc.bloc === donnees.bloc) {
@@ -4765,6 +4802,9 @@ export default {
 					}
 					if (!this.titre) {
 						this.titre = donnees.titre
+					}
+					if (Array.isArray(donnees.etiquettes) && this.etiquettes.length === 0) {
+						this.etiquettes = JSON.parse(JSON.stringify(donnees.etiquettes))
 					}
 					if (!this.media && !this.iframe) {
 						this.media = donnees.media
@@ -5287,6 +5327,14 @@ export default {
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('parametreCommentairesModifie')
+				}
+			})
+
+			this.$socket.on('modifieretiquettes', (statut, identifiant) => {
+				this.pad.etiquettes = statut
+				this.chargement = false
+				if (this.admin && this.identifiant === identifiant) {
+					this.notification = this.$t('parametreEtiquettesModifie')
 				}
 			})
 

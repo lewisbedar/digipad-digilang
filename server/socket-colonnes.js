@@ -14,6 +14,7 @@ import {
 	sauvegarderSession,
 	definirAccesLecture,
 	executerTransactions,
+	assainirEtiquettes,
 	parseJSON
 } from './fonctions.js'
 
@@ -168,7 +169,7 @@ export default function creerGestionnairesColonnes ({
 				})
 				duplications.forEach((duplication) => {
 					const { nouveauBloc, contenu, donneesBloc, blocId, score } = duplication
-					pipeline.HSET('pad-' + pad + ':' + nouveauBloc, ['id', blocId, 'bloc', nouveauBloc, 'titre', donneesBloc.titre || '', 'texte', contenu.texte, 'media', contenu.media, 'alt', contenu.alt, 'iframe', contenu.iframe, 'type', donneesBloc.type || '', 'source', donneesBloc.source || '', 'vignette', contenu.vignette, 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', indexColonne, 'visibilite', donneesBloc.visibilite || 'visible', 'couleur', donneesBloc.couleur || ''])
+					pipeline.HSET('pad-' + pad + ':' + nouveauBloc, ['id', blocId, 'bloc', nouveauBloc, 'titre', donneesBloc.titre || '', 'texte', contenu.texte, 'media', contenu.media, 'alt', contenu.alt, 'iframe', contenu.iframe, 'type', donneesBloc.type || '', 'source', donneesBloc.source || '', 'vignette', contenu.vignette, 'etiquettes', JSON.stringify(assainirEtiquettes(donneesBloc.etiquettes)), 'date', date, 'identifiant', identifiant, 'commentaires', 0, 'evaluations', 0, 'colonne', indexColonne, 'visibilite', donneesBloc.visibilite || 'visible', 'couleur', donneesBloc.couleur || ''])
 					pipeline.ZADD('blocs:' + pad, [{ score: score, value: nouveauBloc }])
 				})
 				pipeline.HSET('pads:' + pad, ['colonnes', JSON.stringify(colonnes), 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', blocCourant + duplications.length, 'activiteColonne', activiteId])
@@ -180,7 +181,7 @@ export default function creerGestionnairesColonnes ({
 				contenusANettoyer.length = 0
 				const blocsDupliques = duplications.map((duplication) => {
 					const { nouveauBloc, contenu, donneesBloc, blocId } = duplication
-					return { bloc: nouveauBloc, titre: donneesBloc.titre || '', type: donneesBloc.type || '', source: donneesBloc.source || '', identifiant, nom, date, couleur: donneesBloc.couleur || '', commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne: indexColonne, visibilite: donneesBloc.visibilite || 'visible', texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette, id: blocId }
+					return { bloc: nouveauBloc, titre: donneesBloc.titre || '', type: donneesBloc.type || '', source: donneesBloc.source || '', identifiant, nom, date, couleur: donneesBloc.couleur || '', etiquettes: assainirEtiquettes(donneesBloc.etiquettes), commentaires: 0, commentairesEnAttente: 0, evaluations: [], colonne: indexColonne, visibilite: donneesBloc.visibilite || 'visible', texte: contenu.texte, media: contenu.media, alt: contenu.alt, iframe: contenu.iframe, vignette: contenu.vignette, id: blocId }
 				})
 				await appliquerUrlsFichiers(pad, blocsDupliques, donneesPad.acces)
 				const donneesColonne = { identifiant, nom, titre, indexColonne, colonnes, affichageColonnes, date, activiteId }

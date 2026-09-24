@@ -429,6 +429,34 @@
 	border-top: 1px dotted #ddd;
 }
 
+#blocs .bloc .etiquettes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.7rem;
+	border-top: 1px dotted #ddd;
+	padding: 0.7rem 1rem;
+	line-height: 1;
+}
+
+#blocs .bloc .etiquettes .etiquette {
+	display: inline-flex;
+	align-items: center;
+	padding: 0.4rem 1rem;
+	border: 1px solid;
+	border-radius: 1.5rem;
+	font-size: 1.4rem;
+	line-height: 1.2;
+}
+
+#blocs .bloc .titre + .etiquettes,
+#blocs .bloc .media + .etiquettes {
+	border-top: 1px dotted #ddd;
+}
+
+#blocs .bloc .texte + .etiquettes {
+	margin-top: 1rem;
+}
+
 #blocs .bloc .evaluation {
 	display: flex;
     justify-content: space-between;

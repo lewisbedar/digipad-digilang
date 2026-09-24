@@ -412,6 +412,13 @@
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
+					<span>{{ $t('etiquettes') }}</span>
+					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-etiquettes')">
+						<input id="parametre-etiquettes" type="checkbox" :checked="pad.etiquettes === 'activees'" @change="modifierEtiquettes">
+						<span class="barre" />
+					</label>
+				</div>
+				<div class="conteneur-interrupteur">
 					<span>{{ $t('evaluations') }}</span>
 					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
 						<input id="parametre-evaluations" type="checkbox" :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
@@ -784,6 +791,22 @@
 						</div>
 					</div>
 
+					<template v-if="pad.etiquettes === 'activees'">
+						<label v-if="etiquettes.length > 0">{{ $t('etiquettes') }}</label>
+						<div id="liste-etiquettes" v-if="etiquettes.length > 0">
+							<div class="etiquette" v-for="(itemEtiquette, indexEtiquette) in etiquettes" :style="{'background': eclaircirCouleur(itemEtiquette.couleur), 'border-color': itemEtiquette.couleur, 'color': itemEtiquette.couleur}" :key="'etiquette_' + indexEtiquette">
+								<span class="nom">{{ itemEtiquette.nom }}</span>
+								<button type="button" class="supprimer" :disabled="disabledModale" :title="$t('supprimerEtiquette')" :aria-label="$t('supprimerEtiquette')" @click="supprimerEtiquette(indexEtiquette)"><i class="material-icons" aria-hidden="true">close</i></button>
+							</div>
+						</div>
+						<label for="champ-ajouter-etiquette" v-if="etiquettes.length < limiteEtiquettes">{{ $t('ajouterEtiquette') }}</label>
+						<div id="ajouter-etiquette" v-if="etiquettes.length < limiteEtiquettes">
+							<input id="champ-ajouter-etiquette" type="text" maxlength="32" :placeholder="$t('nomEtiquette')" :disabled="disabledModale" @keydown.enter.prevent="ajouterEtiquette">
+							<input id="champ-couleur-etiquette" type="color" :value="couleurEtiquette" :disabled="disabledModale" :title="$t('couleurEtiquette')" :aria-label="$t('couleurEtiquette')" @change="couleurEtiquette = $event.target.value">
+							<button type="button" class="icone" :disabled="disabledModale" :title="$t('ajouterEtiquette')" :aria-label="$t('ajouterEtiquette')" @click="ajouterEtiquette"><i class="material-icons" aria-hidden="true">new_label</i></button>
+						</div>
+					</template>
+
 					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</button>
 					<button type="button" class="valider" :disabled="disabledModale || texte === undefined" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement || texte === undefined}" :title="texte === undefined ? $t('recuperationContenuEnCours') : ''" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
 				</div>
@@ -986,7 +1009,7 @@
 				<span class="titre"><span>{{ donneesBloc.titre }}</span> <span>{{ $t('par') }} {{ definirNom(donneesBloc) }}</span></span>
 				<button type="button" class="fermer" :disabled="disabledModaleDiaporama" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDiaporama"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
-			<div class="contenu ascenseur" :class="{'vide': !donneesBloc.texte && !donneesBloc.media && (pad.evaluations === 'desactivees' || !evaluationsVisibles) && (pad.commentaires === 'desactives' || !commentairesVisibles) && ((pad.contributions !== 'moderees') || (pad.contributions === 'moderees' && donneesBloc.visibilite === 'visible'))}">
+			<div class="contenu ascenseur" :class="{'vide': !donneesBloc.texte && !donneesBloc.media && (pad.etiquettes !== 'activees' || !donneesBloc.etiquettes || donneesBloc.etiquettes.length === 0) && (pad.evaluations === 'desactivees' || !evaluationsVisibles) && (pad.commentaires === 'desactives' || !commentairesVisibles) && ((pad.contributions !== 'moderees') || (pad.contributions === 'moderees' && donneesBloc.visibilite === 'visible'))}">
 				<div class="conteneur conteneur-texte" v-if="donneesBloc.texte">
 					<div class="texte" v-html="donneesBloc.texte" />
 				</div>
@@ -1016,6 +1039,12 @@
 							<iframe :src="donneesBloc.iframe" allow="autoplay; fullscreen" v-if="verifierURL(donneesBloc.iframe) === true" />
 							<div class="html" v-else v-html="donneesBloc.iframe" />
 						</div>
+					</div>
+				</div>
+				<div class="conteneur conteneur-etiquettes" v-if="pad.etiquettes === 'activees' && donneesBloc.etiquettes && donneesBloc.etiquettes.length > 0">
+					<label>{{ $t('etiquettes') }}</label>
+					<div class="etiquettes">
+						<span class="etiquette" v-for="(itemEtiquette, indexEtiquette) in donneesBloc.etiquettes" :style="{'background': eclaircirCouleur(itemEtiquette.couleur), 'border-color': itemEtiquette.couleur, 'color': itemEtiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ itemEtiquette.nom }}</span>
 					</div>
 				</div>
 				<div class="conteneur conteneur-moderation" v-if="donneesBloc.visibilite === 'privee' && admin">
