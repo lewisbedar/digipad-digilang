@@ -506,13 +506,25 @@ export default function enregistrerRoutesFichiers ({
 		const protocole = req.body.protocole
 		if (!['http:', 'https:'].includes(protocole)) return res.status(500).send('erreur')
 		if (!domaine || typeof domaine !== 'string' || domaine.trim() === '') return res.status(500).send('erreur')
-		const hoteIcone = domaine.toLowerCase()
-		if (verifierHoteBloque(hoteIcone)) return res.status(500).send('erreur')
+		let urlIcone
 		try {
-			const reponse = await axios.get(protocole + '//' + domaine, {
+			urlIcone = new URL(protocole + '//' + domaine)
+		} catch {
+			return res.status(500).send('erreur')
+		}
+		if (urlIcone.username !== '' || urlIcone.password !== '') return res.status(500).send('erreur')
+		if (verifierHoteBloque(urlIcone.hostname)) return res.status(500).send('erreur')
+		const origineIcone = urlIcone.origin
+		try {
+			const reponse = await axios.get(urlIcone.href, {
 				responseType: 'document',
 				timeout: 5000,
-				maxContentLength: 2 * 1024 * 1024
+				maxContentLength: 2 * 1024 * 1024,
+				beforeRedirect: (options) => {
+					if (!['http:', 'https:'].includes(options.protocol) || verifierHoteBloque(options.hostname)) {
+						throw new Error('hote_bloque')
+					}
+				}
 			})
 			if (reponse && reponse.hasOwnProperty('data')) {
 				const $ = cheerio.load(reponse.data)
@@ -537,11 +549,11 @@ export default function enregistrerRoutesFichiers ({
 				if (favicon !== '' && verifierURL(favicon, ['https', 'http']) === true) {
 					res.status(200).send(favicon)
 				} else if (favicon !== '' && favicon.substring(0, 2) === './') {
-					res.status(200).send(protocole + '//' + domaine + favicon.substring(1))
+					res.status(200).send(origineIcone + favicon.substring(1))
 				} else if (favicon !== '' && favicon.substring(0, 1) === '/') {
-					res.status(200).send(protocole + '//' + domaine + favicon)
+					res.status(200).send(origineIcone + favicon)
 				} else if (favicon !== '') {
-					res.status(200).send(protocole + '//' + domaine + '/' + favicon)
+					res.status(200).send(origineIcone + '/' + favicon)
 				} else {
 					res.status(200).send(favicon)
 				}
