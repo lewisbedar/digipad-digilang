@@ -78,9 +78,12 @@ function genererXML (hote, titre, lien, blocs, admin, langue) {
 				}
 			}
 			try {
-				const date = new Date(blocs[i].date)
-				if (!isNaN(date.getTime())) {
-					rss += '      <pubDate>' + date.toUTCString() + '</pubDate>\n'
+				const valeurDate = blocs[i].date
+				if (typeof valeurDate === 'string' && valeurDate.trim() !== '') {
+					const date = new Date(valeurDate)
+					if (!isNaN(date.getTime())) {
+						rss += '      <pubDate>' + date.toUTCString() + '</pubDate>\n'
+					}
 				}
 			} catch (err) {
 				console.error(err.message)
