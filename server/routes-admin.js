@@ -12,7 +12,8 @@ import {
 	executerTransactions,
 	parseJSON,
 	comparerHash,
-	verifierMotDePasseAdmin
+	verifierMotDePasseAdmin,
+	masquerSecrets
 } from './fonctions.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -112,7 +113,7 @@ export default function enregistrerRoutesAdmin ({
 				if (utilisateurExiste !== 1) return res.status(400).send('identifiant_non_valide')
 				let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
 				donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-				return res.status(200).json([donneesUtilisateur])
+				return res.status(200).json([masquerSecrets(donneesUtilisateur)])
 			}
 			if (email !== '') {
 				const clesUtilisateurs = []
@@ -126,7 +127,7 @@ export default function enregistrerRoutesAdmin ({
 					let donneesUtilisateur = await db.HGETALL('utilisateurs:' + id)
 					donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 					if (donneesUtilisateur.hasOwnProperty('email') && donneesUtilisateur.email.toLowerCase() === email) {
-						return donneesUtilisateur
+						return masquerSecrets(donneesUtilisateur)
 					}
 					return null
 				}))
@@ -160,7 +161,7 @@ export default function enregistrerRoutesAdmin ({
 				donneesPad = await fs.readJson(path.join(__dirname, '..', '/static/pads/pad-' + pad + '.json'))
 				if (typeof donneesPad !== 'object' || !donneesPad) return res.status(500).send('erreur')
 			} else if (padExiste === 0) return res.status(404).send('pad_inexistant')
-			res.status(200).json(donneesPad)
+			res.status(200).json(masquerSecrets(donneesPad))
 		} catch (err) {
 			console.error(err.stack)
 			res.status(500).send('erreur')
