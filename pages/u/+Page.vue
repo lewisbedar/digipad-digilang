@@ -2553,6 +2553,7 @@ export default {
 .pad.liste .actions .admin,
 .pad.mosaique .actions .admin {
 	color: #00ced1;
+	cursor: default;
 }
 
 .pad .mise-a-jour {
