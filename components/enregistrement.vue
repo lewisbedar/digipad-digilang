@@ -337,6 +337,7 @@ export default {
 	display: flex;
 	justify-content: center;
 	align-items: center;
+	margin-bottom: 20px;
 }
 
 #enregistrement .enregistrement .duree {
