@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.7
     restart: unless-stopped
     command:
       - --providers.docker=true
@@ -69,7 +69,7 @@ services:
       - traefik.http.services.digipad.loadbalancer.server.port=3000
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     restart: unless-stopped
     command: ["redis-server", "--requirepass", "${DB_PWD}", "--appendonly", "yes"]
     healthcheck:
