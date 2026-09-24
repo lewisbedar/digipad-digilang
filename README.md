@@ -117,7 +117,18 @@ npm run migrate-acl
 
 Le script parcourt le conteneur, relit l'accès de chaque pad dans la base de données et repasse chaque objet en `public-read` ou `private` en conséquence.
 
-Si un CDN est placé devant le conteneur, purgez son cache à la fin du script.
+Options :
+
+| Option | Effet |
+| --- | --- |
+| `--simulation` | aucune modification ; ne touche ni au point de reprise ni à la file des échecs |
+| `--prefixe=2` | ne traite que les clés commençant par `2` |
+| `--lot=100` | nombre de requêtes ACL simultanées (100 par défaut) |
+| `--reinitialiser` | oublie le point de reprise et la file des échecs du préfixe demandé |
+
+Le script peut être interrompu et repris.
+
+Si un CDN est placé devant le conteneur, purgez son cache à la fin du script. Les fichiers déjà en cache navigateur restent par ailleurs accessibles jusqu'à expiration de `FILE_CACHE_PUBLIC`.
 
 ## Fichiers (stockage disque)
 
