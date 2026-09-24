@@ -17,6 +17,7 @@ import {
 	verifierURL,
 	verifierContenuFichier,
 	verifierFichierAudio,
+	verifierExtensionAutorisee,
 	genererJetonTeleversement,
 	genererJetonFichier
 } from './fonctions.js'
@@ -33,6 +34,7 @@ export default function enregistrerRoutesFichiers ({
 	etherpad,
 	etherpadApi,
 	limiteTeleversement,
+	extensionsAutorisees,
 	secretJetonTeleversement,
 	secretJetonFichier,
 	fonctions
@@ -117,10 +119,16 @@ export default function enregistrerRoutesFichiers ({
 		let mimetype
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
+		let extensionNonAutorisee = false
 		const busboy = Busboy({ headers: req.headers, limits: { fileSize: limiteTeleversement } })
 		busboy.on('file', (champ, fichier, meta) => {
 			mimetype = meta.mimeType
 			nomFichier = definirNomFichier(meta.filename)
+			if (!verifierExtensionAutorisee(extensionsAutorisees, meta.filename)) {
+				extensionNonAutorisee = true
+				fichier.resume()
+				return
+			}
 			fichier.on('data', (donnees) => {
 				buffers.push(donnees)
 			})
@@ -136,6 +144,7 @@ export default function enregistrerRoutesFichiers ({
 		busboy.on('finish', async () => {
 			if (erreurBusboy) return
 			if (fichierTropVolumineux) return res.status(413).send('fichier_trop_volumineux')
+			if (extensionNonAutorisee) return res.status(422).send('format_fichier_non_autorise')
 			const bufferFichier = Buffer.concat(buffers)
 			if (!bufferFichier || !nomFichier|| !mimetype) return res.status(422).send('erreur_televersement')
 			if (!verifierContenuFichier(bufferFichier, mimetype)) return res.status(422).send('erreur_televersement')

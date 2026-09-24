@@ -720,6 +720,28 @@ function verifierJetonFichier (secret, jeton, pad, fichier) {
 	return typeof donnees.exp === 'number' && donnees.exp > Date.now()
 }
 
+// Liste blanche des extensions téléversables par défaut
+const extensionsTeleversementParDefaut = '.jpg,.jpeg,.png,.gif,.mp4,.m4v,.mp3,.m4a,.ogg,.wav,.pdf,.ppt,.pptx,.odp,.doc,.docx,.odt,.ods,.odg,.xls,.xlsx'
+
+function normaliserExtensions (liste) {
+	return new Set(String(liste || '')
+		.split(',')
+		.map((extension) => extension.trim().toLowerCase().replace(/^\./, ''))
+		.filter((extension) => extension !== ''))
+}
+
+function definirExtensionsAutorisees (liste) {
+	const extensions = normaliserExtensions(liste)
+	if (extensions.size > 0) return extensions
+	if (liste) console.warn('VITE_UPLOAD_FILE_TYPES ne contient aucune extension exploitable : repli sur la liste par défaut.')
+	return normaliserExtensions(extensionsTeleversementParDefaut)
+}
+
+function verifierExtensionAutorisee (extensions, nomFichier) {
+	if (!(extensions instanceof Set) || typeof nomFichier !== 'string' || nomFichier === '') return false
+	return extensions.has(nomFichier.substring(nomFichier.lastIndexOf('.') + 1).toLowerCase())
+}
+
 function verifierFichierAudio (buffer, nomFichier, mimetype) {
 	if (!buffer || buffer.length < 3 || typeof nomFichier !== 'string' || typeof mimetype !== 'string') return false
 	if (path.extname(nomFichier).toLowerCase() !== '.mp3') return false
@@ -880,5 +902,7 @@ export {
 	verifierJetonFichier,
 	verifierContenuFichier,
 	verifierFichierAudio,
+	definirExtensionsAutorisees,
+	verifierExtensionAutorisee,
 	formaterDate
 }

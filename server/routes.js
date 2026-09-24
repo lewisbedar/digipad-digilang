@@ -49,6 +49,7 @@ export default async function initialiserRoutes ({
 	limiteAuthAdmin,
 	limiteActionsSensibles,
 	limiteTeleversement,
+	extensionsAutorisees,
 	httpServer,
 	trustProxy,
 	scriptSrc,
@@ -342,6 +343,7 @@ export default async function initialiserRoutes ({
 		etherpad,
 		etherpadApi,
 		limiteTeleversement,
+		extensionsAutorisees,
 		secretJetonTeleversement,
 		secretJetonFichier,
 		fonctions

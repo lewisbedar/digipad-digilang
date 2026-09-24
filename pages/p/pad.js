@@ -1347,6 +1347,8 @@ export default {
 							this.message = this.$t('erreurEspaceDisque')
 						} else if (err.response?.data === 'fichier_trop_volumineux') {
 							this.message = this.$t('tailleMaximale', { taille: this.limite })
+						} else if (err.response?.data === 'format_fichier_non_autorise') {
+							this.message = this.$t('formatFichierPasAccepte')
 						} else {
 							this.message = this.definirMessageErreur(err)
 						}

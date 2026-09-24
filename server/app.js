@@ -18,7 +18,7 @@ import { Agent } from 'https'
 import { createHmac } from 'crypto'
 import { NodeHttpHandler } from '@smithy/node-http-handler'
 import { S3Client } from '@aws-sdk/client-s3'
-import { verifierMotDePasseAdmin } from './fonctions.js'
+import { verifierMotDePasseAdmin, definirExtensionsAutorisees } from './fonctions.js'
 import creerFonctions from './fonctions-db.js'
 import initialiserRoutes from './routes.js'
 import initialiserSocket from './socket.js'
@@ -226,6 +226,7 @@ async function demarrerServeur () {
 	const salonMaintenance = 'admin-maintenance'
 
 	const limiteTeleversement = (parseFloat(process.env.VITE_UPLOAD_LIMIT) || 20) * 1024 * 1024
+	const extensionsAutorisees = definirExtensionsAutorisees(process.env.VITE_UPLOAD_FILE_TYPES)
 
 	const limitePadsParCompte = parseInt(process.env.VITE_PAD_LIMIT, 10) || 100
 
@@ -498,6 +499,7 @@ async function demarrerServeur () {
 		limiteAuthAdmin,
 		limiteActionsSensibles,
 		limiteTeleversement,
+		extensionsAutorisees,
 		httpServer,
 		trustProxy,
 		scriptSrc,
