@@ -224,6 +224,7 @@
 	"droitsAdminAjoutes": "Ora sei amministratore di questo pad.",
 	"droitsAdminRetires": "I tuoi diritti di amministrazione su questo pad sono stati rimossi.",
 	"identifiantNonValide": "Il nome utente non è valido.",
+	"adminsNonAjoutes": "Questi nomi utente non sono stati aggiunti come admin:",
 	"quitterPad": "Esci dall'amministrazione di questo pad.",
 	"confirmationSupprimerPadAdmin": "Vuoi lasciare l'amministrazione di questo pad?",
 	"admin": "Admin del pad",

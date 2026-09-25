@@ -7,7 +7,7 @@ import {
 	definirSalonAdmin,
 	nombreMaxAdmins,
 	verifierIdentifiantPad,
-	verifierIdentifiantUtilisateur,
+	verifierIdentifiantUtilisateurExistant,
 	sauvegarderSession
 } from './fonctions.js'
 
@@ -195,9 +195,11 @@ export default function creerGestionnairesPad ({
 				// Seul le propriétaire du pad peut ajouter ou révoquer des co-admins
 				if (donneesPad.identifiant !== identifiant || !await verifierAdmin(pad, donneesPad, req.session)) return socket.emit('nonautorise')
 				const listeAdmins = definirAdministrateursPad(donneesPad).filter((admin) => admin !== donneesPad.identifiant)
-				const candidats = [...new Set(admins.filter((admin) => verifierIdentifiantUtilisateur(admin) && admin !== donneesPad.identifiant))]
+				const demandes = [...new Set(admins.filter((admin) => typeof admin === 'string' && admin !== donneesPad.identifiant))]
+				const candidats = demandes.filter((admin) => verifierIdentifiantUtilisateurExistant(admin))
 				const comptesExistants = await Promise.all(candidats.map((admin) => db.EXISTS('utilisateurs:' + admin)))
 				const nouveauxAdmins = candidats.filter((admin, index) => comptesExistants[index] === 1)
+				const adminsRefuses = demandes.filter((admin) => !nouveauxAdmins.includes(admin))
 				const adminsAjoutes = nouveauxAdmins.filter((admin) => !listeAdmins.includes(admin))
 				const adminsRetires = listeAdmins.filter((admin) => !nouveauxAdmins.includes(admin))
 				await db.HSET('pads:' + pad, 'admins', JSON.stringify(nouveauxAdmins))
@@ -218,6 +220,7 @@ export default function creerGestionnairesPad ({
 				adminsRetires.forEach((adminRetire) => {
 					io.to(definirSalonUtilisateur(pad, adminRetire)).emit('modifieradmins', [], identifiant)
 				})
+				if (adminsRefuses.length > 0) socket.emit('adminsrefuses', adminsRefuses)
 				req.session.cookie.expires = new Date(Date.now() + dureeSession)
 				await sauvegarderSession(req)
 			} catch (err) {

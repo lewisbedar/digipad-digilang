@@ -201,6 +201,10 @@ function verifierIdentifiantUtilisateur (identifiant) {
 	return typeof identifiant === 'string' && identifiant.length <= 100 && /^[\w-]+$/.test(identifiant)
 }
 
+function verifierIdentifiantUtilisateurExistant (identifiant) {
+	return typeof identifiant === 'string' && identifiant.length > 0 && identifiant.length <= 255 && !/[\u0000-\u001f\u007f]/.test(identifiant)
+}
+
 function verifierIdentifiantBloc (bloc) {
 	return typeof bloc === 'string' && /^bloc-id-[0-9a-f]{20,64}$/.test(bloc)
 }
@@ -877,6 +881,7 @@ export {
 	verifierColonneMasquee,
 	verifierIdentifiantPad,
 	verifierIdentifiantUtilisateur,
+	verifierIdentifiantUtilisateurExistant,
 	verifierIdentifiantBloc,
 	verifierIdentifiantBlocExistant,
 	verifierBlocVisible,

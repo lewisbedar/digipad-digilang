@@ -224,6 +224,7 @@
 	"droitsAdminAjoutes": "Vous êtes maintenant administrateur de ce pad.",
 	"droitsAdminRetires": "Vos droits d'administration sur ce pad ont été retirés.",
 	"identifiantNonValide": "Cet identifiant n'est pas valide.",
+	"adminsNonAjoutes": "Ces identifiants n'ont pas pu être ajoutés comme admins :",
 	"quitterPad": "Quitter l'administration de ce pad",
 	"confirmationSupprimerPadAdmin": "Souhaitez-vous quitter l'administration de ce pad&nbsp;?",
 	"admin": "Admin du pad",

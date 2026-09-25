@@ -224,6 +224,7 @@
 	"droitsAdminAjoutes": "Sada ste administrator ove podloge.",
 	"droitsAdminRetires": "Vaša administratorska prava na ovoj podlozi su uklonjena.",
 	"identifiantNonValide": "Ovo korisničko ime nije važeće.",
+	"adminsNonAjoutes": "Ova korisnička imena nije bilo moguće dodati kao administratore:",
 	"quitterPad": "Napustite upravljanje ovom podlogom",
 	"confirmationSupprimerPadAdmin": "Želite li stvarno napustiti upravljanje ovom podlogom?",
 	"admin": "Administrator ove podloge",

@@ -5106,6 +5106,11 @@ export default {
 				}
 			})
 
+			this.$socket.on('adminsrefuses', (admins) => {
+				this.chargement = false
+				this.message = this.$t('adminsNonAjoutes') + ' ' + admins.join(', ')
+			})
+
 			this.$socket.on('reinitialiservues', (identifiant) => {
 				this.pad.vues = 0
 				this.chargement = false
