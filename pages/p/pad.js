@@ -1989,37 +1989,32 @@ export default {
 				})
 			}
 		},
-		verifierColonnesDestination () {
-			if (this.padDestination !== '') {
-				let colonnes = false
-				;(this.donneesUtilisateur.padsCrees || []).forEach((pad) => {
-					if (parseInt(pad.id, 10) === parseInt(this.padDestination, 10) && pad.affichage === 'colonnes' && JSON.parse(pad.colonnes).length > 0) {
-						colonnes = true
-					}
-				})
-				;(this.donneesUtilisateur.padsAdmins || []).forEach((pad) => {
-					if (parseInt(pad.id, 10) === parseInt(this.padDestination, 10) && pad.affichage === 'colonnes' && JSON.parse(pad.colonnes).length > 0) {
-						colonnes = true
-					}
-				})
-				return colonnes
-			} else {
-				return false
-			}
-		},
-		definirNombreColonnesDestination () {
+		recupererColonnesDestination () {
+			if (this.padDestination === '') { return [] }
 			let colonnes = []
-			;(this.donneesUtilisateur.padsCrees || []).forEach((pad) => {
-				if (parseInt(pad.id, 10) === parseInt(this.padDestination, 10)) {
-					colonnes = JSON.parse(pad.colonnes)
-				}
-			})
-			;(this.donneesUtilisateur.padsAdmins || []).forEach((pad) => {
-				if (parseInt(pad.id, 10) === parseInt(this.padDestination, 10)) {
-					colonnes = JSON.parse(pad.colonnes)
+			const pads = [...(this.donneesUtilisateur.padsCrees || []), ...(this.donneesUtilisateur.padsAdmins || [])]
+			pads.forEach((pad) => {
+				if (parseInt(pad.id, 10) !== parseInt(this.padDestination, 10) || pad.affichage !== 'colonnes') { return }
+				if (Array.isArray(pad.colonnes)) {
+					colonnes = pad.colonnes
+				} else if (typeof pad.colonnes === 'string' && pad.colonnes !== '') {
+					try {
+						const valeur = JSON.parse(pad.colonnes)
+						if (Array.isArray(valeur)) {
+							colonnes = valeur
+						}
+					} catch (e) {
+						colonnes = []
+					}
 				}
 			})
 			return colonnes
+		},
+		verifierColonnesDestination () {
+			return this.recupererColonnesDestination().length > 0
+		},
+		definirNombreColonnesDestination () {
+			return this.recupererColonnesDestination()
 		},
 		envoyerBloc () {
 			if (this.padDestination !== '' && ((this.verifierColonnesDestination() && this.colonneDestination !== '') || (!this.verifierColonnesDestination() && this.colonneDestination === ''))) {

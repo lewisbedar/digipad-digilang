@@ -399,9 +399,9 @@ function verifierAdministrateurListe (identifiant, donneesPad) {
 	return definirAdministrateursPad(donneesPad).includes(identifiant)
 }
 
-function nettoyerPads (pads, identifiant) {
+function nettoyerPads (pads, identifiant, champs = champsPadsClient) {
 	return pads.filter(el => el && Object.keys(el).length > 0).map((el) => {
-		const pad = filtrerChamps(el, champsPadsClient)
+		const pad = filtrerChamps(el, champs)
 		pad.id = parseInt(el.id, 10)
 		if (pad.hasOwnProperty('notification')) pad.notification = reduireNotification(pad.notification, identifiant)
 		return pad

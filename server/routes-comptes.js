@@ -5,6 +5,7 @@ import { renderPage } from 'vike/server'
 import { randomBytes } from 'crypto'
 import { etat } from './etat.js'
 import {
+	champsPadsClient,
 	nettoyerPads,
 	supprimerDoublons,
 	supprimerSession,
@@ -323,8 +324,9 @@ export default function enregistrerRoutesComptes ({
 			if (!autorisation) return res.status(403).send('non_autorise')
 			const pads = await recupererDonneesAuteur(identifiant)
 			if (!pads.hasOwnProperty('padsCrees') || !pads.hasOwnProperty('padsAdmins')) return res.status(500).send('erreur')
-			let padsCrees = nettoyerPads(pads.padsCrees, identifiant)
-			let padsAdmins = nettoyerPads(pads.padsAdmins, identifiant)
+			const champs = [...champsPadsClient, 'colonnes']
+			let padsCrees = nettoyerPads(pads.padsCrees, identifiant, champs)
+			let padsAdmins = nettoyerPads(pads.padsAdmins, identifiant, champs)
 			padsCrees = supprimerDoublons(padsCrees)
 			padsAdmins = supprimerDoublons(padsAdmins)
 			res.status(200).json({ padsCrees, padsAdmins })
