@@ -70,7 +70,6 @@ VITE_DOCX_VIEWER (lien vers une visionneuse pour les documents MS Office / tél�
 VITE_DOCX_VIEWER_ALT (lien vers une visionneuse alternative pour les documents MS Office)
 UPLOAD_HOST (lien vers un serveur externe pour le traitement des téléversements / équivalent à DOMAIN par défaut)
 UPLOAD_TOKEN_SECRET (secret partagé avec un serveur de téléversement externe (UPLOAD_HOST) pour signer les jetons d'autorisation de téléversement / obligatoire en production dès qu'UPLOAD_HOST est utilisé, doit être identique sur les deux serveurs)
-ENCRYPTION_KEY (clé pour decrypter les données Digidrive / uniquement nécessaire si Digidrive est utilisé)
 VITE_LEGAL_TERMS_LINK (lien vers les mentions légales)
 ACCOUNT_VALIDATION (validation de l'inscription par email / 0 ou 1 / 0 par défaut)
 RATE_LIMIT_AUTH (nombre max de requêtes en échec par IP sur 15 min pour mot de passe / identifiant oubliés / 10 par défaut)
@@ -84,6 +83,7 @@ RATE_LIMIT_PASSWORD (nombre max d'échecs de saisie du mot de passe d'un pad sur
 RATE_LIMIT_API (nombre max de requêtes en échec par IP sur 15 min, tous appels /api/ confondus hors lien de fichier / 100 par défaut / à relever pour une instance dont les utilisateurs partagent une même adresse publique)
 RATE_LIMIT_FILE_LINK (nombre max de requêtes en échec par IP sur 15 min pour la génération de liens de fichiers / 300 par défaut)
 TRUST_PROXY (configuration Express « trust proxy » : true, false, un entier = nombre de proxies de confiance ou une liste d'IP / sous-réseaux / 1 par défaut)
+DIGIDRIVE_BASE (lien vers une instance Digidrive pour la validation des tickets d'ouverture des contenus / uniquement nécessaire si l'API Digidrive est utilisée)
 ```
 
 ## Fichiers (stockage S3)

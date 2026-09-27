@@ -43,7 +43,6 @@
     "connect-redis": "^9.0.0",
     "cors": "^2.8.5",
     "cross-env": "^10.1.0",
-    "crypto-js": "^4.2.0",
     "dayjs": "^1.11.19",
     "destyle.css": "^2.0.0",
     "dompurify": "^3.3.0",

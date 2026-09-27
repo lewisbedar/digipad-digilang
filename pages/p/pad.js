@@ -379,10 +379,10 @@ export default {
 	},
 	async created () {
 		const params = this.$pageContext.pageProps.params
-		const identifiant = params.id
-		const motdepasse = params.mdp
-		if (identifiant && identifiant !== '' && motdepasse && motdepasse !== '') {
-			window.history.replaceState({}, document.title, window.location.href.split('?')[0])
+		if (params.dgt && params.dgt !== '') {
+			const requete = new URLSearchParams(window.location.search)
+			requete.delete('dgt')
+			window.history.replaceState({}, document.title, window.location.pathname + (requete.toString() === '' ? '' : '?' + requete))
 		}
 		const langueNav = navigator.language.substring(0, 2)
 		const langueParam = params.lang

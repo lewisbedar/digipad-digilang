@@ -754,38 +754,15 @@ export default function creerFonctions ({
 		return donneesPad.pad
 	}
 
-	async function verifierAcces (pad, identifiant, motdepasse) {
+	// Accès par ticket Digidrive
+	async function verifierAccesTicket (pad, identifiant) {
 		const reponseErreur = { acces: 'erreur', utilisateur: {} }
 		let donneesPad = await db.HGETALL('pads:' + pad)
 		donneesPad = donneesPad ? { ...donneesPad } : {}
 		if (!donneesPad.identifiant) return reponseErreur
-		const proprietaire = (identifiant === donneesPad.identifiant)
-		let motdepasseCorrect = false
-		let hashAComparer = null
-		let donneesUtilisateur = {}
-		// Cas A : Le pad a un mot de passe spécifique et l'utilisateur est le propriétaire
-		if (proprietaire && donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '') {
-			hashAComparer = donneesPad.motdepasse
-		}
-		// Cas B : Le pad n'a pas de mot de passe, vérification du MDP compte
-		else if (proprietaire && !donneesPad.hasOwnProperty('motdepasse')) {
-			donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
-			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-			if (!donneesUtilisateur.motdepasse) return reponseErreur
-			hashAComparer = donneesUtilisateur.motdepasse
-		}
-		if (hashAComparer && motdepasse && motdepasse.trim() !== '') {
-			try {
-				motdepasseCorrect = await bcrypt.compare(motdepasse.trim(), hashAComparer)
-			} catch {
-				return reponseErreur
-			}
-		}
-		if (!motdepasseCorrect) return reponseErreur
-		if (Object.keys(donneesUtilisateur).length === 0) {
-			donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
-			donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
-		}
+		if (identifiant !== donneesPad.identifiant) return reponseErreur
+		let donneesUtilisateur = await db.HGETALL('utilisateurs:' + identifiant)
+		donneesUtilisateur = donneesUtilisateur ? { ...donneesUtilisateur } : {}
 		if (!donneesUtilisateur.hasOwnProperty('id') || !donneesUtilisateur.hasOwnProperty('nom') || !donneesUtilisateur.hasOwnProperty('langue')) return reponseErreur
 		const digidrive = parseInt(donneesPad.digidrive, 10) || 0
 		if (digidrive === 0) {
@@ -1917,7 +1894,7 @@ export default function creerFonctions ({
 		diffuserCommentaires,
 		recupererDonneesBlocs,
 		recupererDonneesPadJSON,
-		verifierAcces,
+		verifierAccesTicket,
 		exporterPad,
 		supprimerPad,
 		fetchSockets,

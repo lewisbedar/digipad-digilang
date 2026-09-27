@@ -174,7 +174,6 @@ async function demarrerServeur () {
 	const creationCompte = parseInt(process.env.VITE_CREATE_ACCOUNT) || 1
 	const creationPadSansCompte = parseInt(process.env.VITE_PAD_WITHOUT_ACCOUNT) || 1
 
-	const cleCrypto = process.env.ENCRYPTION_KEY || ''
 
 	if (production && process.env.UPLOAD_HOST && !process.env.UPLOAD_TOKEN_SECRET) {
 		throw new Error('UPLOAD_TOKEN_SECRET manquante dans les variables d\'environnement alors qu\'UPLOAD_HOST est configuré. Arrêt du serveur.')
@@ -478,7 +477,6 @@ async function demarrerServeur () {
 		db,
 		dureeSession,
 		earlyHints103,
-		cleCrypto,
 		secretJetonTeleversement,
 		secretJetonFichier,
 		creationCompte,

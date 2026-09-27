@@ -28,7 +28,6 @@ export default async function initialiserRoutes ({
 	db,
 	dureeSession,
 	earlyHints103,
-	cleCrypto,
 	secretJetonTeleversement,
 	secretJetonFichier,
 	creationCompte,
@@ -282,7 +281,6 @@ export default async function initialiserRoutes ({
 		db,
 		dureeSession,
 		earlyHints103,
-		cleCrypto,
 		fonctions
 	})
 

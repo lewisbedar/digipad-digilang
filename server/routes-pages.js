@@ -1,7 +1,6 @@
 import path from 'path'
 import fs from 'fs-extra'
-import Rabbit from 'crypto-js/rabbit.js'
-import Utf8 from 'crypto-js/enc-utf8.js'
+import axios from 'axios'
 import genererXML from './genererXML.js'
 import { renderPage } from 'vike/server'
 import { fileURLToPath } from 'url'
@@ -27,7 +26,6 @@ export default function enregistrerRoutesPages ({
 	db,
 	dureeSession,
 	earlyHints103,
-	cleCrypto,
 	fonctions
 }) {
 	const {
@@ -35,7 +33,7 @@ export default function enregistrerRoutesPages ({
 		recupererDonneesPad,
 		recupererDonneesBlocs,
 		recupererDonneesPadJSON,
-		verifierAcces
+		verifierAccesTicket
 	} = fonctions
 
 	app.get('/', async (req, res, next) => {
@@ -223,23 +221,29 @@ export default function enregistrerRoutesPages ({
 			if (!req.session.hasOwnProperty('pads')) {
 				req.session.pads = []
 			}
-			if (req.query.id && req.query.id !== '' && req.query.mdp && req.query.mdp !== '') {
+			if (req.query.dgt && req.query.dgt !== '') {
 				try {
-					const id = decodeURIComponent(req.query.id)
-					const mdpB = Rabbit.decrypt(decodeURIComponent(req.query.mdp), cleCrypto)
-					const mdp = mdpB.toString(Utf8)
+					const base = process.env.DIGIDRIVE_BASE
+					if (!base) throw new Error('DIGIDRIVE_BASE absente')
 					const pad = req.params.id
-					const { acces, utilisateur } = await verifierAcces(pad, id, mdp)
-					if (acces === 'pad_debloque') {
-						req.session.identifiant = utilisateur.id
-						req.session.motdepasse = ''
-						req.session.nom = utilisateur.nom
-						req.session.statut = 'auteur'
-						req.session.langue = utilisateur.langue
-						if (!req.session.pads.includes(parseInt(pad, 10))) {
-							req.session.pads.push(parseInt(pad, 10))
+					const { data } = await axios.post(base + 'inc/echanger_ticket.php', {
+						ticket: req.query.dgt,
+						outil: 'digipad',
+						contenu: pad
+					}, { timeout: 5000 })
+					if (data.statut === 'ticket_valide' && data.contenu === pad && data.identifiant) {
+						const { acces, utilisateur } = await verifierAccesTicket(pad, data.identifiant)
+						if (acces === 'pad_debloque') {
+							req.session.identifiant = utilisateur.id
+							req.session.motdepasse = ''
+							req.session.nom = utilisateur.nom
+							req.session.statut = 'auteur'
+							req.session.langue = utilisateur.langue
+							if (!req.session.pads.includes(parseInt(pad, 10))) {
+								req.session.pads.push(parseInt(pad, 10))
+							}
+							req.session.cookie.expires = new Date(Date.now() + dureeSession)
 						}
-						req.session.cookie.expires = new Date(Date.now() + dureeSession)
 					}
 				} catch {}
 			}
