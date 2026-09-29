@@ -45,6 +45,12 @@ async function demarrerServeur () {
 	} else if (process.env.PORT) {
 		hote = 'http://localhost:' + process.env.PORT
 	}
+	let origineAutorisee
+	try {
+		origineAutorisee = new URL(hote).origin
+	} catch {
+		throw new Error('DOMAIN manquante ou invalide dans les variables d\'environnement (ex. : https://digipad.app). Arrêt du serveur.')
+	}
 	const hoteWs = hote.replace(/^https:\/\//, 'wss://').replace(/^http:\/\//, 'ws://')
 	const hoteTeleversement = process.env.UPLOAD_HOST || hote
 	const langues = ['fr', 'es', 'it', 'de', 'en', 'hr']
@@ -405,11 +411,15 @@ async function demarrerServeur () {
 	const io = new Server(httpServer, {
 		wsEngine: eiows.Server,
 		cors: {
-			origin: hote
+			origin: origineAutorisee
 		},
 		pingInterval: 120000,
 		pingTimeout: 100000,
 		maxHttpBufferSize: 1e7,
+		allowRequest: (req, callback) => {
+			const origine = req.headers.origin
+			callback(null, !origine || origine === origineAutorisee)
+		},
 		cookie: false,
 		perMessageDeflate: false
 	})
