@@ -38,6 +38,7 @@ export default function enregistrerRoutesLadigitale ({
 	etherpad,
 	etherpadApi,
 	televerserTemp,
+	limiteImportApi,
 	fonctions
 }) {
 	const {
@@ -320,7 +321,7 @@ export default function enregistrerRoutesLadigitale ({
 		}
 	})
 
-	app.post('/api/ladigitale/importer', (req, res) => {
+	app.post('/api/ladigitale/importer', limiteImportApi, (req, res) => {
 		televerserTemp(req, res, async (err) => {
 			if (err) return res.status(500).send('erreur')
 			if (!req.file) return res.status(500).send('erreur')

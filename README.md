@@ -82,6 +82,8 @@ RATE_LIMIT_CODE (nombre max d'échecs de saisie du code d'accès sur 15 min pour
 RATE_LIMIT_PASSWORD (nombre max d'échecs de saisie du mot de passe d'un pad sur 15 min pour un couple IP + pad, fenêtre fixe non prolongée, remise à zéro dès qu'un mot de passe correct est saisi / 10 par défaut)
 RATE_LIMIT_API (nombre max de requêtes en échec par IP sur 15 min, tous appels /api/ confondus hors lien de fichier / 100 par défaut / à relever pour une instance dont les utilisateurs partagent une même adresse publique)
 RATE_LIMIT_FILE_LINK (nombre max de requêtes en échec par IP sur 15 min pour la génération de liens de fichiers / 300 par défaut)
+RATE_LIMIT_API_IMPORT (nombre max d'imports par IP sur 15 min via l'API Digidrive, réussis ou non / 10 par défaut)
+ARCHIVE_UPLOAD_LIMIT (taille maximale des archives importées en Mo / 200 par défaut)
 TRUST_PROXY (configuration Express « trust proxy » : true, false, un entier = nombre de proxies de confiance ou une liste d'IP / sous-réseaux / 1 par défaut)
 DIGIDRIVE_BASE (lien vers une instance Digidrive pour la validation des tickets d'ouverture des contenus / uniquement nécessaire si l'API Digidrive est utilisée)
 ```

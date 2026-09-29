@@ -210,6 +210,7 @@ async function demarrerServeur () {
 	const limiteEchecsMotDePasseAdresse = parseInt(process.env.RATE_LIMIT_PASSWORD) || 10
 	const limiteRequetesApi = parseInt(process.env.RATE_LIMIT_API) || 100
 	const limiteRequetesLienFichier = parseInt(process.env.RATE_LIMIT_FILE_LINK) || 300
+	const limiteRequetesImportApi = parseInt(process.env.RATE_LIMIT_API_IMPORT) || 10
 	const fenetreEchecsConnexionParIdentifiant = 15 * 60
 
 	let trustProxy = process.env.TRUST_PROXY
@@ -231,6 +232,7 @@ async function demarrerServeur () {
 	const salonMaintenance = 'admin-maintenance'
 
 	const limiteTeleversement = (parseFloat(process.env.VITE_UPLOAD_LIMIT) || 20) * 1024 * 1024
+	const limiteArchive = (parseFloat(process.env.ARCHIVE_UPLOAD_LIMIT) || 200) * 1024 * 1024
 	const extensionsAutorisees = definirExtensionsAutorisees(process.env.VITE_UPLOAD_FILE_TYPES)
 
 	const limitePadsParCompte = parseInt(process.env.VITE_PAD_LIMIT, 10) || 100
@@ -261,6 +263,18 @@ async function demarrerServeur () {
 			prefix: 'rl-lien-fichier:'
 		}),
 		skipSuccessfulRequests: true,
+		validate: { trustProxy: false }
+	})
+
+	const limiteImportApi = rateLimit({
+		windowMs: 15 * 60 * 1000,
+		limit: limiteRequetesImportApi,
+		standardHeaders: 'draft-7',
+		legacyHeaders: false,
+		store: new RateLimitRedisStore({
+			sendCommand: (...args) => db.sendCommand(args),
+			prefix: 'rl-import-api:'
+		}),
 		validate: { trustProxy: false }
 	})
 
@@ -507,6 +521,7 @@ async function demarrerServeur () {
 		limiteAuthAdmin,
 		limiteActionsSensibles,
 		limiteTeleversement,
+		limiteArchive,
 		extensionsAutorisees,
 		httpServer,
 		trustProxy,
@@ -521,6 +536,7 @@ async function demarrerServeur () {
 		domainesAutorises,
 		limiteApi,
 		limiteLienFichier,
+		limiteImportApi,
 		cheminLienFichier,
 		fonctions
 	})

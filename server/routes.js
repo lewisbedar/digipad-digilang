@@ -48,6 +48,7 @@ export default async function initialiserRoutes ({
 	limiteAuthAdmin,
 	limiteActionsSensibles,
 	limiteTeleversement,
+	limiteArchive,
 	extensionsAutorisees,
 	httpServer,
 	trustProxy,
@@ -62,6 +63,7 @@ export default async function initialiserRoutes ({
 	domainesAutorises,
 	limiteApi,
 	limiteLienFichier,
+	limiteImportApi,
 	cheminLienFichier,
 	fonctions
 }) {
@@ -245,7 +247,7 @@ export default async function initialiserRoutes ({
 	}
 
 	const televerserTemp = multer({
-		limits: { fileSize: 200 * 1024 * 1024 },
+		limits: { fileSize: limiteArchive, files: 1 },
 		storage: multer.diskStorage({
 			destination: (req, fichier, callback) => {
 				const dossier = path.join(__dirname, '..', '/static/temp/')
@@ -355,6 +357,7 @@ export default async function initialiserRoutes ({
 		etherpad,
 		etherpadApi,
 		televerserTemp,
+		limiteImportApi,
 		fonctions
 	})
 
