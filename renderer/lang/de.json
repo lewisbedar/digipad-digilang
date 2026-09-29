@@ -300,6 +300,7 @@
 	"compteActive": "Ihr Konto wurde aktiviert.",
 	"erreurEnvoiEmail": "Fehler beim Versenden der E-Mail. Möglicherweise wurde das Tageslimit für die Anzahl der versendeten Nachrichten erreicht.",
 	"afficherHub": "App-Hub anzeigen",
+	"voirDocumentation": "Dokumentation anzeigen",
 	"plier": "Ein-/ausblenden",
 	"normaliser": "Normalisieren",
 	"maximiser": "Maximieren",

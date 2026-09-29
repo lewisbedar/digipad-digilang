@@ -300,6 +300,7 @@
 	"compteActive": "Your account has been activated.",
 	"erreurEnvoiEmail": "Error while sending the email. The daily limit for the number of messages sent may have been reached.",
 	"afficherHub": "View app hub",
+	"voirDocumentation": "View documentation",
 	"plier": "Collapse/Expand",
 	"normaliser": "Normalize",
 	"maximiser": "Maximize",

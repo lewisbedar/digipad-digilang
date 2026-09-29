@@ -300,6 +300,7 @@
 	"compteActive": "Vaš je račun aktiviran.",
 	"erreurEnvoiEmail": "Pogreška pri slanju e-pošte. Možda je dostignuta dnevna granica broja poslatih poruka.",
 	"afficherHub": "Prikaži središte aplikacija",
+	"voirDocumentation": "Prikaži dokumentaciju",
 	"plier": "Sklopi/Raziširi",
 	"normaliser": "Vrati na normalu",
 	"maximiser": "Optimiziraj",

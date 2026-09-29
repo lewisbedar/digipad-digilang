@@ -300,6 +300,7 @@
 	"compteActive": "Votre compte a été activé.",
 	"erreurEnvoiEmail": "Erreur lors de l'envoi de l'e-mail. La limite quotidienne du nombre de messages envoyés a peut-être été atteinte.",
 	"afficherHub": "Afficher le hub d'applications",
+	"voirDocumentation": "Voir la documentation",
 	"plier": "Plier/déplier",
 	"normaliser": "Normaliser",
 	"maximiser": "Maximiser",

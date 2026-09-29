@@ -300,6 +300,7 @@
 	"compteActive": "Su cuenta ha sido activada.",
 	"erreurEnvoiEmail": "Error al enviar el correo electrónico. Es posible que se haya alcanzado el límite diario de mensajes enviados.",
 	"afficherHub": "Mostrar el centro de aplicaciones",
+	"voirDocumentation": "Ver la documentación",
 	"plier": "Contraer/expandir",
 	"normaliser": "Normalizar",
 	"maximiser": "Maximizar",
