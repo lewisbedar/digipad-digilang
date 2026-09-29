@@ -384,7 +384,7 @@ export default function enregistrerRoutesFichiers ({
 			if (!bufferImage || !nomFichier) return res.status(422).send('erreur_televersement')
 			if (!verifierContenuFichier(bufferImage, mimetypeVignette)) return res.status(422).send('erreur_televersement')
 			const extensionFichier = path.parse(nomFichier).ext.toLowerCase()
-			let bufferOptimise = null
+			let bufferOptimise
 			try {
 				if (extensionFichier === '.jpg' || extensionFichier === '.jpeg') {
 					bufferOptimise = await sharp(bufferImage, { failOnError: false })
@@ -458,7 +458,7 @@ export default function enregistrerRoutesFichiers ({
 			if (!verifierContenuFichier(bufferImage, mimetypeFond)) return res.status(422).send('erreur_televersement')
 			const padId = donneesFormulaire.get('pad')
 			const extensionFichier = path.parse(nomFichier).ext.toLowerCase()
-			let bufferOptimise = null
+			let bufferOptimise
 			try {
 				const donneesPad = await recupererPadAutorise(padId, req.session, { adminRequis: true })
 				if (!donneesPad) return res.status(403).send('non_autorise')

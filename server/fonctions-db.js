@@ -293,7 +293,7 @@ export default function creerFonctions ({
 			if (!pads || pads.length === 0) return []
 			const donneesPads = await Promise.all(pads.map(async (pad) => {
 				const padExiste = await db.EXISTS('pads:' + pad)
-				let donneesPad = null
+				let donneesPad
 				if (padExiste === 1) {
 					donneesPad = await db.HGETALL('pads:' + pad)
 					return donneesPad ? { ...donneesPad } : null
@@ -1162,7 +1162,7 @@ export default function creerFonctions ({
 
 	async function signerUrlS3 (cle, { telechargement = false, duree = dureeUrlAffichage } = {}) {
 		const parametres = { Bucket: bucket, Key: cle }
-		if (telechargement) parametres.ResponseContentDisposition = 'attachment; filename="' + path.basename(cle).replace(/[^\w.\-]/g, '_') + '"'
+		if (telechargement) parametres.ResponseContentDisposition = 'attachment; filename="' + path.basename(cle).replace(/[^\w.-]/g, '_') + '"'
 		return getSignedUrl(s3Client, new GetObjectCommand(parametres), { expiresIn: duree.validite })
 	}
 

@@ -85,6 +85,8 @@ const regles = {
 	'no-undef': 'error',
 	'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
 	'no-prototype-builtins': 'off',
+	'no-empty': 'off',
+	'no-control-regex': 'off',
 	'@stylistic/indent': ['error', 'tab', { SwitchCase: 0 }],
 	'no-tabs': 'off',
 	'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',

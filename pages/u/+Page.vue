@@ -1569,7 +1569,7 @@ export default {
 			return type
 		},
 		rechercher () {
-			let resultats = []
+			let resultats
 			if (this.requete === '!maj') {
 				resultats = this.pads.filter((element) => {
 					return element.notification && element.notification.includes(this.identifiant)

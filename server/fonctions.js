@@ -461,7 +461,7 @@ function genererMotDePasse (longueur) {
 	}
 	const caracteres = '123456789abcdefghijklmnopqrstuvwxyz'.split('')
 	const caracteresSpeciaux = '!#$@*'
-	const specialRegex = /[!#\$@*]/
+	const specialRegex = /[!#$@*]/
 	const majuscules = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 	const majusculesRegex = /[A-Z]/
 	let motdepasse = ''
@@ -587,8 +587,8 @@ function definirNomFichier (fichier) {
 	const info = path.parse(fichier)
 	const extension = info.ext.toLowerCase()
 	let nom = v.latinise(info.name.toLowerCase())
-	nom = nom.replace(/\ /gi, '-')
-	nom = nom.replace(/[^0-9a-z_\-]/gi, '')
+	nom = nom.replace(/ /gi, '-')
+	nom = nom.replace(/[^0-9a-z_-]/gi, '')
 	if (nom.length > 100) {
 		nom = nom.substring(0, 100)
 	}

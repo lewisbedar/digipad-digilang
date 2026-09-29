@@ -219,7 +219,7 @@ export default {
 		},
 		blocsRecherche () {
 			let resultats = []
-			let blocs = []
+			let blocs
 			switch (this.requete) {
 			case '!eval+':
 				blocs = this.blocs.slice().sort((a, b) => {
@@ -933,7 +933,7 @@ export default {
 			})
 		},
 		ajouterColonne (indexColonne) {
-			let titre = ''
+			let titre
 			if ((this.modale === 'colonne' && this.titreColonne.trim() === '') || (this.modale === '' && this.menuColonne === null)) {
 				return
 			}
@@ -2069,7 +2069,7 @@ export default {
 				const imageId = 'image-' + Date.now()
 				let html = ''
 				let urlMedia = ''
-				let urlMediaHote = ''
+				let urlMediaHote
 				try {
 					this.elementPrecedent = (document.activeElement || document.body)
 					await this.rafraichirMedia(item)
