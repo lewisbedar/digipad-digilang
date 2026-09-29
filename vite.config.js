@@ -17,7 +17,7 @@ export default {
 	},
 	server: {
 		watch: {
-			ignored: ["**/static/**"],
+			ignored: ['**/static/**']
 		}
 	},
 	build: {

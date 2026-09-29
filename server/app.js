@@ -366,16 +366,16 @@ async function demarrerServeur () {
 	let domaineUmami = null
 	if (process.env.VITE_MATOMO && process.env.VITE_MATOMO !== '') {
 		domaineMatomo = process.env.VITE_MATOMO
-		scriptSrc = ["'self'", domaineMatomo]
+		scriptSrc = ['\'self\'', domaineMatomo]
 	} else if (process.env.UMAMI_SCRIPT_URL && process.env.UMAMI_SCRIPT_URL !== '') {
 		const umamiScriptUrl = new URL(process.env.UMAMI_SCRIPT_URL)
 		domaineUmami = umamiScriptUrl.protocol + '//' + umamiScriptUrl.hostname
-		scriptSrc = ["'self'", domaineUmami]
+		scriptSrc = ['\'self\'', domaineUmami]
 	} else {
-		scriptSrc = ["'self'"]
+		scriptSrc = ['\'self\'']
 	}
 	if (!production) {
-		scriptSrc.push("'unsafe-inline'")
+		scriptSrc.push('\'unsafe-inline\'')
 	}
 
 	const originesS3 = []
@@ -408,8 +408,8 @@ async function demarrerServeur () {
 			origin: hote
 		},
 		pingInterval: 120000,
-    	pingTimeout: 100000,
-    	maxHttpBufferSize: 1e7,
+		pingTimeout: 100000,
+		maxHttpBufferSize: 1e7,
 		cookie: false,
 		perMessageDeflate: false
 	})

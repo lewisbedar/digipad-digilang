@@ -45,12 +45,12 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
-										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + '" aria-label="' + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<a :href="item.media" title="` + t[langue].ouvrirLienNouvelOnglet + '" aria-label="' + t[langue].ouvrirLienNouvelOnglet + `" target="_blank" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + '" aria-label="' + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 									</div>
 									<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
 										<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
@@ -63,8 +63,8 @@ function genererHTML (pad, blocs, langue) {
 										</span>
 									</div>
 									<div class="action" :style="{'color': item.couleur}">
-										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + '" aria-label="' + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + '" aria-label="' + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 										<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 									</div>
 								</div>
@@ -79,12 +79,12 @@ function genererHTML (pad, blocs, langue) {
 									</div>
 									<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 									<div class="media" v-if="item.media !== ''">
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
-										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
-										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + '" aria-label="' + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+										<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + '" aria-label="' + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+										<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + '" aria-label="' + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 									</div>
 									<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
 										<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
@@ -97,8 +97,8 @@ function genererHTML (pad, blocs, langue) {
 										</span>
 									</div>
 									<div class="action" :style="{'color': item.couleur}">
-										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
-										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + '" aria-label="' + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc, item.titre)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+										<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + '" aria-label="' + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 										<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 									</div>
 								</div>
@@ -120,12 +120,12 @@ function genererHTML (pad, blocs, langue) {
 											</div>
 											<div class="texte" v-if="item.texte !== ''" v-html="item.texte"></div>
 											<div class="media" v-if="item.media !== ''">
-												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
-												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
-												<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + `" aria-label="` + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-												<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + `" aria-label="` + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
-												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + `" aria-label="` + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
-												<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + `" aria-label="` + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-if="item.type === 'image'" @click="afficherVisionneuse(item)"><img :src="'./fichiers/' + item.media" :alt="definirTexteAlternatif(item)"></button>
+												<button type="button" class="bouton-image" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'lien-image'" @click="afficherVisionneuse(item)"><img :src="item.media" :alt="definirTexteAlternatif(item)"></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].afficherDansVisionneuse + '" aria-label="' + t[langue].afficherDansVisionneuse + `" v-else-if="item.type === 'audio' || item.type === 'video' || item.type === 'embed'" @click="afficherVisionneuse(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].ouvrirDocumentNouvelOnglet + '" aria-label="' + t[langue].ouvrirDocumentNouvelOnglet + `" v-else-if="item.type === 'document' || item.type === 'pdf' || item.type === 'office'" @click="afficherMedia(item)"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></button>
+												<a :href="item.media" target="_blank" title="` + t[langue].ouvrirLienNouvelOnglet + '" aria-label="' + t[langue].ouvrirLienNouvelOnglet + `" v-else-if="item.type === 'lien'"><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
+												<a :href="'./fichiers/' + item.media" title="` + t[langue].telecharger + '" aria-label="' + t[langue].telecharger + `" download v-else><img :class="{'vignette': definirVignette(item).substring(0, 9) !== './static/'}" :src="definirVignette(item)"></a>
 											</div>
 											<div class="etiquettes" v-if="pad.etiquettes === 'activees' && item.etiquettes && item.etiquettes.length > 0">
 												<span class="etiquette" v-for="(etiquette, indexEtiquette) in item.etiquettes" :style="{'background': eclaircirCouleur(etiquette.couleur), 'border-color': etiquette.couleur, 'color': etiquette.couleur}" :key="'etiquette_' + indexEtiquette">{{ etiquette.nom }}</span>
@@ -138,8 +138,8 @@ function genererHTML (pad, blocs, langue) {
 												</span>
 											</div>
 											<div class="action" :style="{'color': item.couleur}">
-												<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + `" aria-label="` + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
-												<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + `" aria-label="` + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].afficherCommentaires + '" aria-label="' + t[langue].afficherCommentaires + `" class="bouton" @click="ouvrirModaleCommentaires(item.bloc)" v-if="pad.commentaires === 'actives' && item.commentaires > 0"><i class="material-icons" aria-hidden="true">comment</i><span class="badge">{{ item.commentaires }}</span></button>
+												<button type="button" :disabled="disabled" title="` + t[langue].informationsCapsule + '" aria-label="' + t[langue].informationsCapsule + `" class="bouton info" :data-description="item.info"><i class="material-icons" aria-hidden="true">info</i></button>
 												<span class="media-type" v-if="item.media !== ''"><i class="material-icons" aria-hidden="true">{{ definirIconeMedia(item) }}</i></span>
 											</div>
 										</div>
@@ -153,7 +153,7 @@ function genererHTML (pad, blocs, langue) {
 						<div id="discussion" class="modale" role="dialog" aria-modal="true" :aria-label="titre">
 							<div class="en-tete">
 								<span class="titre">{{ titre }}</span>
-								<button type="button" title="` + t[langue].fermer + `" aria-label="` + t[langue].fermer + `" class="fermer" @click="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
+								<button type="button" title="` + t[langue].fermer + '" aria-label="' + t[langue].fermer + `" class="fermer" @click="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></span>
 							</div>
 							<ul class="commentaires ascenseur">
 								<li v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" :key="indexEntreeCommentaire">
@@ -617,7 +617,7 @@ function genererHTML (pad, blocs, langue) {
 							return rem * parseFloat(getComputedStyle(document.documentElement).fontSize)
 						},
 						definirEtoiles (evaluations) {
-							const etoiles = this.definirEvaluationCapsule(evaluations) > 1 ? this.definirEvaluationCapsule(evaluations) + ' ` + t[langue].etoiles + `' : this.definirEvaluationCapsule(evaluations) + ' ` + t[langue].etoile + `'
+							const etoiles = this.definirEvaluationCapsule(evaluations) > 1 ? this.definirEvaluationCapsule(evaluations) + ' ` + t[langue].etoiles + '\' : this.definirEvaluationCapsule(evaluations) + \' ' + t[langue].etoile + `'
 							return etoiles + ' - ' + evaluations.length + ' ` + t[langue].evaluations + `'
 						},
 						definirEvaluationCapsule (evaluations) {

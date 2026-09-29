@@ -127,8 +127,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
 					donneesPad = await recupererDonneesPadJSON(pad)
 				} else if (padExiste === 1) {
-				    donneesPad = await db.HGETALL('pads:' + pad)
-				    donneesPad = donneesPad ? { ...donneesPad } : {}
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				const autorisation = (donneesPad.hasOwnProperty('motdepasse') && donneesPad.motdepasse.trim() !== '' && donneesPad.identifiant === identifiant && await bcrypt.compare(ancienmotdepasse, donneesPad.motdepasse))
@@ -149,8 +149,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
 					donneesPad = await recupererDonneesPadJSON(pad)
 				} else if (padExiste === 1) {
-				    donneesPad = await db.HGETALL('pads:' + pad)
-				    donneesPad = donneesPad ? { ...donneesPad } : {}
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				let autorisation = false
@@ -177,12 +177,12 @@ export default function enregistrerRoutesLadigitale ({
 					langue = req.session.langue
 				}
 				if (typePad === 'sans-compte') {
-				    await db.multi()
-				    .HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
-				    .HSET('pads:' + pad, ['identifiant', identifiant, 'digidrive', 1])
-				    .exec()
+					await db.multi()
+						.HSET('utilisateurs:' + identifiant, ['id', identifiant, 'date', date, 'nom', nom, 'langue', langue])
+						.HSET('pads:' + pad, ['identifiant', identifiant, 'digidrive', 1])
+						.exec()
 				} else {
-				    await db.HSET('pads:' + pad, 'digidrive', 1)
+					await db.HSET('pads:' + pad, 'digidrive', 1)
 				}
 				return res.status(200).json({ titre: donneesPad.titre, identifiant: identifiantFinal })
 			}
@@ -198,8 +198,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + padSource + '.json'))) {
 					donneesPad = await recupererDonneesPadJSON(padSource)
 				} else if (padExiste === 1) {
-			        donneesPad = await db.HGETALL('pads:' + padSource)
-				    donneesPad = donneesPad ? { ...donneesPad } : {}
+					donneesPad = await db.HGETALL('pads:' + padSource)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (!donneesPad.hasOwnProperty('identifiant')) return res.status(500).send('erreur')
 				const autorisation = await verifierAutorisationApi(donneesPad, identifiant, motdepasse)
@@ -216,14 +216,14 @@ export default function enregistrerRoutesLadigitale ({
 				const colonnesDupliquees = JSON.stringify(normaliserTitresColonnes(parseJSON(donneesPad.colonnes, [])))
 				const affichageColonnes = normaliserAffichageColonnes(parseJSON(donneesPad.colonnes, []), parseJSON(donneesPad.affichageColonnes, null))
 				if (typeof donneesPad.fond === 'string' && donneesPad.fond !== '' && !donneesPad.fond.includes('/img/') && donneesPad.fond.substring(0, 1) !== '#') {
-	                donneesPad.fond = path.basename(donneesPad.fond)
+					donneesPad.fond = path.basename(donneesPad.fond)
 				}
 				const champsPad = ['id', padId, 'token', token, 'titre', 'Copie de ' + donneesPad.titre, 'identifiant', identifiant, 'fond', donneesPad.fond, 'acces', donneesPad.acces, 'contributions', donneesPad.contributions, 'affichage', donneesPad.affichage, 'registreActivite', donneesPad.registreActivite || 'active', 'conversation', donneesPad.conversation || 'desactivee', 'listeUtilisateurs', donneesPad.listeUtilisateurs || 'activee', 'editionNom', donneesPad.editionNom || 'desactivee', 'fichiers', donneesPad.fichiers, 'enregistrements', donneesPad.enregistrements || 'desactives', 'liens', donneesPad.liens, 'documents', donneesPad.documents, 'commentaires', donneesPad.commentaires, 'evaluations', donneesPad.evaluations, 'etiquettes', donneesPad.etiquettes || 'desactivees', 'copieBloc', donneesPad.copieBloc || 'desactivee', 'ordre', donneesPad.ordre || 'croissant', 'largeur', donneesPad.largeur || 'normale', 'date', date, 'colonnes', colonnesDupliquees, 'affichageColonnes', JSON.stringify(affichageColonnes), 'bloc', donneesPad.bloc, 'activite', 0, 'vues', 0, 'digidrive', 1, ...definirParametresModeration(donneesPad)]
 				if (donneesPad.hasOwnProperty('code')) {
 					champsPad.push('code', code)
 				}
 				if (!compteUtilisateur) {
-				    champsPad.push('motdepasse', hash)
+					champsPad.push('motdepasse', hash)
 				}
 				const pipelineCreation = db.multi()
 					.HSET('pads:' + padId, champsPad)
@@ -282,8 +282,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
 					donneesPad = await recupererDonneesPadJSON(pad)
 				} else if (padExiste === 1) {
-			        donneesPad = await db.HGETALL('pads:' + pad)
-				    donneesPad = donneesPad ? { ...donneesPad } : {}
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				const autorisation = await verifierAutorisationApi(donneesPad, identifiant, motdepasse)
@@ -302,8 +302,8 @@ export default function enregistrerRoutesLadigitale ({
 				if (padExiste === 0 && await fs.pathExists(path.join(__dirname, '..', '/static/pads/' + pad + '.json'))) {
 					donneesPad = await recupererDonneesPadJSON(pad)
 				} else if (padExiste === 1) {
-			        donneesPad = await db.HGETALL('pads:' + pad)
-				    donneesPad = donneesPad ? { ...donneesPad } : {}
+					donneesPad = await db.HGETALL('pads:' + pad)
+					donneesPad = donneesPad ? { ...donneesPad } : {}
 				} else if (padExiste === 0) return res.status(404).send('contenu_inexistant')
 				if (Object.keys(donneesPad).length === 0) return res.status(500).send('erreur')
 				const autorisation = await verifierAutorisationApi(donneesPad, identifiant, motdepasse)

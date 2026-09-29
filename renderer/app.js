@@ -20,18 +20,18 @@ export { createPageApp }
 function createPageApp (pageContext) {
 	const { Page, pageProps } = pageContext
 	const PageWithLayout = {
-    	render () {
-      		return h(
-        		PageShell,
-        		{},
-        		{
-          			default () {
-            			return h(Page, pageProps || {})
-          			}
-        		}
-      		)
-    	}
-  	}
+		render () {
+			return h(
+				PageShell,
+				{},
+				{
+					default () {
+						return h(Page, pageProps || {})
+					}
+				}
+			)
+		}
+	}
 
 	let langueParDefaut = import.meta.env.VITE_DEFAULT_LANGUAGE || 'fr'
 	if (!messages.hasOwnProperty(langueParDefaut)) {
@@ -73,24 +73,24 @@ function createPageApp (pageContext) {
 	app.config.globalProperties.$formaterDate = (date, langue) => {
 		let dateFormattee = ''
 		switch (langue) {
-			case 'fr':
-				dateFormattee = dayjs(new Date(date)).locale('fr').format('L') + ' à ' + dayjs(new Date(date)).locale('fr').format('LT')
-				break
-			case 'es':
-				dateFormattee = dayjs(new Date(date)).locale('es').format('L') + ' a las ' + dayjs(new Date(date)).locale('es').format('LT')
-				break
-			case 'it':
-				dateFormattee = dayjs(new Date(date)).locale('it').format('L') + ' alle ' + dayjs(new Date(date)).locale('it').format('LT')
-				break
-			case 'de':
-				dateFormattee = dayjs(new Date(date)).locale('de').format('L') + ' um ' + dayjs(new Date(date)).locale('de').format('LT')
-				break
-			case 'en':
-				dateFormattee = dayjs(new Date(date)).locale('en').format('L') + ' at ' + dayjs(new Date(date)).locale('en').format('LT')
-				break
-			case 'hr':
-				dateFormattee = dayjs(new Date(date)).locale('hr').format('L') + ' u ' + dayjs(new Date(date)).locale('hr').format('LT')
-				break
+		case 'fr':
+			dateFormattee = dayjs(new Date(date)).locale('fr').format('L') + ' à ' + dayjs(new Date(date)).locale('fr').format('LT')
+			break
+		case 'es':
+			dateFormattee = dayjs(new Date(date)).locale('es').format('L') + ' a las ' + dayjs(new Date(date)).locale('es').format('LT')
+			break
+		case 'it':
+			dateFormattee = dayjs(new Date(date)).locale('it').format('L') + ' alle ' + dayjs(new Date(date)).locale('it').format('LT')
+			break
+		case 'de':
+			dateFormattee = dayjs(new Date(date)).locale('de').format('L') + ' um ' + dayjs(new Date(date)).locale('de').format('LT')
+			break
+		case 'en':
+			dateFormattee = dayjs(new Date(date)).locale('en').format('L') + ' at ' + dayjs(new Date(date)).locale('en').format('LT')
+			break
+		case 'hr':
+			dateFormattee = dayjs(new Date(date)).locale('hr').format('L') + ' u ' + dayjs(new Date(date)).locale('hr').format('LT')
+			break
 		}
 		return dateFormattee
 	}

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { convert } from 'html-to-text'
 import t from './lang.js'
 
-function echapperXML(str) {
+function echapperXML (str) {
 	if (typeof str !== 'string') {
 		str = String(str || '')
 	}

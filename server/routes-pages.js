@@ -64,7 +64,7 @@ export default function enregistrerRoutesPages ({
 			headers.forEach(([name, value]) => res.setHeader(name, value))
 		}
 		res.status(statusCode).send(body)
-  	})
+	})
 
 	app.get('/u/:utilisateur', async (req, res, next) => {
 		if (etat.maintenance === true) return res.redirect(302, '/maintenance')
@@ -198,7 +198,7 @@ export default function enregistrerRoutesPages ({
 			supprimerSession(req)
 			res.redirect(302, '/')
 		}
-  	})
+	})
 
 	app.get('/p/:id/:token', async (req, res, next) => {
 		if (etat.maintenance === true) return res.redirect(302, '/maintenance')
@@ -300,7 +300,7 @@ export default function enregistrerRoutesPages ({
 			supprimerSession(req)
 			res.redirect(302, '/')
 		}
-  	})
+	})
 
 	app.get('/p/:id/:token/rss', async (req, res) => {
 		if (etat.maintenance === true) return res.redirect(302, '/maintenance')
@@ -332,7 +332,7 @@ export default function enregistrerRoutesPages ({
 			console.error(err.stack)
 			res.redirect(302, '/p/' + req.params.id + '/' + req.params.token)
 		}
-  	})
+	})
 
 	app.get('/maintenance', async (req, res, next) => {
 		if (etat.maintenance === false) return res.redirect(302, '/')
@@ -361,7 +361,7 @@ export default function enregistrerRoutesPages ({
 			headers.forEach(([name, value]) => res.setHeader(name, value))
 		}
 		res.status(statusCode).send(body)
-  	})
+	})
 
 	app.get('/admin', async (req, res, next) => {
 		let langue = langueParDefaut
@@ -389,5 +389,5 @@ export default function enregistrerRoutesPages ({
 			headers.forEach(([name, value]) => res.setHeader(name, value))
 		}
 		res.status(statusCode).send(body)
-  	})
+	})
 }

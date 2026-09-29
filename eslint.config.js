@@ -1,5 +1,6 @@
+import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import stylistic from '@stylistic/eslint-plugin'
 
 // Globales du navigateur et globales communes aux deux environnements
 const globalesNavigateur = {
@@ -84,7 +85,7 @@ const regles = {
 	'no-undef': 'error',
 	'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
 	'no-prototype-builtins': 'off',
-	'indent': ['error', 'tab'],
+	'@stylistic/indent': ['error', 'tab', { SwitchCase: 0 }],
 	'no-tabs': 'off',
 	'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'off',
 	'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off'
@@ -93,10 +94,10 @@ const regles = {
 export default [
 	{
 		name: 'app/files-to-ignore',
-		ignores: ['**/dist/**', '**/dist-ssr/**', 'static/**', 'public/js/**', '_resources/**'],
+		ignores: ['**/dist/**', '**/dist-ssr/**', 'static/**', '_resources/**', 'public/**', 'ecosystem.config.cjs']
 	},
+	js.configs.recommended,
 	...pluginVue.configs['flat/essential'],
-	skipFormatting,
 	{
 		files: ['**/*.{js,mjs,vue}'],
 		ignores: ['server/**/*.js', 'tests/**/*.js'],
@@ -127,5 +128,15 @@ export default [
 			ecmaVersion: 'latest'
 		},
 		rules: regles
+	},
+	{
+		plugins: {
+			'@stylistic': stylistic
+		},
+		rules: {
+			'@stylistic/space-before-function-paren': ['error', 'always'],
+			'@stylistic/comma-dangle': ['error', 'never'],
+			'@stylistic/quotes': ['error', 'single', { avoidEscape: false }]
+		}
 	}
 ]

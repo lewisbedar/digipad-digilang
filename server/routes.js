@@ -72,14 +72,14 @@ export default async function initialiserRoutes ({
 
 	const politiqueSecuriteApplication = helmet.contentSecurityPolicy({
 		directives: {
-			"default-src": ["'self'", "https:"],
-			"connect-src": ["'self'", hoteWs, hoteVite, hoteTeleversement, "https://pixabay.com", "https://noembed.com", ...(etherpad ? [etherpad] : []), ...(domaineUmami ? [domaineUmami] : []), ...(domaineMatomo ? [domaineMatomo] : []), ...(Array.isArray(originesS3) ? originesS3 : [])],
-			"script-src": scriptSrc,
-			"media-src": ["'self'", "https:", "data:", "blob:"],
-			"worker-src": ["'self'", "https:", "data:", "blob:"],
-			"img-src": ["'self'", "https:", "data:"],
-			"frame-ancestors": ["*"],
-			"frame-src": ["*", "blob:"]
+			'default-src': ['\'self\'', 'https:'],
+			'connect-src': ['\'self\'', hoteWs, hoteVite, hoteTeleversement, 'https://pixabay.com', 'https://noembed.com', ...(etherpad ? [etherpad] : []), ...(domaineUmami ? [domaineUmami] : []), ...(domaineMatomo ? [domaineMatomo] : []), ...(Array.isArray(originesS3) ? originesS3 : [])],
+			'script-src': scriptSrc,
+			'media-src': ['\'self\'', 'https:', 'data:', 'blob:'],
+			'worker-src': ['\'self\'', 'https:', 'data:', 'blob:'],
+			'img-src': ['\'self\'', 'https:', 'data:'],
+			'frame-ancestors': ['*'],
+			'frame-src': ['*', 'blob:']
 		}
 	})
 
@@ -215,7 +215,7 @@ export default async function initialiserRoutes ({
 	}
 
 	function definirEnTetesSecuriteFichier (req, res, next) {
-		res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox")
+		res.setHeader('Content-Security-Policy', 'default-src \'none\'; sandbox')
 		res.setHeader('X-Content-Type-Options', 'nosniff')
 		next()
 	}

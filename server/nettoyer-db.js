@@ -82,23 +82,23 @@ async function supprimerPad (identifiant, pad) {
 		donneesPad = Object.assign({}, donneesPad)
 		if (donneesPad.identifiant === identifiant) { // pad créé
 			await db
-			.multi()
-			.UNLINK('blocs:' + pad)
-			.UNLINK('pads:' + pad)
-			.UNLINK('activite:' + pad)
-			.UNLINK('dates-pads:' + pad)
-			.SREM('pads-crees:' + identifiant, pad.toString())
-			.SREM('pads-supprimes:' + identifiant, pad.toString())
-			.exec()
+				.multi()
+				.UNLINK('blocs:' + pad)
+				.UNLINK('pads:' + pad)
+				.UNLINK('activite:' + pad)
+				.UNLINK('dates-pads:' + pad)
+				.SREM('pads-crees:' + identifiant, pad.toString())
+				.SREM('pads-supprimes:' + identifiant, pad.toString())
+				.exec()
 			const utilisateurs = await db.SMEMBERS('utilisateurs-pads:' + pad)
 			for (let j = 0; j < utilisateurs.length; j++) {
 				await db
-				.multi()
-				.SREM('pads-rejoints:' + utilisateurs[j], pad.toString())
-				.SREM('pads-utilisateurs:' + utilisateurs[j], pad.toString())
-				.SREM('pads-admins:' + utilisateurs[j], pad.toString())
-				.SREM('pads-favoris:' + utilisateurs[j], pad.toString())
-				.exec()
+					.multi()
+					.SREM('pads-rejoints:' + utilisateurs[j], pad.toString())
+					.SREM('pads-utilisateurs:' + utilisateurs[j], pad.toString())
+					.SREM('pads-admins:' + utilisateurs[j], pad.toString())
+					.SREM('pads-favoris:' + utilisateurs[j], pad.toString())
+					.exec()
 			}
 			await db.UNLINK('utilisateurs-pads:' + pad)
 			return 'pad_supprime : ' + pad
@@ -110,16 +110,16 @@ async function supprimerPad (identifiant, pad) {
 
 async function supprimerCompte (identifiant, email) {
 	await db
-	.multi()
-	.UNLINK('pads-crees:' + identifiant)
-	.UNLINK('pads-supprimes:' + identifiant)
-	.UNLINK('pads-rejoints:' + identifiant)
-	.UNLINK('pads-favoris:' + identifiant)
-	.UNLINK('pads-admins:' + identifiant)
-	.UNLINK('pads-utilisateurs:' + identifiant)
-	.UNLINK('utilisateurs:' + identifiant)
-	.UNLINK('noms:' + identifiant)
-	.exec()
+		.multi()
+		.UNLINK('pads-crees:' + identifiant)
+		.UNLINK('pads-supprimes:' + identifiant)
+		.UNLINK('pads-rejoints:' + identifiant)
+		.UNLINK('pads-favoris:' + identifiant)
+		.UNLINK('pads-admins:' + identifiant)
+		.UNLINK('pads-utilisateurs:' + identifiant)
+		.UNLINK('utilisateurs:' + identifiant)
+		.UNLINK('noms:' + identifiant)
+		.exec()
 	if (email !== '') {
 		await db.UNLINK('emails:' + email)
 	}

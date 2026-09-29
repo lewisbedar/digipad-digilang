@@ -83,7 +83,7 @@ async function render (pageContext) {
 				<script src="/js/pell.js"></script>
 			</body>
 		</html>`
-  	return {
-    	documentHtml
-  	}
+	return {
+		documentHtml
+	}
 }

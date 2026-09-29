@@ -11,11 +11,11 @@ const httpServer = createServer(app)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', '/static/maintenance/maintenance.html'))
+	res.sendFile(path.join(__dirname, '..', '/static/maintenance/maintenance.html'))
 })
 
 app.get('/*splat', (req, res) => {
-    res.redirect('/')
+	res.redirect('/')
 })
 
 const port = process.env.PORT || 3000
