@@ -2092,7 +2092,7 @@ export default {
 						html = '<video controls playsinline crossOrigin="anonymous" src="' + escapeHtml(urlMedia) + '"></video>'
 						break
 					case 'pdf':
-						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse('/pdfjs/web/viewer.html?file=', urlMediaHote)) + '" allowfullscreen></iframe>'
+						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + this.langue + '&file=', urlMediaHote)) + '" allowfullscreen></iframe>'
 						break
 					case 'document':
 					case 'office':

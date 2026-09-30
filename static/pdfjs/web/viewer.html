@@ -34,6 +34,32 @@ See https://github.com/adobe-type-tools/cmap-resources
     <link rel="stylesheet" href="viewer.css">
 
   <script src="viewer.mjs" type="module"></script>
+  <!-- Langue de l'application passée via le paramètre ?lang= -->
+  <script>
+    (function () {
+      var cibles = [document]
+      try {
+        if (window.parent !== window && window.parent.document) {
+          cibles.push(window.parent.document)
+        }
+      } catch (e) {}
+      function definirLangue (event) {
+        if (event.detail && event.detail.source !== window) {
+          return
+        }
+        cibles.forEach(function (cible) {
+          cible.removeEventListener('webviewerloaded', definirLangue)
+        })
+        var langue = new URLSearchParams(window.location.search).get('lang')
+        if (langue && window.PDFViewerApplicationOptions) {
+          window.PDFViewerApplicationOptions.set('localeProperties', { lang: langue })
+        }
+      }
+      cibles.forEach(function (cible) {
+        cible.addEventListener('webviewerloaded', definirLangue)
+      })
+    })()
+  </script>
   </head>
 
   <body tabindex="0">

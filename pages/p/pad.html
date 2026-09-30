@@ -741,7 +741,7 @@
 						<audio id="audio" controls :src="media" v-show="!chargementMedia" v-else-if="type === 'enregistrement'" />
 						<audio id="audio" controls :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'audio'" />
 						<video id="video" controls playsinline crossOrigin="anonymous" :src="definirLienFichier(pad.id, media)" v-show="!chargementMedia" v-else-if="type === 'video'" />
-						<iframe id="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?file=', definirLienFichierHote(pad.id, media))" allowfullscreen v-show="!chargementMedia" v-else-if="type === 'pdf'" />
+						<iframe id="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + langue + '&file=', definirLienFichierHote(pad.id, media))" allowfullscreen v-show="!chargementMedia" v-else-if="type === 'pdf'" />
 						<iframe id="document" :src="definirLienVisionneuse(visionneuse, definirLienModaleVisionneuse())" allowfullscreen v-show="!chargementMedia" v-else-if="(type === 'office' || type === 'document') && visionneuse !== ''" />
 						<a id="lien" :href="media" target="_blank" v-show="!chargementMedia" v-else-if="type === 'lien'">
 							<span class="type">{{ $t('lienExterne') }}</span>
@@ -1019,7 +1019,7 @@
 						<img :src="donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-else-if="donneesBloc.type === 'lien-image'">
 						<audio controls :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
 						<video controls playsinline crossOrigin="anonymous" :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
-						<iframe class="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?file=', stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media)" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
+						<iframe class="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + langue + '&file=', stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media)" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
 						<iframe class="document" :src="definirLienVisionneuse(visionneuse, definirLienDocumentVisionneuse())" allowfullscreen v-else-if="(donneesBloc.type === 'office' || donneesBloc.type === 'document') && visionneuse !== ''" />
 						<span v-else-if="donneesBloc.type === 'lien'">
 							<a :href="donneesBloc.media" target="_blank">
