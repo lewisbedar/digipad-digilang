@@ -1,7 +1,7 @@
 import path from 'path'
 import fs from 'fs-extra'
 import axios from 'axios'
-import genererXML from './genererXML.js'
+import genererXML from './generer-xml.js'
 import { renderPage } from 'vike/server'
 import { fileURLToPath } from 'url'
 import { etat } from './etat.js'

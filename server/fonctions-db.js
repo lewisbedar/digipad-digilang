@@ -10,7 +10,7 @@ import { randomBytes } from 'crypto'
 import { pipeline } from 'stream/promises'
 import { CopyObjectCommand, PutObjectCommand, PutObjectAclCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
-import genererHTML from './genererHTML.js'
+import genererHTML from './generer-html.js'
 import { etat } from './etat.js'
 import {
 	assainirTexteAlternatif,
