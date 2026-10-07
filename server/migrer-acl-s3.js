@@ -30,7 +30,7 @@ const s3Client = new S3Client({
 
 const db_port = parseInt(process.env.DB_PORT) || 6379
 const db = process.env.NODE_ENV === 'production'
-	? await createClient({ url: 'redis://default:' + process.env.DB_PWD + '@' + process.env.DB_HOST + ':' + db_port }).on('error', (err) => console.error('Redis : ' + err)).connect()
+	? await createClient({ url: 'redis://default:' + encodeURIComponent(process.env.DB_PWD) + '@' + process.env.DB_HOST + ':' + db_port }).on('error', (err) => console.error('Redis : ' + err)).connect()
 	: await createClient({ url: 'redis://localhost:' + db_port }).on('error', (err) => console.error('Redis : ' + err)).connect()
 
 const parametres = process.argv.slice(2)

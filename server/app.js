@@ -88,7 +88,7 @@ async function demarrerServeur () {
 	const db_port = parseInt(process.env.DB_PORT) || 6379
 	if (production) {
 		db = await createClient({
-			url: 'redis://default:' + process.env.DB_PWD  + '@' + process.env.DB_HOST + ':' + db_port
+			url: 'redis://default:' + encodeURIComponent(process.env.DB_PWD)  + '@' + process.env.DB_HOST + ':' + db_port
 		}).on('error', (err) => {
 			console.error('Erreur Redis : ' + err)
 		}).on('ready', () => {

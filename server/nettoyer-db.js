@@ -6,7 +6,7 @@ let db
 const db_port = parseInt(process.env.DB_PORT) || 6379
 if (process.env.NODE_ENV === 'production') {
 	db = await createClient({
-		url: 'redis://default:' + process.env.DB_PWD  + '@' + process.env.DB_HOST + ':' + db_port
+		url: 'redis://default:' + encodeURIComponent(process.env.DB_PWD)  + '@' + process.env.DB_HOST + ':' + db_port
 	}).on('error', function (err) {
 		console.log('redis: ', err)
 	}).connect()
