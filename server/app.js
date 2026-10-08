@@ -211,7 +211,7 @@ async function demarrerServeur () {
 	const limiteRequetesApi = parseInt(process.env.RATE_LIMIT_API) || 100
 	const limiteRequetesLienFichier = parseInt(process.env.RATE_LIMIT_FILE_LINK) || 300
 	const limiteRequetesImportApi = parseInt(process.env.RATE_LIMIT_API_IMPORT) || 10
-	const fenetreEchecsConnexionParIdentifiant = 15 * 60
+	const dureeEchecsConnexion = 15 * 60
 
 	let trustProxy = process.env.TRUST_PROXY
 	if (trustProxy === undefined || trustProxy.trim() === '') {
@@ -452,7 +452,7 @@ async function demarrerServeur () {
 		langues,
 		langueParDefaut,
 		minimumEspaceDisque,
-		fenetreEchecsConnexionParIdentifiant,
+		dureeEchecsConnexion,
 		limiteEchecsCodeAdresse,
 		limiteEchecsMotDePasseAdresse,
 		salonMaintenance
