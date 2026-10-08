@@ -75,7 +75,7 @@ export default function creerFonctions ({
 	langues,
 	langueParDefaut,
 	minimumEspaceDisque,
-	fenetreEchecsConnexionParIdentifiant,
+	dureeEchecsConnexion,
 	limiteEchecsCodeAdresse,
 	limiteEchecsMotDePasseAdresse,
 	salonMaintenance
@@ -86,7 +86,7 @@ export default function creerFonctions ({
 		try {
 			const [tentatives] = await db.multi()
 				.INCR(cle)
-				.EXPIRE(cle, fenetreEchecsConnexionParIdentifiant, 'NX')
+				.EXPIRE(cle, dureeEchecsConnexion, 'NX')
 				.exec()
 			return parseInt(tentatives)
 		} catch (err) {
