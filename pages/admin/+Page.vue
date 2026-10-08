@@ -137,7 +137,7 @@
 				<div class="conteneur">
 					<div class="conteneur-interrupteur">
 						<span>{{ $t('supprimerFichiersServeur') }}</span>
-						<label class="bouton-interrupteur" :tabindex="tabIndex" :aria-disabled="disabled" @keydown.enter.space.prevent="activerInput('suppression-fichier')">
+						<label class="bouton-interrupteur" :tabindex="tabIndex" role="switch" :aria-checked="suppressionFichiers ? 'true' : 'false'" :aria-label="$t('supprimerFichiersServeur')" :aria-disabled="disabled" @keydown.enter.space.prevent="activerInput('suppression-fichier')">
 							<input id="suppression-fichier" type="checkbox" tabindex="-1" aria-hidden="true" :checked="suppressionFichiers" :disabled="disabled" @change="modifierSuppressionFichiers">
 							<span class="barre" />
 						</label>
