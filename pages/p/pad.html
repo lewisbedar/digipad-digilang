@@ -317,7 +317,7 @@
 				<div class="conteneur-interrupteur" v-if="pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && progressionFond === 0">
 					<span>{{ $t('repeterImageFond') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.fondRepete === 'active') ? 'true' : 'false'" :aria-label="$t('repeterImageFond')" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
-						<input id="parametre-fond-repete" type="checkbox" hidden :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
+						<input id="parametre-fond-repete" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
 						<span class="barre" />
 					</label>
 				</div>
@@ -327,14 +327,14 @@
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('activitePad') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.registreActivite || pad.registreActivite === 'active') ? 'true' : 'false'" :aria-label="$t('activitePad')" @keydown.enter.space.prevent="activerInput('parametre-registre-activite')">
-						<input id="parametre-registre-activite" type="checkbox" hidden :checked="!pad.registreActivite || pad.registreActivite === 'active'" @change="modifierActivite">
+						<input id="parametre-registre-activite" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="!pad.registreActivite || pad.registreActivite === 'active'" @change="modifierActivite">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('conversation') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.conversation || pad.conversation === 'activee') ? 'true' : 'false'" :aria-label="$t('conversation')" @keydown.enter.space.prevent="activerInput('parametre-conversation')">
-						<input id="parametre-conversation" type="checkbox" hidden :checked="!pad.conversation || pad.conversation === 'activee'" @change="modifierConversation">
+						<input id="parametre-conversation" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="!pad.conversation || pad.conversation === 'activee'" @change="modifierConversation">
 						<span class="barre" />
 					</label>
 				</div>
@@ -344,14 +344,14 @@
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('utilisateursConnectes') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee') ? 'true' : 'false'" :aria-label="$t('utilisateursConnectes')" @keydown.enter.space.prevent="activerInput('parametre-liste-utilisateurs')">
-						<input id="parametre-liste-utilisateurs" type="checkbox" hidden :checked="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'" @change="modifierListeUtilisateurs">
+						<input id="parametre-liste-utilisateurs" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'" @change="modifierListeUtilisateurs">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'">
 					<span>{{ $t('editionNom') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.editionNom === 'activee') ? 'true' : 'false'" :aria-label="$t('editionNom')" @keydown.enter.space.prevent="activerInput('parametre-edition-nom')">
-						<input id="parametre-edition-nom" type="checkbox" hidden :checked="pad.editionNom === 'activee'" @change="modifierEditionNom">
+						<input id="parametre-edition-nom" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.editionNom === 'activee'" @change="modifierEditionNom">
 						<span class="barre" />
 					</label>
 				</div>
@@ -361,35 +361,35 @@
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('fichiers') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.fichiers === 'actives') ? 'true' : 'false'" :aria-label="$t('fichiers')" @keydown.enter.space.prevent="activerInput('parametre-fichiers')">
-						<input id="parametre-fichiers" type="checkbox" hidden :checked="pad.fichiers === 'actives'" @change="modifierFichiers">
+						<input id="parametre-fichiers" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.fichiers === 'actives'" @change="modifierFichiers">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('enregistrementsAudio') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.enregistrements === 'actives') ? 'true' : 'false'" :aria-label="$t('enregistrementsAudio')" @keydown.enter.space.prevent="activerInput('parametre-enregistrements')">
-						<input id="parametre-enregistrements" type="checkbox" hidden :checked="pad.enregistrements === 'actives'" @change="modifierEnregistrements">
+						<input id="parametre-enregistrements" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.enregistrements === 'actives'" @change="modifierEnregistrements">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('liens') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.liens === 'actives') ? 'true' : 'false'" :aria-label="$t('liens')" @keydown.enter.space.prevent="activerInput('parametre-liens')">
-						<input id="parametre-liens" type="checkbox" hidden :checked="pad.liens === 'actives'" @change="modifierLiens">
+						<input id="parametre-liens" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.liens === 'actives'" @change="modifierLiens">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="etherpad !== ''">
 					<span>{{ $t('documentsCollaboratifs') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.documents === 'actives') ? 'true' : 'false'" :aria-label="$t('documentsCollaboratifs')" @keydown.enter.space.prevent="activerInput('parametre-documents')">
-						<input id="parametre-documents" type="checkbox" hidden :checked="pad.documents === 'actives'" @change="modifierDocuments">
+						<input id="parametre-documents" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.documents === 'actives'" @change="modifierDocuments">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('commentaires') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.commentaires === 'actives') ? 'true' : 'false'" :aria-label="$t('commentaires')" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
-						<input id="parametre-commentaires" type="checkbox" hidden :checked="pad.commentaires === 'actives'" @change="modifierCommentaires">
+						<input id="parametre-commentaires" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.commentaires === 'actives'" @change="modifierCommentaires">
 						<span class="barre" />
 					</label>
 				</div>
@@ -410,21 +410,21 @@
 				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives' && pad.accesCommentaires !== 'admin'">
 					<span>{{ $t('moderationCommentaires') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.commentairesModeration === 'activee') ? 'true' : 'false'" :aria-label="$t('moderationCommentaires')" @keydown.enter.space.prevent="activerInput('parametre-commentaires-moderation')">
-						<input id="parametre-commentaires-moderation" type="checkbox" hidden :checked="pad.commentairesModeration === 'activee'" @change="modifierModerationCommentaires">
+						<input id="parametre-commentaires-moderation" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.commentairesModeration === 'activee'" @change="modifierModerationCommentaires">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('etiquettes') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.etiquettes === 'activees') ? 'true' : 'false'" :aria-label="$t('etiquettes')" @keydown.enter.space.prevent="activerInput('parametre-etiquettes')">
-						<input id="parametre-etiquettes" type="checkbox" hidden :checked="pad.etiquettes === 'activees'" @change="modifierEtiquettes">
+						<input id="parametre-etiquettes" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.etiquettes === 'activees'" @change="modifierEtiquettes">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('evaluations') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.evaluations === 'activees') ? 'true' : 'false'" :aria-label="$t('evaluations')" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
-						<input id="parametre-evaluations" type="checkbox" hidden :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
+						<input id="parametre-evaluations" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
 						<span class="barre" />
 					</label>
 				</div>
@@ -445,7 +445,7 @@
 				<div class="conteneur-interrupteur" v-if="statut === 'utilisateur' || viaDigidrive">
 					<span>{{ $t('copieCapsule') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.copieBloc === 'activee') ? 'true' : 'false'" :aria-label="$t('copieCapsule')" @keydown.enter.space.prevent="activerInput('parametre-copie-bloc')">
-						<input id="parametre-copie-bloc" type="checkbox" hidden :checked="pad.copieBloc === 'activee'" @change="modifierCopieBloc">
+						<input id="parametre-copie-bloc" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.copieBloc === 'activee'" @change="modifierCopieBloc">
 						<span class="barre" />
 					</label>
 				</div>
@@ -461,7 +461,7 @@
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('transfertPropriete') }}</span>
 					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.transfertPropriete === 'active') ? 'true' : 'false'" :aria-label="$t('transfertPropriete')" @keydown.enter.space.prevent="activerInput('parametre-transfert-propriete')">
-						<input id="parametre-transfert-propriete" type="checkbox" hidden :checked="pad.transfertPropriete === 'active'" @change="modifierTransfertPropriete">
+						<input id="parametre-transfert-propriete" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="pad.transfertPropriete === 'active'" @change="modifierTransfertPropriete">
 						<span class="barre" />
 					</label>
 				</div>
@@ -671,11 +671,11 @@
 					<div class="conteneur-interrupteur" v-if="admin">
 						<span>{{ $t('capsulePrivee') }}</span>
 						<label class="bouton-interrupteur" role="switch" :aria-checked="visibilite ? 'true' : 'false'" :aria-label="$t('capsulePrivee')" aria-disabled="true" v-if="mode === 'edition' && visibiliteInitiale === 'privee'">
-							<input id="visibilite-capsule" type="checkbox" hidden :checked="visibilite" disabled>
+							<input id="visibilite-capsule" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="visibilite" disabled>
 							<span class="barre desactive" />
 						</label>
 						<label class="bouton-interrupteur" role="switch" :aria-checked="visibilite ? 'true' : 'false'" :aria-label="$t('capsulePrivee')" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('visibilite-capsule')" v-else>
-							<input id="visibilite-capsule" type="checkbox" hidden :checked="visibilite" :disabled="disabledModale" @change="modifierVisibiliteCapsule">
+							<input id="visibilite-capsule" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="visibilite" :disabled="disabledModale" @change="modifierVisibiliteCapsule">
 							<span class="barre" />
 						</label>
 					</div>
@@ -1185,7 +1185,7 @@
 					<div class="conteneur-interrupteur confirmation" v-if="typeConfirmation === 'vider-pad' && pad.affichage === 'colonnes'">
 						<span>{{ $t('suppressionColonnes') }}</span>
 						<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(suppressionColonnes) ? 'true' : 'false'" :aria-label="$t('suppressionColonnes')" @keydown.enter.space.prevent="activerInput('confirmation-supprimer-colonnes')">
-							<input id="confirmation-supprimer-colonnes" type="checkbox" hidden :checked="suppressionColonnes" @change="suppressionColonnes = !suppressionColonnes">
+							<input id="confirmation-supprimer-colonnes" type="checkbox" tabindex="-1" aria-hidden="true" hidden :checked="suppressionColonnes" @change="suppressionColonnes = !suppressionColonnes">
 							<span class="barre" />
 						</label>
 					</div>
