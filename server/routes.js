@@ -247,6 +247,7 @@ export default async function initialiserRoutes ({
 	}
 
 	const televerserTemp = multer({
+		defParamCharset: 'utf8',
 		limits: { fileSize: limiteArchive, files: 1 },
 		storage: multer.diskStorage({
 			destination: (req, fichier, callback) => {

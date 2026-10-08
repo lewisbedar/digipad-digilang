@@ -120,7 +120,7 @@ export default function enregistrerRoutesFichiers ({
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
 		let extensionNonAutorisee = false
-		const busboy = Busboy({ headers: req.headers, limits: { fileSize: limiteTeleversement } })
+		const busboy = Busboy({ headers: req.headers, defParamCharset: 'utf8', limits: { fileSize: limiteTeleversement } })
 		busboy.on('file', (champ, fichier, meta) => {
 			mimetype = meta.mimeType
 			nomFichier = definirNomFichier(meta.filename)
@@ -306,7 +306,7 @@ export default function enregistrerRoutesFichiers ({
 		const donneesFormulaire = new Map()
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
-		const busboy = Busboy({ headers: req.headers, limits: { fileSize: limiteTeleversement } })
+		const busboy = Busboy({ headers: req.headers, defParamCharset: 'utf8', limits: { fileSize: limiteTeleversement } })
 		busboy.on('field', (champ, valeur) => {
 			donneesFormulaire.set(champ, valeur)
 		})
@@ -361,7 +361,7 @@ export default function enregistrerRoutesFichiers ({
 		let mimetypeVignette
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
-		const busboy = Busboy({ headers: req.headers, limits: { fileSize: 3 * 1024 * 1024 } })
+		const busboy = Busboy({ headers: req.headers, defParamCharset: 'utf8', limits: { fileSize: 3 * 1024 * 1024 } })
 		busboy.on('file', (champ, fichier, meta) => {
 			mimetypeVignette = meta.mimeType
 			nomFichier = definirNomFichier(meta.filename)
@@ -431,7 +431,7 @@ export default function enregistrerRoutesFichiers ({
 		const donneesFormulaire = new Map()
 		let erreurBusboy = false
 		let fichierTropVolumineux = false
-		const busboy = Busboy({ headers: req.headers, limits: { fileSize: 3 * 1024 * 1024 } })
+		const busboy = Busboy({ headers: req.headers, defParamCharset: 'utf8', limits: { fileSize: 3 * 1024 * 1024 } })
 		busboy.on('field', (champ, valeur) => {
 			donneesFormulaire.set(champ, valeur)
 		})
