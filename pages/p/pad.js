@@ -110,6 +110,9 @@ export default {
 			typeConfirmation: '',
 			suppressionColonnes: false,
 			modaleDiaporama: false,
+			commentaireEnvoye: '',
+			commentaireEnregistre: '',
+			commentaireSupprime: '',
 			donneesBloc: {},
 			motDePasse: '',
 			nouveauMotDePasse: '',
@@ -2935,6 +2938,7 @@ export default {
 				bloc = this.donneesBloc.bloc
 			}
 			if (this.commentaire !== '') {
+				this.commentaireEnvoye = bloc
 				this.$socket.emit('commenterbloc', bloc, this.pad.id, this.titre, this.formaterHTML(this.commentaire), this.identifiant, this.nom)
 				this.commentaire = ''
 				this.commentaireId = ''
@@ -3004,11 +3008,16 @@ export default {
 			if (Object.keys(this.donneesBloc).length > 0) {
 				bloc = this.donneesBloc.bloc
 			}
+			const id = this.commentaireId
+			this.commentaireEnregistre = id
 			this.$socket.emit('modifiercommentaire', bloc, this.pad.id, this.commentaireId, this.formaterHTML(this.commentaireModifie), this.identifiant)
 			this.commentaireId = ''
 			this.commentaireModifie = ''
 			this.editionCommentaire = false
 			this.emojis = ''
+			this.$nextTick(() => {
+				document.querySelector('#commentaire-' + id + ' .action button')?.focus()
+			})
 		},
 		afficherSupprimerCommentaire (id) {
 			this.editionCommentaire = false
@@ -3027,8 +3036,19 @@ export default {
 			if (Object.keys(this.donneesBloc).length > 0) {
 				bloc = this.donneesBloc.bloc
 			}
+			this.commentaireSupprime = this.commentaireId
 			this.$socket.emit('supprimercommentaire', bloc, this.pad.id, this.commentaireId, this.identifiant)
 			this.fermerModaleConfirmation()
+		},
+		annoncerCommentaire (texte) {
+			if (this.modaleDiaporama) {
+				this.annonceDiapositive = ''
+				this.$nextTick(() => {
+					this.annonceDiapositive = texte
+				})
+			} else {
+				this.annoncer(texte)
+			}
 		},
 		genererEditeur () {
 			if (this.editeurCommentaire === '' && document.querySelector('#commentaire')) {
@@ -5220,10 +5240,18 @@ export default {
 					} else if (modaleOuverte && this.commentairesVisibles) {
 						this.rafraichirCommentaires(donnees.bloc)
 					}
+					if (this.commentaireEnvoye === donnees.bloc && donnees.identifiant === this.identifiant) {
+						this.commentaireEnvoye = ''
+						this.annoncerCommentaire(donnees.visibilite === 'masquee' ? this.$t('commentaireEnModeration') : this.$t('commentaireAjoute'))
+					}
 				}
 			})
 
 			this.$socket.on('modifiercommentaire', (donnees) => {
+				if (this.commentaireEnregistre !== '' && this.commentaireEnregistre === donnees.id) {
+					this.commentaireEnregistre = ''
+					this.annoncerCommentaire(this.$t('commentaireModifie'))
+				}
 				if (!donnees.hasOwnProperty('texte')) {
 					if (this.verifierModaleCommentaires(donnees.bloc) && this.commentairesVisibles) {
 						this.rafraichirCommentaires(donnees.bloc)
@@ -5253,6 +5281,13 @@ export default {
 					commentaires.splice(indexCommentaire, 1)
 				}
 				this.commentaires = commentaires
+				if (this.commentaireSupprime !== '' && this.commentaireSupprime === donnees.id) {
+					this.commentaireSupprime = ''
+					this.annoncerCommentaire(this.$t('commentaireSupprime'))
+					this.$nextTick(() => {
+						document.querySelector('#commentaire .contenu-editeur-commentaire')?.focus()
+					})
+				}
 			})
 
 			this.$socket.on('commentaires', (commentaires, type, bloc) => {

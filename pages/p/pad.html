@@ -709,7 +709,7 @@
 					</div>
 					<div id="ajouter-lien" v-if="media === '' && progressionFichier === 0 && !enregistrement && pad.liens === 'actives'">
 						<input type="text" :value="lien" :disabled="disabledModale" @input="lien = $event.target.value" :aria-label="$t('ajouterLien')" :placeholder="$t('ajouterLien')" @keydown.enter="ajouterLien" v-if="!chargementLien">
-						<button type="button" class="bouton rechercher" :disabled="disabledModale" :title="$t('valider')" :aria-label="$t('valider')" @click="ajouterLien" v-if="!chargementLien"><i class="material-icons" aria-hidden="true">search</i></button>
+						<button type="button" class="bouton rechercher" :disabled="disabledModale" :title="$t('validerLien')" :aria-label="$t('validerLien')" @click="ajouterLien" v-if="!chargementLien"><i class="material-icons" aria-hidden="true">search</i></button>
 						<div class="conteneur-chargement" v-else>
 							<div class="chargement" />
 						</div>
