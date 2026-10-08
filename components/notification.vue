@@ -12,14 +12,15 @@ export default {
 		return {
 			elementNotification: null,
 			evenementNotification: null,
-			evenementNotificationClavier: null,
-			timeoutNotification: null
+			evenementNotificationClavier: null
 		}
 	},
+	created () {
+		this.chronos = new Map()
+	},
 	beforeUnmount () {
-		if (this.timeoutNotification) {
-			clearTimeout(this.timeoutNotification)
-		}
+		this.chronos.forEach((chrono) => clearTimeout(chrono))
+		this.chronos.clear()
 		if (this.elementNotification && this.evenementNotification) {
 			this.elementNotification.removeEventListener('click', this.evenementNotification)
 		}
@@ -32,17 +33,38 @@ export default {
 	watch: {
 		notification (notification) {
 			if (notification === '') return
+			const conteneur = document.querySelector('#notification')
+			const notificationsPersistantes = [this.$t('rechargerPage'), this.$t('sessionExpiree')]
+			const notificationPersistante = notificationsPersistantes.includes(notification)
+			if (!notificationPersistante) {
+				conteneur?.querySelectorAll('.notification').forEach((ancienne) => {
+					if (ancienne.textContent === notification && this.chronos.has(ancienne)) {
+						clearTimeout(this.chronos.get(ancienne))
+						this.chronos.delete(ancienne)
+						ancienne.remove()
+					}
+				})
+			}
 			const element = document.createElement('div')
 			element.textContent = notification
 			element.classList.add('notification')
-			document.querySelector('#notification')?.appendChild(element)
-			const notificationsPersistantes = [this.$t('rechargerPage'), this.$t('sessionExpiree')]
-			if (!notificationsPersistantes.includes(notification)) {
-				this.timeoutNotification = setTimeout(() => {
-					this.timeoutNotification = null
-					element?.remove()
-					this.$emit('fermer')
-				}, 2500)
+			conteneur?.appendChild(element)
+			if (!notificationPersistante) {
+				const demarrer = () => {
+					clearTimeout(this.chronos.get(element))
+					this.chronos.set(element, setTimeout(() => {
+						this.chronos.delete(element)
+						element.remove()
+					}, 5000))
+				}
+				element.addEventListener('pointerenter', (event) => {
+					if (event.pointerType === 'mouse') clearTimeout(this.chronos.get(element))
+				})
+				element.addEventListener('pointerleave', (event) => {
+					if (event.pointerType === 'mouse') demarrer()
+				})
+				demarrer()
+				this.$emit('fermer')
 			} else {
 				element.style.cursor = 'pointer'
 				element.setAttribute('role', 'button')

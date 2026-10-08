@@ -41,6 +41,11 @@ export default {
 			message: '',
 			messagesEnAttente: [],
 			notification: '',
+			annonce: '',
+			annonceDiapositive: '',
+			navigationDiapositive: false,
+			chronoRecherche: null,
+			annonceDeplacement: '',
 			modale: '',
 			titreModale: '',
 			action: '',
@@ -180,9 +185,6 @@ export default {
 		tabIndexModale () {
 			return this.message === '' && !this.modaleConfirmation && !this.transcodage && !this.progressionEnregistrement ? 0 : -1
 		},
-		tabIndexModaleDiaporama () {
-			return this.modale === '' && this.message === '' && this.menu === '' && !this.transcodage && !this.progressionEnregistrement ? 0 : -1
-		},
 		disabled () {
 			return this.modale === '' && this.message === '' && !this.modaleConfirmation && !this.modaleDiaporama && !this.transcodage && !this.progressionEnregistrement && this.panneaux.length === 0 ? false : true
 		},
@@ -191,6 +193,9 @@ export default {
 		},
 		panneauOuvert () {
 			return this.panneaux.length > 0
+		},
+		menuInerte () {
+			return this.modale !== '' || this.message !== '' || this.modaleConfirmation || this.transcodage || this.progressionEnregistrement
 		},
 		disabledModale () {
 			return this.message === '' && !this.modaleConfirmation && !this.transcodage && !this.progressionEnregistrement ? false : true
@@ -300,6 +305,14 @@ export default {
 		}
 	},
 	watch: {
+		requete () {
+			clearTimeout(this.chronoRecherche)
+			this.chronoRecherche = setTimeout(() => {
+				if (this.recherche && this.requete !== '') {
+					this.annoncer(this.$t('resultatsRecherche', { nombre: this.definirNombreResultatsRecherche() }))
+				}
+			}, 750)
+		},
 		affichage (affichage) {
 			if (affichage === 'colonnes') {
 				this.definirColonnes(this.blocs)
@@ -565,7 +578,23 @@ export default {
 		gererRecherche () {
 			if (this.action !== 'organiser') {
 				this.recherche = !this.recherche
+				if (this.recherche) {
+					this.$nextTick(() => {
+						document.querySelector('#champ-requete')?.focus()
+					})
+				}
 			}
+		},
+		definirNombreResultatsRecherche () {
+			if (this.pad.affichage !== 'colonnes') {
+				return this.blocsRecherche.length
+			}
+			return this.blocsRecherche.reduce((total, colonne, indexCol) => {
+				if (this.admin || !this.pad.hasOwnProperty('affichageColonnes') || this.pad.affichageColonnes[indexCol]) {
+					return total + colonne.length
+				}
+				return total
+			}, 0)
 		},
 		definirFond (fond) {
 			if (fond.substring(0, 1) === '#') {
@@ -1109,11 +1138,11 @@ export default {
 						this.texte = html
 					},
 					actions: [
-						{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold') },
-						{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
-						{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
-						{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-						{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
+						{ name: 'gras', shortcut: 'b', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold'), state: () => document.queryCommandState('bold') },
+						{ name: 'italique', shortcut: 'i', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic'), state: () => document.queryCommandState('italic') },
+						{ name: 'souligne', shortcut: 'u', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline'), state: () => document.queryCommandState('underline') },
+						{ name: 'barre', shortcut: 'shift+x', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough'), state: () => document.queryCommandState('strikethrough') },
+						{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript'), state: () => document.queryCommandState('superscript') },
 						{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<i class="material-icons couleur-texte" aria-hidden="true">format_color_text</i>', result: () => {
 							let i = 0
 							let couleurActuelle = ''
@@ -1133,9 +1162,9 @@ export default {
 							champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
 							this.ouvrirSelecteurCouleur(champ)
 						} },
-						{ name: 'liste-ordonnee', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList') },
-						{ name: 'liste', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList') },
-						{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
+						{ name: 'liste-ordonnee', shortcut: 'shift+7', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList'), state: () => document.queryCommandState('insertOrderedList') },
+						{ name: 'liste', shortcut: 'shift+8', title: this.$t('liste'), icon: '<i class="material-icons" aria-hidden="true">format_list_bulleted</i>', result: () => pell.exec('insertUnorderedList'), state: () => document.queryCommandState('insertUnorderedList') },
+						{ name: 'lien', shortcut: 'k', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 							let i = 0
 							let lienActuel = ''
 							let element = window.getSelection()?.focusNode?.parentNode ?? null
@@ -1165,7 +1194,10 @@ export default {
 							pell.exec('removeFormat')
 						} }
 					],
-					classes: { actionbar: 'boutons-editeur', button: 'bouton-editeur', content: 'contenu-editeur', selected: 'bouton-actif' }
+					classes: { actionbar: 'boutons-editeur', button: 'bouton-editeur', content: 'contenu-editeur', selected: 'bouton-actif' },
+					label: this.$t('texte'),
+					actionbarLabel: this.$t('miseEnForme'),
+					keyLabels: { ctrl: this.$t('toucheCtrl'), shift: this.$t('toucheMaj') }
 				})
 				editeur.content.innerHTML = this.formaterHTML(this.texte)
 				editeur.content.onpaste = (event) => {
@@ -1227,12 +1259,22 @@ export default {
 				champ.addEventListener('input', this.modifierCouleurTexte)
 				champ.addEventListener('change', this.modifierCouleurTexte)
 			}
-			bouton.style.position = 'relative'
-			bouton.appendChild(champ)
+			champ.boutonCouleur = bouton
+			if (getComputedStyle(bouton.parentNode).position === 'static') {
+				bouton.parentNode.style.position = 'relative'
+			}
+			bouton.parentNode.prepend(champ)
 		},
 		ouvrirSelecteurCouleur (champ) {
 			if (!champ) {
 				return
+			}
+			const bouton = champ.boutonCouleur
+			if (bouton) {
+				champ.style.left = bouton.offsetLeft + 'px'
+				champ.style.top = bouton.offsetTop + 'px'
+				champ.style.width = bouton.offsetWidth + 'px'
+				champ.style.height = bouton.offsetHeight + 'px'
 			}
 			try {
 				if (typeof champ.showPicker === 'function') {
@@ -2067,6 +2109,7 @@ export default {
 			if (!this.panneaux.map((e) => { return e.id }).includes('panneau_' + item.bloc) && !this.visionneusesEnCours.includes(item.bloc)) {
 				this.visionneusesEnCours.push(item.bloc)
 				const imageId = 'image-' + Date.now()
+				const titreMedia = item.titre || this.definirNomMedia(item)
 				let html = ''
 				let urlMedia = ''
 				let urlMediaHote
@@ -2086,23 +2129,23 @@ export default {
 						html = '<span id="' + imageId + '" class="image"><img src="' + escapeHtml(item.media) + '" alt="' + escapeHtml(this.definirTexteAlternatif(item)) + '"></span>'
 						break
 					case 'audio':
-						html = '<audio controls preload="metadata" src="' + escapeHtml(urlMedia) + '"></audio>'
+						html = '<audio controls preload="metadata" src="' + escapeHtml(urlMedia) + '" aria-label="' + escapeHtml(titreMedia) + '"></audio>'
 						break
 					case 'video':
-						html = '<video controls playsinline crossOrigin="anonymous" src="' + escapeHtml(urlMedia) + '"></video>'
+						html = '<video controls playsinline crossOrigin="anonymous" src="' + escapeHtml(urlMedia) + '" aria-label="' + escapeHtml(titreMedia) + '"></video>'
 						break
 					case 'pdf':
-						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + this.langue + '&file=', urlMediaHote)) + '" allowfullscreen></iframe>'
+						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + this.langue + '&file=', urlMediaHote)) + '" title="' + escapeHtml(titreMedia) + '" allowfullscreen></iframe>'
 						break
 					case 'document':
 					case 'office':
-						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse(this.visionneuse, urlMediaHote)) + '" allowfullscreen></iframe>'
+						html = '<iframe src="' + escapeHtml(this.definirLienVisionneuse(this.visionneuse, urlMediaHote)) + '" title="' + escapeHtml(titreMedia) + '" allowfullscreen></iframe>'
 						break
 					case 'embed':
 						if (item.source === 'etherpad') {
-							html = '<iframe src="' + escapeHtml(item.media) + '?userName=' + encodeURIComponent(this.nom) + '" allowfullscreen></iframe>'
+							html = '<iframe src="' + escapeHtml(item.media) + '?userName=' + encodeURIComponent(this.nom) + '" title="' + escapeHtml(titreMedia) + '" allowfullscreen></iframe>'
 						} else if (this.verifierURL(item.iframe)) {
-							html = '<iframe src="' + escapeHtml(item.iframe) + '" allow="autoplay; fullscreen"></iframe>'
+							html = '<iframe src="' + escapeHtml(item.iframe) + '" title="' + escapeHtml(titreMedia) + '" allow="autoplay; fullscreen"></iframe>'
 						} else {
 							html = '<div class="html">' + DOMPurify.sanitize(item.iframe, { ADD_TAGS: ['iframe'], ADD_ATTR: ['allow', 'allowfullscreen', 'frameborder'] }) + '</div>'
 						}
@@ -2143,7 +2186,7 @@ export default {
 							iconfont: 'material-icons',
 							closeOnEscape: true,
 							border: '4px solid ' + item.couleur,
-							headerTitle: this.echapperHTML(item.titre),
+							headerTitle: this.echapperHTML(titreMedia),
 							position: position,
 							maximizedMargin: 0,
 							syncMargins: true,
@@ -2157,6 +2200,11 @@ export default {
 							},
 							content: html,
 							callback: (panel) => {
+								panel.setAttribute('role', 'dialog')
+								panel.setAttribute('aria-label', titreMedia)
+								panel.querySelectorAll('iframe:not([title])').forEach((iframe) => {
+									iframe.title = titreMedia
+								})
 								panel.setControlStatus('normalize', 'hide')
 								panel.setControlStatus('minimize', 'remove')
 								document.querySelector('#masque').classList.add('ouvert')
@@ -2455,6 +2503,7 @@ export default {
 				})
 				this.panneaux = []
 				this.chargement = true
+				this.navigationDiapositive = false
 				let donneesBloc = {}
 				const blocActif = document.querySelector('.bloc.actif')
 				if (blocActif) {
@@ -2500,6 +2549,7 @@ export default {
 		},
 		afficherBlocPrecedent () {
 			this.chargement = true
+			this.navigationDiapositive = true
 			this.commentaire = ''
 			const bloc = this.donneesBloc.bloc
 			let indexBloc = 0
@@ -2560,6 +2610,7 @@ export default {
 		},
 		afficherBlocSuivant () {
 			this.chargement = true
+			this.navigationDiapositive = true
 			this.commentaire = ''
 			const bloc = this.donneesBloc.bloc
 			let indexBloc = 0
@@ -2626,13 +2677,73 @@ export default {
 			}
 		},
 		definirAriaLabelBloc (item) {
-			if (item.media !== '' && (item.type === 'image' || item.type === 'lien-image' || item.type === 'audio' || item.type === 'video' || (item.type === 'document' && this.visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && this.visionneuse !== '') || item.type === 'embed')) {
-				return this.$t('afficherDansVisionneuse')
-			} else if (item.media !== '' && item.type === 'lien') {
-				return this.$t('ouvrirLienNouvelOnglet')
-			} else if (item.media !== '') {
-				return this.$t('telecharger')
+			if (item.media) {
+				return this.definirNomMedia(item)
 			}
+			return this.$t('capsuleSansTitre')
+		},
+		definirDescriptionBloc (item) {
+			const ids = []
+			if (item.visibilite === 'privee' || item.visibilite === 'masquee') {
+				ids.push('statut-' + item.bloc)
+			}
+			if (item.media && this.action !== 'organiser') {
+				ids.push('action-' + item.bloc)
+			}
+			if (this.action === 'organiser') {
+				ids.push('instructions-organiser')
+			}
+			return ids.length > 0 ? ids.join(' ') : null
+		},
+		definirActionMedia (item) {
+			if (item.type === 'image' || item.type === 'lien-image' || item.type === 'audio' || item.type === 'video' || (item.type === 'document' && this.visionneuse !== '') || item.type === 'pdf' || (item.type === 'office' && this.visionneuse !== '') || item.type === 'embed') {
+				return this.$t('afficherDansVisionneuse')
+			} else if (item.type === 'lien') {
+				return this.$t('ouvrirLienNouvelOnglet')
+			}
+			return this.$t('telecharger')
+		},
+		definirNomMedia (item) {
+			if (!item || !item.media) return ''
+			if ((item.type === 'image' || item.type === 'lien-image') && this.definirTexteAlternatif(item) !== '') {
+				return this.definirTexteAlternatif(item)
+			}
+			if (item.type === 'lien' || item.type === 'lien-image' || item.type === 'embed') {
+				try {
+					return new URL(item.media).hostname.replace(/^www\./, '')
+				} catch {
+					return item.media
+				}
+			}
+			const fichier = this.definirNomLienFichier(item.media)
+			const resultat = fichier.match(/^(.*)_[0-9a-z]+(\.[0-9a-z]+)$/i)
+			if (resultat) {
+				return resultat[1].replace(/[-_]+/g, ' ').trim() + resultat[2]
+			}
+			return fichier
+		},
+		definirLibelleMedia (item) {
+			return this.$t('libelleCible', { action: this.definirActionMedia(item), cible: this.definirNomMedia(item) })
+		},
+		allerAuContenu () {
+			document.querySelector('#pad')?.focus()
+		},
+		annoncer (texte) {
+			this.annonce = ''
+			this.$nextTick(() => {
+				this.annonce = texte
+			})
+		},
+		verifierBlocVisible (bloc, colonne) {
+			if (this.admin || this.pad.affichage !== 'colonnes') return true
+			if (colonne === undefined) {
+				colonne = this.blocs.find((item) => item.bloc === bloc)?.colonne
+			}
+			return colonne === undefined || !!this.affichageColonnes[colonne]
+		},
+		annoncerActiviteBloc (donnees, cle) {
+			const texte = donnees.titre ? this.$t(cle + 'Capsule', { titre: donnees.titre }) : this.$t(cle + 'UneCapsule')
+			this.annoncer(this.definirNom(donnees) + ' ' + texte.replace(/&nbsp;/g, ' '))
 		},
 		definirBlocActif (bloc) {
 			const blocActif = document.querySelector('.bloc.actif')
@@ -2660,7 +2771,14 @@ export default {
 					if (this.pad.commentaires === 'actives') {
 						this.genererEditeur()
 					}
-					document.querySelector('#diapositive .fermer')?.focus()
+					const elementActif = document.activeElement
+					if (!elementActif || (elementActif.id !== 'precedent' && elementActif.id !== 'suivant')) {
+						document.querySelector('#diapositive .fermer')?.focus()
+					}
+					if (this.navigationDiapositive) {
+						this.navigationDiapositive = false
+						this.annoncerDiapositive()
+					}
 					this.definirParametreURL(this.donneesBloc.bloc)
 				})
 			}
@@ -2706,6 +2824,21 @@ export default {
 			} else {
 				this.chargement = false
 			}
+		},
+		annoncerDiapositive () {
+			let blocs = this.blocs
+			if (this.pad.affichage === 'colonnes') {
+				blocs = this.colonnes.flat()
+			}
+			const position = blocs.findIndex((item) => item.bloc === this.donneesBloc.bloc) + 1
+			let texte = (this.donneesBloc.titre || this.definirAriaLabelBloc(this.donneesBloc)) + ' ' + this.$t('par') + ' ' + this.definirNom(this.donneesBloc)
+			if (position > 0) {
+				texte = this.$t('libelleCible', { action: this.$t('capsulePosition', { position: position, total: blocs.length }), cible: texte })
+			}
+			this.annonceDiapositive = ''
+			this.$nextTick(() => {
+				this.annonceDiapositive = texte
+			})
 		},
 		afficherBlocURL () {
 			const params = this.$pageContext.pageProps.params
@@ -2826,7 +2959,10 @@ export default {
 						this.commentaireModifie = html
 					},
 					actions: actions,
-					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' }
+					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' },
+					label: this.$t('modifierCommentaire'),
+					actionbarLabel: this.$t('miseEnForme'),
+					keyLabels: { ctrl: this.$t('toucheCtrl'), shift: this.$t('toucheMaj') }
 				})
 				editeur.content.innerHTML = this.formaterHTML(this.commentaireModifie)
 				editeur.content.onpaste = (event) => {
@@ -2844,7 +2980,13 @@ export default {
 					}
 				}
 				this.initialiserChampCouleur(editeur, 'couleur-texte-commentaire-modifie')
-				document.querySelector('#commentaire-' + this.commentaireId + ' .action button')?.focus()
+				editeur.content.focus()
+				const range = document.createRange()
+				range.selectNodeContents(editeur.content)
+				range.collapse(false)
+				const selection = window.getSelection()
+				selection.removeAllRanges()
+				selection.addRange(range)
 			})
 		},
 		annulerModifierCommentaire () {
@@ -2897,7 +3039,10 @@ export default {
 						this.commentaire = html
 					},
 					actions: actions,
-					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' }
+					classes: { actionbar: 'boutons-editeur-commentaire', button: 'bouton-editeur', content: 'contenu-editeur-commentaire', selected: 'bouton-actif' },
+					label: this.$t('ecrireCommentaire'),
+					actionbarLabel: this.$t('miseEnForme'),
+					keyLabels: { ctrl: this.$t('toucheCtrl'), shift: this.$t('toucheMaj') }
 				})
 				this.editeurCommentaire.content.onpaste = (event) => {
 					event.preventDefault()
@@ -2918,11 +3063,11 @@ export default {
 		},
 		definirActionsEditeur (type) {
 			const actions = [
-				{ name: 'gras', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold') },
-				{ name: 'italique', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic') },
-				{ name: 'souligne', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline') },
-				{ name: 'barre', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough') },
-				{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript') },
+				{ name: 'gras', shortcut: 'b', title: this.$t('gras'), icon: '<i class="material-icons" aria-hidden="true">format_bold</i>', result: () => pell.exec('bold'), state: () => document.queryCommandState('bold') },
+				{ name: 'italique', shortcut: 'i', title: this.$t('italique'), icon: '<i class="material-icons" aria-hidden="true">format_italic</i>', result: () => pell.exec('italic'), state: () => document.queryCommandState('italic') },
+				{ name: 'souligne', shortcut: 'u', title: this.$t('souligne'), icon: '<i class="material-icons" aria-hidden="true">format_underlined</i>', result: () => pell.exec('underline'), state: () => document.queryCommandState('underline') },
+				{ name: 'barre', shortcut: 'shift+x', title: this.$t('barre'), icon: '<i class="material-icons" aria-hidden="true">format_strikethrough</i>', result: () => pell.exec('strikethrough'), state: () => document.queryCommandState('strikethrough') },
+				{ name: 'exposant', title: this.$t('exposant'), icon: '<i class="material-icons" aria-hidden="true">superscript</i>', result: () => pell.exec('superscript'), state: () => document.queryCommandState('superscript') },
 				{ name: 'couleur', title: this.$t('couleurTexte'), icon: '<i class="material-icons couleur-texte" aria-hidden="true">format_color_text</i>', result: () => {
 					let i = 0
 					let couleurActuelle = ''
@@ -2942,7 +3087,7 @@ export default {
 					champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
 					this.ouvrirSelecteurCouleur(champ)
 				} },
-				{ name: 'lien', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
+				{ name: 'lien', shortcut: 'k', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
 					let i = 0
 					let lienActuel = ''
 					let element = window.getSelection()?.focusNode?.parentNode ?? null
@@ -3105,24 +3250,10 @@ export default {
 			}
 		},
 		deplacerBloc (event) {
-			this.chargement = true
-			if (this.pad.affichage === 'colonnes') {
-				if (!this.mobile) {
-					this.activerDefilementHorizontal()
-				}
-				const blocs = []
-				this.colonnes.forEach((colonne, indexColonne) => {
-					colonne.forEach((bloc) => {
-						blocs.push({ ...bloc, colonne: indexColonne })
-					})
-				})
-				this.blocs = blocs
+			if (this.pad.affichage === 'colonnes' && !this.mobile) {
+				this.activerDefilementHorizontal()
 			}
-			let ordre = 'croissant'
-			if (this.pad.hasOwnProperty('ordre')) {
-				ordre = this.pad.ordre
-			}
-			this.$socket.emit('deplacerbloc', this.blocs, this.pad.id, this.pad.affichage, ordre, this.identifiant)
+			this.enregistrerOrdreBlocs()
 			this.$nextTick(() => {
 				const blocsActifs = document.querySelectorAll('.bloc.actif')
 				if (blocsActifs.length > 0) {
@@ -3144,6 +3275,82 @@ export default {
 						document.querySelector('#' + this.blocs[indexBloc].bloc).classList.add('actif')
 						document.querySelector('#' + this.blocs[indexBloc].bloc)?.focus()
 					}
+				}
+			})
+		},
+		enregistrerOrdreBlocs () {
+			this.chargement = true
+			if (this.pad.affichage === 'colonnes') {
+				const blocs = []
+				this.colonnes.forEach((colonne, indexColonne) => {
+					colonne.forEach((bloc) => {
+						blocs.push({ ...bloc, colonne: indexColonne })
+					})
+				})
+				this.blocs = blocs
+			}
+			let ordre = 'croissant'
+			if (this.pad.hasOwnProperty('ordre')) {
+				ordre = this.pad.ordre
+			}
+			this.$socket.emit('deplacerbloc', this.blocs, this.pad.id, this.pad.affichage, ordre, this.identifiant)
+		},
+		calculerDeplacementBloc (item, direction) {
+			let liste = this.blocs
+			let indexColonne = -1
+			if (this.pad.affichage === 'colonnes') {
+				indexColonne = this.colonnes.findIndex((colonne) => colonne.some((bloc) => bloc.bloc === item.bloc))
+				if (indexColonne === -1) return null
+				liste = this.colonnes[indexColonne]
+			}
+			const index = liste.findIndex((bloc) => bloc.bloc === item.bloc)
+			if (index === -1) return null
+			let colonneCible = indexColonne
+			let listeCible = liste
+			let indexCible
+			if (direction === 'avant' || direction === 'apres') {
+				indexCible = direction === 'avant' ? index - 1 : index + 1
+				if (indexCible < 0 || indexCible >= liste.length) return null
+			} else if (indexColonne !== -1 && (direction === 'gauche' || direction === 'droite')) {
+				colonneCible = indexColonne + (direction === 'gauche' ? -1 : 1)
+				if (colonneCible < 0 || colonneCible >= this.colonnes.length) return null
+				listeCible = this.colonnes[colonneCible]
+				indexCible = Math.min(index, listeCible.length)
+			} else {
+				return null
+			}
+			return { liste, index, listeCible, indexCible, colonneCible }
+		},
+		verifierDeplacementBloc (item, direction) {
+			return this.calculerDeplacementBloc(item, direction) !== null
+		},
+		deplacerBlocPosition (item, direction, elementFocus) {
+			if (this.chargement || this.action !== 'organiser') return
+			const deplacement = this.calculerDeplacementBloc(item, direction)
+			if (!deplacement) return
+			const { liste, index, listeCible, indexCible, colonneCible } = deplacement
+			const [bloc] = liste.splice(index, 1)
+			listeCible.splice(indexCible, 0, bloc)
+			if (colonneCible !== -1) {
+				this.annonceDeplacement = this.$t('capsuleDeplaceeColonne', { colonne: this.pad.colonnes[colonneCible], position: indexCible + 1, total: listeCible.length })
+			} else {
+				this.annonceDeplacement = this.$t('capsuleDeplacee', { position: indexCible + 1, total: listeCible.length })
+			}
+			this.enregistrerOrdreBlocs()
+			this.$nextTick(() => {
+				const blocActif = document.querySelector('.bloc.actif')
+				if (blocActif) {
+					blocActif.classList.remove('actif')
+				}
+				const element = document.querySelector('#' + item.bloc)
+				if (!element) return
+				element.classList.add('actif')
+				element.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+				const bouton = elementFocus ? element.querySelector('.action .deplacer[data-direction="' + direction + '"]') : null
+				if (bouton && !bouton.disabled) {
+					bouton.focus()
+				} else {
+					element.focus()
 				}
 			})
 		},
@@ -4438,9 +4645,13 @@ export default {
 					}
 				}
 				if (event.key === 'Escape') {
-					this.fermerModaleDiaporama()
+					if (this.editionCommentaire) {
+						this.annulerModifierCommentaire()
+					} else {
+						this.fermerModaleDiaporama()
+					}
 				} else if (event.key === 'Tab') {
-					const modale = document.querySelector('#diapositive')
+					const modale = document.querySelector('#conteneur-diaporama')
 					this.piegerFocus(event, modale)
 				}
 			} else if (event.key === 'Escape' && this.message !== '') {
@@ -4454,7 +4665,11 @@ export default {
 			} else if (event.key === 'Escape' && this.modale === 'admins') {
 				this.fermerModaleAdmins()
 			} else if (event.key === 'Escape' && this.modale === 'commentaires') {
-				this.fermerModaleCommentaires()
+				if (this.editionCommentaire) {
+					this.annulerModifierCommentaire()
+				} else {
+					this.fermerModaleCommentaires()
+				}
 			} else if (event.key === 'Escape' && this.modale === 'evaluations') {
 				this.fermerModaleEvaluations()
 			} else if (event.key === 'Escape' && this.modale === 'liste-evaluations') {
@@ -4529,6 +4744,46 @@ export default {
 				}
 			}
 		},
+		gererClavierOrganiser (event, item) {
+			if (event.target !== event.currentTarget || !event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+			const colonnes = this.pad.affichage === 'colonnes'
+			const directions = {
+				ArrowUp: 'avant',
+				ArrowDown: 'apres',
+				ArrowLeft: colonnes ? 'gauche' : 'avant',
+				ArrowRight: colonnes ? 'droite' : 'apres'
+			}
+			const direction = directions[event.key]
+			if (!direction) return
+			event.preventDefault()
+			this.deplacerBlocPosition(item, direction, false)
+		},
+		gererClavierRadio (event) {
+			const radios = [...event.currentTarget.querySelectorAll('[role="radio"]')]
+			const index = radios.indexOf(event.target)
+			if (index === -1) return
+			let suivant
+			switch (event.key) {
+			case 'ArrowDown':
+			case 'ArrowRight':
+				suivant = (index + 1) % radios.length
+				break
+			case 'ArrowUp':
+			case 'ArrowLeft':
+				suivant = (index - 1 + radios.length) % radios.length
+				break
+			case 'Home':
+				suivant = 0
+				break
+			case 'End':
+				suivant = radios.length - 1
+				break
+			default:
+				return
+			}
+			event.preventDefault()
+			radios[suivant].focus()
+		},
 		gererClavierMenu (event, id) {
 			const items = [...document.querySelectorAll('#' + id + ' [role="menuitem"]')]
 			if (items.length === 0) return
@@ -4537,22 +4792,10 @@ export default {
 			switch (event.key) {
 			case 'ArrowDown':
 				event.preventDefault()
-				if (this.menu === 'activite') {
-					document.querySelectorAll('.menu-entree').forEach(menu => {
-						menu.style.display = 'none'
-					})
-					if (items[(index + 1) % items.length].closest('.menu-entree')) items[(index + 1) % items.length].closest('.menu-entree').style.display = 'block'
-				}
 				items[(index + 1) % items.length].focus(options)
 				break
 			case 'ArrowUp':
 				event.preventDefault()
-				if (this.menu === 'activite') {
-					document.querySelectorAll('.menu-entree').forEach(menu => {
-						menu.style.display = 'none'
-					})
-					if (items[(index - 1 + items.length) % items.length].closest('.menu-entree')) items[(index - 1 + items.length) % items.length].closest('.menu-entree').style.display = 'block'
-				}
 				items[(index - 1 + items.length) % items.length].focus(options)
 				break
 			case 'Home':
@@ -4597,6 +4840,7 @@ export default {
 
 			this.$socket.on('erreur', () => {
 				this.chargement = false
+				this.annonceDeplacement = ''
 				this.message = this.$t('erreurActionServeur')
 			})
 
@@ -4677,6 +4921,8 @@ export default {
 							const bloc = document.querySelector('#' + donnees.bloc)
 							bloc.scrollIntoView()
 						})
+					} else if (this.verifierBlocVisible(donnees.bloc, donnees.colonne)) {
+						this.annoncerActiviteBloc(donnees, 'aCree')
 					}
 				}
 			})
@@ -4726,6 +4972,9 @@ export default {
 							}
 						})
 					}
+					if (this.utilisateur !== this.identifiant && this.verifierBlocVisible(donnees.bloc, donnees.colonne)) {
+						this.annoncerActiviteBloc(donnees, 'aDuplique')
+					}
 				}
 				this.chargement = false
 			})
@@ -4764,6 +5013,9 @@ export default {
 					}
 					if (!donneesCompletes && !(donnees.visibilite === 'privee' && !this.admin)) {
 						this.recupererBloc(donnees.bloc)
+					}
+					if (donnees.identifiant !== this.identifiant && !(donnees.visibilite === 'privee' && !this.admin) && this.verifierBlocVisible(donnees.bloc, donnees.colonne)) {
+						this.annoncerActiviteBloc(donnees, 'aModifie')
 					}
 				}
 			})
@@ -4852,6 +5104,9 @@ export default {
 					if (this.pad.affichage === 'colonnes') {
 						this.colonnes[donnees.colonne].splice(donnees.indexBlocColonne, 0, donnees)
 					}
+					if (this.verifierBlocVisible(donnees.bloc, donnees.colonne)) {
+						this.annoncerActiviteBloc(donnees, 'aCree')
+					}
 				}
 				if (donnees.moderation === 'moderee') {
 					if (donnees.publication && !this.activite.some((entree) => { return entree.id === donnees.publication.activiteId && entree.type === 'bloc-ajoute' })) {
@@ -4912,6 +5167,12 @@ export default {
 						this.blocs = blocs
 					}
 				}
+				if (this.utilisateur !== this.identifiant) {
+					this.annoncer(this.$t('capsulesReorganisees'))
+				} else if (this.annonceDeplacement !== '') {
+					this.annoncer(this.annonceDeplacement)
+					this.annonceDeplacement = ''
+				}
 				this.$nextTick(() => {
 					if (blocActif && this.utilisateur !== this.identifiant && document.querySelector('#' + blocId)) {
 						blocActif.classList.remove('actif')
@@ -4934,6 +5195,9 @@ export default {
 				if (indexBloc !== -1) {
 					this.utilisateur = donnees.identifiant
 					this.blocs.splice(indexBloc, 1)
+					if (donnees.identifiant !== this.identifiant && this.verifierBlocVisible(donnees.bloc, donnees.colonne)) {
+						this.annoncerActiviteBloc(donnees, 'aSupprime')
+					}
 				}
 				if (this.modale === 'bloc' && this.bloc === donnees.bloc) {
 					this.fermerModaleBloc()
@@ -5715,6 +5979,7 @@ export default {
 
 			this.$socket.on('nonautorise', () => {
 				this.chargement = false
+				this.annonceDeplacement = ''
 				this.message = this.$t('actionNonAutorisee')
 			})
 

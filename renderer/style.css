@@ -59,6 +59,7 @@ html {
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	touch-action: manipulation;
 }
 
 body {
@@ -162,7 +163,7 @@ iframe {
 }
 
 ::placeholder {
-	color: #aaa;
+	color: #5b5b5b;
 	opacity: 1!important;
 }
 
@@ -176,6 +177,35 @@ main {
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+}
+
+.lecteur-ecran {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*:not(.chargement, .chargement div, .spinner div, #conteneur-chargement div),
+	*:not(.chargement, .chargement div, .spinner div, #conteneur-chargement div)::before,
+	*:not(.chargement, .chargement div, .spinner div, #conteneur-chargement div)::after {
+		animation-duration: 0.01ms!important;
+		animation-iteration-count: 1!important;
+		transition-duration: 0s!important;
+		transition-delay: 0s!important;
+		scroll-behavior: auto!important;
+	}
+}
+
+:focus-visible:not([tabindex="-1"], [contenteditable="true"]) {
+	outline: 2px solid #ed5b00!important;
+	outline-offset: 2px;
 }
 
 #page {
@@ -471,13 +501,13 @@ header.pleine-largeur #titre {
 }
 
 .bouton-vert {
-	border: 1px solid #00a885;
-    color: #00a885;
+	border: 1px solid #00806a;
+    color: #00806a;
 	width: 100%;
 }
 
 .bouton-vert:hover {
-	background: #00a885;
+	background: #00806a;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -494,12 +524,12 @@ header.pleine-largeur #titre {
 }
 
 .bouton-rouge {
-	border: 1px solid #ff6259;
-    color: #ff6259;
+	border: 1px solid #c9372c;
+    color: #c9372c;
 }
 
 .bouton-rouge:hover {
-	background: #ff6259;
+	background: #c9372c;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -880,32 +910,32 @@ label.bouton-bleu {
 
 .contenu-editeur:lang(fr):empty:before {
 	content: 'Ajouter du texte…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur:lang(en):empty:before {
 	content: 'Add text…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur:lang(it):empty:before {
 	content: 'Aggiungere testo…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur:lang(de):empty:before {
 	content: 'Text hinzufügen…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur:lang(es):empty:before {
 	content: 'Añadir texto…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur:lang(hr):empty:before {
 	content: 'Dodavanje teksta…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 #commentaire.mobile .boutons-editeur-commentaire {
@@ -945,32 +975,32 @@ label.bouton-bleu {
 
 .contenu-editeur-commentaire:lang(fr):empty:before {
 	content: 'Votre commentaire…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire:lang(en):empty:before {
 	content: 'Your comment…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire:lang(it):empty:before {
 	content: 'Il tuo commento…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire:lang(de):empty:before {
 	content: 'Ihr Kommentar…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire:lang(es):empty:before {
 	content: 'Tu comentario…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire:lang(hr):empty:before {
 	content: 'Vaš komentar…';
-	color: #aaa;
+	color: #5b5b5b;
 }
 
 .contenu-editeur-commentaire strong,
@@ -982,7 +1012,7 @@ label.bouton-bleu {
 
 .contenu-editeur-commentaire a,
 .contenu-editeur a {
-	color: #00a1e3;
+	color: #0077b3;
 	text-decoration: underline;
 }
 
@@ -994,7 +1024,7 @@ label.bouton-bleu {
 	font-size: 2.2rem;
     vertical-align: middle;
     margin-left: 0.5rem;
-    color: #fdc00b;
+    color: #b87800;
 	line-height: 1;
 	cursor: help;
 }
@@ -1285,7 +1315,7 @@ label.bouton-bleu {
 .commentaires li:not(.edition) .texte a,
 #diapositive .texte a,
 #blocs .bloc .texte a {
-	color: #00a1e3;
+	color: #0077b3;
 	text-decoration: underline;
 }
 

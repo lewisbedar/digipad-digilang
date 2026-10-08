@@ -1,9 +1,9 @@
 <template>
 	<div id="conteneur-message" class="conteneur-modale">
-		<div id="message" class="modale" role="dialog" aria-modal="true">
+		<div id="message" class="modale" role="alertdialog" aria-modal="true" aria-labelledby="texte-message">
 			<div class="conteneur">
 				<div class="contenu">
-					<div class="message" v-html="message" />
+					<div id="texte-message" class="message" v-html="message" />
 					<div class="actions">
 						<button type="button" class="bouton" @click="fermer">{{ $t('fermer') }}</button>
 					</div>

@@ -1,8 +1,9 @@
 <template>
 	<Transition name="fondu">
 		<div id="conteneur-chargement" v-if="chargement">
-			<div id="chargement">
-				<div class="spinner">
+			<div id="chargement" role="status">
+				<span class="lecteur-ecran">{{ $t('chargementEnCours') }}</span>
+				<div class="spinner" aria-hidden="true">
 					<div />
 					<div />
 					<div />

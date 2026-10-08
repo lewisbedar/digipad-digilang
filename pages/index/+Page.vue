@@ -1,13 +1,13 @@
 <template>
 	<div id="page">
-		<div id="accueil" :style="{'background-image': 'url(./img/fond.png)'}">
-			<div id="langues">
-				<button type="button" class="bouton" :disabled="disabled" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
-				<button type="button" class="bouton" :disabled="disabled" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
+		<div id="accueil" :inert="hub || null" :style="{'background-image': 'url(./img/fond.png)'}">
+			<div id="langues" role="group" :aria-label="$t('langue')">
+				<button type="button" class="bouton" :disabled="disabled" title="Français" aria-label="FR, Français" lang="fr" :aria-pressed="langue === 'fr' ? 'true' : 'false'" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Español" aria-label="ES, Español" lang="es" :aria-pressed="langue === 'es' ? 'true' : 'false'" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Italiano" aria-label="IT, Italiano" lang="it" :aria-pressed="langue === 'it' ? 'true' : 'false'" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Deutsch" aria-label="DE, Deutsch" lang="de" :aria-pressed="langue === 'de' ? 'true' : 'false'" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+				<button type="button" class="bouton" :disabled="disabled" title="English" aria-label="EN, English" lang="en" :aria-pressed="langue === 'en' ? 'true' : 'false'" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Hrvatski" aria-label="HR, Hrvatski" lang="hr" :aria-pressed="langue === 'hr' ? 'true' : 'false'" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 			</div>
 			<div id="conteneur">
 				<div id="contenu">
@@ -26,8 +26,8 @@
 					</div>
 				</div>
 				<div id="credits">
-					<p><a :href="mentionsLegales" target="_blank" rel="noreferrer" v-if="mentionsLegales !== ''">{{ $t('mentionsLegales') }}</a> - <a href="https://ladigitale.dev/contribuer.html" target="_blank" rel="noreferrer">{{ $t('soutien') }} ❤️.</a></p>
-					<p>{{ new Date().getFullYear() }} - <a href="https://ladigitale.dev" target="_blank" rel="noreferrer">La Digitale</a> - <a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noreferrer">{{ $t('codeSource') }}</a> - <a href="https://codeberg.org/ladigitale/digipad/releases" target="_blank" rel="noreferrer">v{{ version }}</a> - <a class="doc" href="https://doc.ladigitale.dev/doku.php?id=digipad" target="_blank" rel="noreferrer" :title="$t('voirDocumentation')" :aria-label="$t('voirDocumentation')"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="30px" height="30px" fill="#001d1d" aria-hidden="true"><path d="M511.83-256.83Q524-269 524-286.67q0-17.66-12.17-29.83-12.16-12.17-29.83-12.17-17.67 0-29.83 12.17Q440-304.33 440-286.67q0 17.67 12.17 29.84 12.16 12.16 29.83 12.16 17.67 0 29.83-12.16Zm-65.16-136.5h64q0-28.34 6.83-49 6.83-20.67 41.17-50.34 29.33-26 43-50.5 13.66-24.5 13.66-55.5 0-54-36.66-85.33-36.67-31.33-93.34-31.33-51.66 0-88.5 26.33Q360-662.67 344-620l57.33 22q9-24.67 29.5-42t52.5-17.33q33.34 0 52.67 18.16 19.33 18.17 19.33 44.5 0 21.34-12.66 40.17-12.67 18.83-35.34 37.83-34.66 30.34-47.66 54-13 23.67-13 69.34ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/></svg></a> - <button type="button" class="hub" :disabled="disabled" :title="$t('afficherHub')" :aria-label="$t('afficherHub')" @click="ouvrirHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="30px" height="30px" fill="#001d1d" aria-hidden="true"><path d="M180.5-180.5Q160-201 160-230.67q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T230.67-160q-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T480-160q-29.67 0-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.16-20.5 29.67 0 50.17 20.5t20.5 50.16q0 29.67-20.5 50.17T729.33-160q-29.66 0-50.16-20.5ZM180.5-429.83Q160-450.33 160-480t20.5-50.17q20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.16 20.5-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.17 20.5t-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.16-20.5 29.67 0 50.17 20.5T800-480q0 29.67-20.5 50.17t-50.17 20.5q-29.66 0-50.16-20.5ZM180.5-679.17q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17 0 29.66-20.5 50.16-20.5 20.5-50.16 20.5-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17T480-800q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5t-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.16-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5-29.66 0-50.16-20.5Z"/></svg></button></p>
+					<p><a :href="mentionsLegales" target="_blank" rel="noreferrer" v-if="mentionsLegales !== ''">{{ $t('mentionsLegales') }}<span class="lecteur-ecran"> ({{ $t('nouvelOnglet') }})</span></a><span aria-hidden="true"> - </span><a href="https://ladigitale.dev/contribuer.html" target="_blank" rel="noreferrer">{{ $t('soutien') }} <span aria-hidden="true">❤️</span>.<span class="lecteur-ecran"> ({{ $t('nouvelOnglet') }})</span></a></p>
+					<p>{{ new Date().getFullYear() }}<span aria-hidden="true"> - </span><a href="https://ladigitale.dev" target="_blank" rel="noreferrer">La Digitale<span class="lecteur-ecran"> ({{ $t('nouvelOnglet') }})</span></a><span aria-hidden="true"> - </span><a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noreferrer">{{ $t('codeSource') }}<span class="lecteur-ecran"> ({{ $t('nouvelOnglet') }})</span></a><span aria-hidden="true"> - </span><a href="https://codeberg.org/ladigitale/digipad/releases" target="_blank" rel="noreferrer">v{{ version }}<span class="lecteur-ecran"> ({{ $t('nouvelOnglet') }})</span></a><span aria-hidden="true"> - </span><a class="doc" href="https://doc.ladigitale.dev/doku.php?id=digipad" target="_blank" rel="noreferrer" :title="$t('voirDocumentation') + ' (' + $t('nouvelOnglet') + ')'" :aria-label="$t('voirDocumentation') + ' (' + $t('nouvelOnglet') + ')'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="30px" height="30px" fill="#001d1d" aria-hidden="true"><path d="M511.83-256.83Q524-269 524-286.67q0-17.66-12.17-29.83-12.16-12.17-29.83-12.17-17.67 0-29.83 12.17Q440-304.33 440-286.67q0 17.67 12.17 29.84 12.16 12.16 29.83 12.16 17.67 0 29.83-12.16Zm-65.16-136.5h64q0-28.34 6.83-49 6.83-20.67 41.17-50.34 29.33-26 43-50.5 13.66-24.5 13.66-55.5 0-54-36.66-85.33-36.67-31.33-93.34-31.33-51.66 0-88.5 26.33Q360-662.67 344-620l57.33 22q9-24.67 29.5-42t52.5-17.33q33.34 0 52.67 18.16 19.33 18.17 19.33 44.5 0 21.34-12.66 40.17-12.67 18.83-35.34 37.83-34.66 30.34-47.66 54-13 23.67-13 69.34ZM480-80q-82.33 0-155.33-31.5-73-31.5-127.34-85.83Q143-251.67 111.5-324.67T80-480q0-83 31.5-156t85.83-127q54.34-54 127.34-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 82.33-31.5 155.33-31.5 73-85.5 127.34Q709-143 636-111.5T480-80Zm0-66.67q139.33 0 236.33-97.33t97-236q0-139.33-97-236.33t-236.33-97q-138.67 0-236 97-97.33 97-97.33 236.33 0 138.67 97.33 236 97.33 97.33 236 97.33ZM480-480Z"/></svg></a><span aria-hidden="true"> - </span><button type="button" class="hub" :disabled="disabled" :title="$t('afficherHub')" :aria-label="$t('afficherHub')" @click="ouvrirHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="30px" height="30px" fill="#001d1d" aria-hidden="true"><path d="M180.5-180.5Q160-201 160-230.67q0-29.66 20.5-50.16 20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T230.67-160q-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.16 0 29.67-20.5 50.17T480-160q-29.67 0-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.17 0-29.66 20.5-50.16 20.5-20.5 50.16-20.5 29.67 0 50.17 20.5t20.5 50.16q0 29.67-20.5 50.17T729.33-160q-29.66 0-50.16-20.5ZM180.5-429.83Q160-450.33 160-480t20.5-50.17q20.5-20.5 50.17-20.5 29.66 0 50.16 20.5 20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.16 20.5-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.17-20.5t50.17 20.5q20.5 20.5 20.5 50.17t-20.5 50.17q-20.5 20.5-50.17 20.5t-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.17t20.5-50.17q20.5-20.5 50.16-20.5 29.67 0 50.17 20.5T800-480q0 29.67-20.5 50.17t-50.17 20.5q-29.66 0-50.16-20.5ZM180.5-679.17q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.17-20.5q29.66 0 50.16 20.5 20.5 20.5 20.5 50.17 0 29.66-20.5 50.16-20.5 20.5-50.16 20.5-29.67 0-50.17-20.5Zm249.33 0q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17T480-800q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5t-50.17-20.5Zm249.34 0q-20.5-20.5-20.5-50.16 0-29.67 20.5-50.17t50.16-20.5q29.67 0 50.17 20.5t20.5 50.17q0 29.66-20.5 50.16-20.5 20.5-50.17 20.5-29.66 0-50.16-20.5Z"/></svg></button></p>
 				</div>
 			</div>
 		</div>
@@ -43,11 +43,11 @@
 						<label for="champ-titre-pad">{{ $t('titrePad') }}</label>
 						<input id="champ-titre-pad" type="text" maxlength="48" :value="titre" :disabled="disabledModale" @input="titre = $event.target.value">
 						<label for="champ-motdepasse-pad">{{ $t('motDePassePad') }}</label>
-						<p class="information">{{ $t('infoMotDePassePad') }}</p>
-						<p class="information">{{ $t('infoMotDePasse') }}</p>
+						<p id="info-motdepasse-pad" class="information">{{ $t('infoMotDePassePad') }}</p>
+						<p id="info-motdepasse" class="information">{{ $t('infoMotDePasse') }}</p>
 						<div class="conteneur-motdepasse">
-							<input id="champ-motdepasse-pad" type="password" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-if="!motDePasseVisible">
-							<input id="champ-motdepasse-pad-texte" type="text" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-else>
+							<input id="champ-motdepasse-pad" type="password" autocomplete="new-password" aria-describedby="info-motdepasse-pad info-motdepasse" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-if="!motDePasseVisible">
+							<input id="champ-motdepasse-pad-texte" type="text" autocomplete="off" aria-describedby="info-motdepasse-pad info-motdepasse" maxlength="48" :value="motDePassePad" :disabled="disabledModale" @input="motDePassePad = $event.target.value" @keydown.enter="creerPad" v-else>
 							<button type="button" class="icone" :disabled="disabledModale" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="modifierMotDePasseVisible(false)" v-if="motDePasseVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
 							<button type="button" class="icone" :disabled="disabledModale" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="modifierMotDePasseVisible(true)" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 						</div>
@@ -71,11 +71,11 @@
 				<div class="conteneur">
 					<div class="contenu">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
-						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
+						<input id="champ-identifiant" type="text" autocomplete="username" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
 						<label for="champ-motdepasse">{{ $t('motDePasse') }}</label>
 						<div class="conteneur-motdepasse">
-							<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-if="!motDePasseVisible">
-							<input id="champ-motdepasse-texte" type="text" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-else>
+							<input id="champ-motdepasse" type="password" autocomplete="current-password" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-if="!motDePasseVisible">
+							<input id="champ-motdepasse-texte" type="text" autocomplete="off" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value" @keydown.enter="seConnecter" v-else>
 							<button type="button" class="icone" :disabled="disabledModale" :title="$t('masquerMotDePasse')" :aria-label="$t('masquerMotDePasse')" @click="modifierMotDePasseVisible(false)" v-if="motDePasseVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
 							<button type="button" class="icone" :disabled="disabledModale" :title="$t('afficherMotDePasse')" :aria-label="$t('afficherMotDePasse')" @click="modifierMotDePasseVisible(true)" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 						</div>
@@ -98,9 +98,9 @@
 				<div class="conteneur">
 					<div class="contenu">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
-						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
+						<input id="champ-identifiant" type="text" autocomplete="username" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
 						<label for="champ-email">{{ $t('email') }}</label>
-						<input id="champ-email" type="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerMotDePasse">
+						<input id="champ-email" type="email" autocomplete="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerMotDePasse">
 						<button type="button" class="identifiant-oublie" :disabled="disabledModale" @click="afficherModaleIdentifiantOublie" v-html="$t('identifiantOublie')" />
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerMotDePasse" v-if="!chargement">{{ $t('valider') }}</button>
@@ -119,7 +119,7 @@
 				<div class="conteneur">
 					<div class="contenu">
 						<label for="champ-email">{{ $t('email') }}</label>
-						<input id="champ-email" type="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerIdentifiant">
+						<input id="champ-email" type="email" autocomplete="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value" @keydown.enter="envoyerIdentifiant">
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="envoyerIdentifiant" v-if="!chargement">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
@@ -140,15 +140,15 @@
 				<div class="conteneur">
 					<div class="contenu">
 						<label for="champ-identifiant">{{ $t('identifiant') }}</label>
-						<p class="information">{{ $t('infoIdentifiant') }}</p>
-						<input id="champ-identifiant" type="text" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
+						<p id="info-identifiant" class="information">{{ $t('infoIdentifiant') }}</p>
+						<input id="champ-identifiant" type="text" autocomplete="username" aria-describedby="info-identifiant" maxlength="48" :value="identifiant" :disabled="disabledModale" @input="identifiant = $event.target.value">
 						<label for="champ-email">{{ $t('email') }}</label>
-						<input id="champ-email" type="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value">
+						<input id="champ-email" type="email" autocomplete="email" :value="email" :disabled="disabledModale" @input="email = $event.target.value">
 						<label for="champ-motdepasse">{{ $t('motDePasse') }}</label>
-						<p class="information">{{ $t('infoMotDePasse') }}</p>
-						<input id="champ-motdepasse" type="password" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value">
+						<p id="info-motdepasse" class="information">{{ $t('infoMotDePasse') }}</p>
+						<input id="champ-motdepasse" type="password" autocomplete="new-password" aria-describedby="info-motdepasse" maxlength="48" :value="motDePasse" :disabled="disabledModale" @input="motDePasse = $event.target.value">
 						<label for="champ-confirmation-motdepasse">{{ $t('confirmationMotDePasse') }}</label>
-						<input id="champ-confirmation-motdepasse" type="password" maxlength="48" :value="confirmationMotDePasse" :disabled="disabledModale" @input="confirmationMotDePasse = $event.target.value" @keydown.enter="sInscrire">
+						<input id="champ-confirmation-motdepasse" type="password" autocomplete="new-password" maxlength="48" :value="confirmationMotDePasse" :disabled="disabledModale" @input="confirmationMotDePasse = $event.target.value" @keydown.enter="sInscrire">
 						<div class="actions">
 							<button type="button" class="bouton" :disabled="disabledModale" @click="sInscrire" v-if="!chargement">{{ $t('valider') }}</button>
 							<div class="conteneur-chargement" v-else>
@@ -160,7 +160,7 @@
 			</div>
 		</div>
 
-		<div id="hub" :class="{'ouvert': hub}" role="dialog" aria-modal="true" aria-label="Le Hub by La Digitale" :aria-hidden="!hub">
+		<div id="hub" :class="{'ouvert': hub}" role="dialog" aria-modal="true" aria-label="Le Hub by La Digitale" :aria-hidden="!hub" :inert="!hub">
 			<button type="button" :disabled="!hub" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerHub"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#fff" width="36px" height="36px" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none" /><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg></button>
 			<iframe src="https://ladigitale.dev/hub.html" title="Le Hub by La Digitale"></iframe>
 		</div>
@@ -743,6 +743,10 @@ export default {
 
 #credits p:last-child a {
 	margin: 0 5px;
+}
+
+#credits p:last-child > span:first-child {
+	margin-left: 5px;
 }
 
 #credits p:last-child a.doc,

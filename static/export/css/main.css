@@ -237,7 +237,7 @@ header {
 	font-size: 2.2rem;
     vertical-align: middle;
     margin-left: 0.5rem;
-    color: #fdc00b;
+    color: #b87800;
 	line-height: 1;
 	cursor: help;
 }
@@ -432,7 +432,7 @@ header {
 
 .commentaires li .texte a,
 #blocs .bloc .texte a {
-	color: #00a1e3;
+	color: #0077b3;
 	text-decoration: underline;
 }
 

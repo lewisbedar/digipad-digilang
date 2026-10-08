@@ -3,6 +3,27 @@
 	height: 100%;
 }
 
+.lien-evitement {
+	position: absolute;
+	top: 0.5rem;
+	left: 0.5rem;
+	z-index: 1000;
+	padding: 0.75rem 1rem;
+	background: #001d1d;
+	color: #fff;
+	font-size: 16px;
+	border-radius: 4px;
+	transform: translateY(-200%);
+}
+
+.lien-evitement:focus {
+	transform: none;
+}
+
+#pad:focus {
+	outline: none;
+}
+
 #champ-recherche {
 	position: absolute;
 	top: 0;
@@ -36,7 +57,7 @@
 #nav button .badge {
 	width: 1.5rem;
 	height: 1.5rem;
-	background: #e32f6c;
+	background: #d1245e;
 	position: absolute;
 	top: -0.5rem;
 	right: -0.5rem;
@@ -238,7 +259,7 @@
 }
 
 #deconnexion {
-	color: #ff6259;
+	color: #c9372c;
 	margin-bottom: 3rem;
 }
 
@@ -248,7 +269,7 @@
 	right: 1.5rem;
 	width: 6.5rem;
 	height: 6.5rem;
-	background: #e32f6c;
+	background: #d1245e;
 	color: #fff;
 	font-size: 4rem;
 	line-height: 6.5rem;
@@ -285,11 +306,11 @@
 }
 
 #diapositive .evaluation .etoiles i {
-	color: #aaa;
+	color: #8a8a8a;
 }
 
 #diapositive .evaluation .etoiles .evalue {
-	color: #fdcc33;
+	color: #b87800;
 }
 
 #diapositive .conteneur-moderation .bouton {
@@ -297,8 +318,8 @@
 	padding: 0.9rem;
 	text-align: center;
 	font-size: 12px;
-	color: #e32f6c;
-	border: 1px solid #e32f6c;
+	color: #d1245e;
+	border: 1px solid #d1245e;
 	line-height: 1;
 	font-weight: 700;
 	letter-spacing: 1px;
@@ -317,7 +338,7 @@
 }
 
 #diapositive .conteneur-moderation button.bouton:hover {
-	background: #e32f6c;
+	background: #d1245e;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -329,8 +350,8 @@
 	padding: 0.5rem 0.9rem;
 	text-align: center;
 	font-size: 12px;
-	color: #e32f6c;
-	border: 1px solid #e32f6c;
+	color: #d1245e;
+	border: 1px solid #d1245e;
 	line-height: 1;
 	font-weight: 700;
 	letter-spacing: 1px;
@@ -351,7 +372,7 @@
 
 #discussion .commentaires li .moderation button.bouton:hover,
 #diapositive .conteneur-commentaires .commentaires li .moderation button.bouton:hover {
-	background: #e32f6c;
+	background: #d1245e;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -379,14 +400,14 @@
 }
 
 #liste-evaluations .evaluations li .etoiles i {
-	color: #fdcc33;
+	color: #b87800;
 	font-size: 3rem;
 }
 
 #liste-evaluations .evaluations li .meta {
 	font-size: 1.2rem;
 	width: 100%;
-	color: #aaa;
+	color: #5b5b5b;
 	display: block;
 }
 
@@ -394,6 +415,8 @@
 	max-height: 90%;
 	max-width: 75rem;
 	overflow: auto;
+	scroll-padding-top: 6rem;
+	scroll-padding-bottom: calc(5rem + 40px);
 }
 
 #bloc .en-tete {
@@ -594,7 +617,7 @@
 	align-items: center;
 	font-size: 1.5rem;
 	margin-top: 1rem;
-	color: #777;
+	color: #5b5b5b;
 }
 
 #info-alt {
@@ -603,7 +626,7 @@
 	font-size: 1.5rem;
 	margin: -1rem 0 2rem;
 	text-align: left;
-	color: #777;
+	color: #5b5b5b;
 }
 
 #media .information i,
@@ -638,7 +661,7 @@
 }
 
 #ajouter-lien button.supprimer {
-	background: #ff6259;
+	background: #c9372c;
 	margin-top: 1.5rem;
 }
 
@@ -665,7 +688,7 @@
 
 #media .supprimer {
 	margin-top: 15px;
-	background: #ff6259;
+	background: #c9372c;
 }
 
 #media .supprimer:hover {
@@ -762,7 +785,7 @@
 
 #diapositive .titre span:nth-child(2) {
 	font-size: 12px;
-	color: #777;
+	color: #5b5b5b;
 }
 
 #diapositive .texte {
@@ -928,24 +951,28 @@
 }
 
 #entrees li .menu-entree {
-	display: none;
 	position: absolute;
-	top: 0;
-	right: 0;
+	top: -1px;
+	right: -1px;
 	line-height: 1;
 	font-size: 24px;
 	padding: 3px 1rem;
-	background: rgba(0, 0, 0, 0.25);
+	background: #fff;
+	border: 1px solid #ddd;
 	border-top-right-radius: 4px;
 	border-bottom-left-radius: 4px;
+	opacity: 0;
+	pointer-events: none;
 }
 
-#entrees li:hover .menu-entree {
-	display: block;
+#entrees li:hover .menu-entree,
+#entrees li:focus-within .menu-entree {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 #entrees li .menu-entree button.supprimer {
-	color: #ff6259;
+	color: #c9372c;
 	cursor: pointer;
 }
 
@@ -1085,7 +1112,7 @@
 	margin-bottom: 0.5rem;
 	font-size: 1.2rem;
 	width: 100%;
-	color: #aaa;
+	color: #5b5b5b;
 	display: block;
 }
 
@@ -1094,34 +1121,47 @@
 }
 
 .commentaires li.focus .action,
-.commentaires li:hover .action {
-	display: block;
+.commentaires li:hover .action,
+.commentaires li:focus-within .action {
+	opacity: 1;
+	pointer-events: auto;
 }
 
 .commentaires li .action {
-	display: none;
+	display: block;
+	opacity: 0;
+	pointer-events: none;
 	position: absolute;
 	top: 0.2rem;
 	right: 0;
 	text-align: right;
-	width: calc(48px + 3.4rem);
+	width: calc(50px + 3.4rem);
 	line-height: 1;
 	font-size: 0;
 	padding: 3px 1rem;
-	background: rgba(0, 0, 0, 0.25);
+	background: #fff;
+	border: 1px solid #ddd;
 	border-radius: 2px;
 	z-index: 10;
 }
 
+@media (hover: none) {
+	.commentaires li .action,
+	#entrees li .menu-entree {
+		opacity: 1;
+		pointer-events: auto;
+	}
+}
+
 .commentaires li .action button {
 	font-size: 24px;
-	color: #fff;
+	color: #001d1d;
 	line-height: 1;
 	cursor: pointer;
 }
 
 .commentaires li .action button:last-child {
-	color: #ff6259;
+	color: #c9372c;
 	margin-left: 1.4rem;
 }
 
@@ -1136,7 +1176,7 @@
 	display: flex;
 	padding: 0;
 	border-radius: 0;
-	border: 1px solid #fe9926;
+	border: 1px solid #b35900;
 	border-radius: 4px;
 }
 
@@ -1158,7 +1198,7 @@
 .commentaires li .texte button {
 	width: 5rem;
 	text-align: center;
-	background: #fe9926;
+	background: #b35900;
 	border: none;
 	color: #fff;
 	font-size: 24px;
@@ -1221,7 +1261,7 @@
 .modale .section-etoiles .annuler {
 	font-size: 36px;
 	line-height: 1;
-	color: #aaa;
+	color: #5b5b5b;
 	cursor: pointer;
 	background: none;
 	border: none;
@@ -1242,7 +1282,7 @@
 }
 
 .modale .section-etoiles .etoiles button.selectionne {
-	color: #fdcc33;
+	color: #b87800;
 }
 
 .modale .contenu .connexion {
@@ -1289,6 +1329,11 @@
 	font-weight: 400;
 	margin-bottom: 1rem;
 	line-height: 2.2rem;
+}
+
+.menu .bouton-radio[role="radio"]:focus {
+	outline: 2px solid #ed5b00;
+	outline-offset: 2px;
 }
 
 .menu .bouton-radio input {

@@ -2,12 +2,12 @@
 	<div id="page" v-if="acces">
 		<div id="accueil">
 			<div id="langues">
-				<button type="button" class="bouton" :disabled="disabled" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
-				<button type="button" class="bouton" :disabled="disabled" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
-				<button type="button" class="bouton" :disabled="disabled" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Français" aria-label="FR, Français" lang="fr" :aria-pressed="langue === 'fr' ? 'true' : 'false'" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Español" aria-label="ES, Español" lang="es" :aria-pressed="langue === 'es' ? 'true' : 'false'" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Italiano" aria-label="IT, Italiano" lang="it" :aria-pressed="langue === 'it' ? 'true' : 'false'" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Deutsch" aria-label="DE, Deutsch" lang="de" :aria-pressed="langue === 'de' ? 'true' : 'false'" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+				<button type="button" class="bouton" :disabled="disabled" title="English" aria-label="EN, English" lang="en" :aria-pressed="langue === 'en' ? 'true' : 'false'" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+				<button type="button" class="bouton" :disabled="disabled" title="Hrvatski" aria-label="HR, Hrvatski" lang="hr" :aria-pressed="langue === 'hr' ? 'true' : 'false'" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 			</div>
 			<div id="conteneur">
 				<h1>

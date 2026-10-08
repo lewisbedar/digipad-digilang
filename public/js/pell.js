@@ -31,6 +31,7 @@ var exec = function exec(command) {
 
 var defaultActions = {
   bold: {
+    shortcut: 'b',
     icon: '<b>B</b>',
     title: 'Bold',
     state: function state() {
@@ -41,6 +42,7 @@ var defaultActions = {
     }
   },
   italic: {
+    shortcut: 'i',
     icon: '<i>I</i>',
     title: 'Italic',
     state: function state() {
@@ -51,6 +53,7 @@ var defaultActions = {
     }
   },
   underline: {
+    shortcut: 'u',
     icon: '<u>U</u>',
     title: 'Underline',
     state: function state() {
@@ -61,6 +64,7 @@ var defaultActions = {
     }
   },
   strikethrough: {
+    shortcut: 'shift+x',
     icon: '<strike>S</strike>',
     title: 'Strike-through',
     state: function state() {
@@ -99,6 +103,7 @@ var defaultActions = {
     }
   },
   olist: {
+    shortcut: 'shift+7',
     icon: '&#35;',
     title: 'Ordered List',
     result: function result() {
@@ -106,6 +111,7 @@ var defaultActions = {
     }
   },
   ulist: {
+    shortcut: 'shift+8',
     icon: '&#8226;',
     title: 'Unordered List',
     result: function result() {
@@ -127,6 +133,7 @@ var defaultActions = {
     }
   },
   link: {
+    shortcut: 'k',
     icon: '&#128279;',
     title: 'Link',
     result: function result() {
@@ -142,6 +149,35 @@ var defaultActions = {
       if (url) exec('insertImage', url);
     }
   }
+};
+
+var isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
+
+var formatShortcut = function formatShortcut(shortcut, keyLabels) {
+  var labels = keyLabels || {};
+  var keys = shortcut.split('+').map(function (key) {
+    if (key === 'shift') return isMac ? '\u21E7' : labels.shift || 'Shift';
+    return key.toUpperCase();
+  });
+  return isMac ? '\u2318' + keys.join('') : (labels.ctrl || 'Ctrl') + '+' + keys.join('+');
+};
+
+var formatAriaShortcut = function formatAriaShortcut(shortcut) {
+  var keys = shortcut.split('+').map(function (key) {
+    return key === 'shift' ? 'Shift' : key.toUpperCase();
+  });
+  return (isMac ? 'Meta+' : 'Control+') + keys.join('+');
+};
+
+var getShortcut = function getShortcut(event) {
+  if ((isMac ? !event.metaKey || event.ctrlKey : !event.ctrlKey || event.metaKey) || event.altKey) return '';
+  var key = event.key.toLowerCase();
+  if (event.code && event.code.indexOf('Digit') === 0) {
+    key = event.code.slice(5);
+  } else if (!/^[a-z]$/.test(key) && event.code && event.code.indexOf('Key') === 0) {
+    key = event.code.slice(3).toLowerCase();
+  }
+  return (event.shiftKey ? 'shift+' : '') + key;
 };
 
 var defaultClasses = {
@@ -165,11 +201,19 @@ var init = function init(settings) {
 
   var actionbar = createElement('div');
   actionbar.className = classes.actionbar;
+  if (settings.actionbarLabel) {
+    actionbar.setAttribute('role', 'group');
+    actionbar.setAttribute('aria-label', settings.actionbarLabel);
+  }
   appendChild(settings.element, actionbar);
 
   var content = settings.element.content = createElement('div');
   content.contentEditable = true;
   content.className = classes.content;
+  content.setAttribute('role', 'textbox');
+  content.setAttribute('aria-multiline', 'true');
+  if (settings.label) content.setAttribute('aria-label', settings.label);
+  if (settings.labelledBy) content.setAttribute('aria-labelledby', settings.labelledBy);
   content.oninput = function (_ref) {
     var firstChild = _ref.target.firstChild;
 
@@ -197,12 +241,26 @@ var init = function init(settings) {
   };
   appendChild(settings.element, content);
 
+  var shortcuts = {};
+  actions.forEach(function (action) {
+    if (action.shortcut) shortcuts[action.shortcut] = action;
+  });
+  addEventListener(content, 'keydown', function (event) {
+    var action = shortcuts[getShortcut(event)];
+    if (!action) return;
+    event.preventDefault();
+    event.stopPropagation();
+    action.result();
+  });
+
   actions.forEach(function (action) {
     var button = createElement('button');
     button.className = classes.button;
     button.innerHTML = action.icon;
-    button.title = action.title;
-    button.setAttribute('aria-label', action.title);
+    var label = action.shortcut ? action.title + ' (' + formatShortcut(action.shortcut, settings.keyLabels) + ')' : action.title;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    if (action.shortcut) button.setAttribute('aria-keyshortcuts', formatAriaShortcut(action.shortcut));
     button.setAttribute('type', 'button');
     button.onclick = function () {
       return action.result() && content.focus();
@@ -210,10 +268,20 @@ var init = function init(settings) {
 
     if (action.state) {
       var handler = function handler() {
-        return button.classList[action.state() ? 'add' : 'remove'](classes.selected);
+        var actif = false;
+        try {
+          var selection = window.getSelection();
+          actif = !!(selection && content.contains(selection.anchorNode) && action.state());
+        } catch (e) {
+          actif = false;
+        }
+        button.classList[actif ? 'add' : 'remove'](classes.selected);
+        button.setAttribute('aria-pressed', actif ? 'true' : 'false');
       };
+      handler();
       addEventListener(content, 'keyup', handler);
       addEventListener(content, 'mouseup', handler);
+      addEventListener(content, 'focus', handler);
       addEventListener(button, 'click', handler);
     }
 

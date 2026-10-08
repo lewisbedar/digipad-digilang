@@ -279,7 +279,7 @@
 }
 
 #blocs .bloc .evaluation .etoiles i {
-	color: #fdcc33;
+	color: #b87800;
 }
 
 #blocs .bloc .evaluation .etoiles span {
@@ -309,13 +309,13 @@
 
 #blocs .bloc .action .media-type {
 	font-size: 24px;
-	color: #aaa;
+	color: #8a8a8a;
 }
 
 #blocs .bloc .action .bouton .badge {
 	width: 1.5rem;
     height: 1.5rem;
-    background: #e32f6c;
+    background: #d1245e;
     position: absolute;
     top: -0.4rem;
     right: -0.7rem;
@@ -357,7 +357,7 @@
 	margin-bottom: 0.5rem;
 	font-size: 1.2rem;
 	width: 100%;
-	color: #aaa;
+	color: #5b5b5b;
 	display: block;
 }
 

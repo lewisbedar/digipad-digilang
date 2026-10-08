@@ -7,7 +7,7 @@ function genererHTML (pad, blocs, langue) {
 	<html lang="` + langue + `">
 		<head>
 			<meta charset="utf-8">
-			<meta name="viewport" content="width=device-width, height=device-height, viewport-fit=cover, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+			<meta name="viewport" content="width=device-width, height=device-height, viewport-fit=cover, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 			<meta name="description" content="Digipad permet de créer des murs multimédias collaboratifs.">
 			<meta name="robots" content="index, nofollow">
 			<meta name="theme-color" content="#00ced1">

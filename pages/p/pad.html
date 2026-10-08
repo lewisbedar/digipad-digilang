@@ -1,17 +1,20 @@
 <div id="page" :class="pad.affichage">
+	<a href="#pad" class="lien-evitement" @click.prevent="allerAuContenu">{{ $t('allerAuContenu') }}</a>
+	<div class="lecteur-ecran" aria-live="polite" aria-atomic="true">{{ annonce }}</div>
 	<header :class="{'pleine-largeur': pad.listeUtilisateurs && pad.listeUtilisateurs === 'desactivee'}">
 		<span id="conteneur-logo">
 			<span id="logo" />
 		</span>
-		<span id="titre" v-if="!recherche">{{ pad.titre }}</span>
-		<button type="button" id="conteneur-header-droit" :disabled="disabled" :title="$t('utilisateursConnectes')" :aria-label="$t('utilisateursConnectes')" @click="afficherUtilisateurs" v-if="!pad.listeUtilisateurs || (pad.listeUtilisateurs && pad.listeUtilisateurs === 'activee')">
+		<span id="titre" role="heading" aria-level="1" v-if="!recherche">{{ pad.titre }}</span>
+		<span class="lecteur-ecran" role="heading" aria-level="1" v-else>{{ pad.titre }}</span>
+		<button type="button" id="conteneur-header-droit" :disabled="disabled" :title="$t('libelleCible', { action: $t('utilisateursConnectes'), cible: utilisateurs.length })" :aria-label="$t('libelleCible', { action: $t('utilisateursConnectes'), cible: utilisateurs.length })" @click="afficherUtilisateurs" v-if="!pad.listeUtilisateurs || (pad.listeUtilisateurs && pad.listeUtilisateurs === 'activee')">
 			<i class="material-icons" aria-hidden="true">people_alt</i>
-			<span class="badge">{{ utilisateurs.length }}</span>
+			<span class="badge" aria-hidden="true">{{ utilisateurs.length }}</span>
 		</button>
 	</header>
 
 	<div id="champ-recherche" role="search" :aria-label="$t('rechercherCapsules')" v-if="recherche">
-		<input type="text" maxlength="48" :disabled="disabled" :placeholder="$t('rechercherCapsules')" @input="requete = $event.target.value">
+		<input id="champ-requete" type="search" maxlength="48" :disabled="disabled" :placeholder="$t('rechercherCapsules')" :aria-label="$t('rechercherCapsules')" @input="requete = $event.target.value">
 		<button type="button" :disabled="disabled" :title="$t('fermer')" :aria-label="$t('fermer')" @click="recherche = false"><i class="material-icons" aria-hidden="true">close</i></button>
 	</div>
 
@@ -20,9 +23,9 @@
 		<button type="button" id="accueil" :disabled="disabled" :title="$t('accueil')" :aria-label="$t('accueil')" @click="allerAccueil" v-else-if="!integration"><i class="material-icons" aria-hidden="true">home</i></button>
 		<button type="button" id="recherche" :disabled="disabled" :title="$t('recherche')" :aria-label="$t('recherche')" :class="{'active': recherche, 'desactive': action === 'organiser'}" @click="gererRecherche"><i class="material-icons" aria-hidden="true">search</i></button>
 		<button type="button" id="activite" :disabled="disabled" :title="$t('activitePad')" :aria-label="$t('activitePad')" @click="afficherActivite" v-if="accesAutorise && (!pad.registreActivite || (pad.registreActivite && pad.registreActivite === 'active'))"><i class="material-icons" aria-hidden="true">schedule</i></button>
-		<button type="button" id="chat" :disabled="disabled" :title="$t('conversation')" :aria-label="$t('conversation')" @click="afficherChat" v-if="accesAutorise && (!pad.conversation || (pad.conversation && pad.conversation === 'activee'))">
+		<button type="button" id="chat" :disabled="disabled" :title="nouveauxMessagesChat > 0 ? $t('conversation') + ', ' + $t('nouveauxMessages', { nombre: nouveauxMessagesChat }) : $t('conversation')" :aria-label="nouveauxMessagesChat > 0 ? $t('conversation') + ', ' + $t('nouveauxMessages', { nombre: nouveauxMessagesChat }) : $t('conversation')" @click="afficherChat" v-if="accesAutorise && (!pad.conversation || (pad.conversation && pad.conversation === 'activee'))">
 			<i class="material-icons" aria-hidden="true">chat</i>
-			<span class="badge" v-if="nouveauxMessagesChat > 0">{{ nouveauxMessagesChat }}</span>
+			<span class="badge" aria-hidden="true" v-if="nouveauxMessagesChat > 0">{{ nouveauxMessagesChat }}</span>
 		</button>
 		<button type="button" id="motdepasse" :disabled="disabled" :title="$t('motDePassePad')" :aria-label="$t('motDePassePad')" @click="afficherModaleMotDePasse" v-if="pad.hasOwnProperty('motdepasse') && !admin && statut !== 'utilisateur'"><i class="material-icons" aria-hidden="true">vpn_key</i></button>
 		<button type="button" id="options" :disabled="disabled" :title="$t('parametresPad')" :aria-label="$t('parametresPad')" @click="afficherOptions" v-if="admin"><i class="material-icons" aria-hidden="true">settings</i></button>
@@ -34,12 +37,12 @@
 		<button type="button" id="deconnexion" :disabled="disabled" :title="$t('seDeconnecterPad')" :aria-label="$t('seDeconnecterPad')" @click="afficherSeDeconnecterPad" v-else-if="admin"><i class="material-icons" aria-hidden="true">power_settings_new</i></button>
 	</nav>
 
-	<div id="menu-activite" class="menu gauche" role="menu" :aria-label="$t('activitePad')" @keydown="gererClavierMenu($event, 'menu-activite')" v-if="menu === 'activite' && pad.registreActivite === 'active'">
+	<div id="menu-activite" class="menu gauche" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('activitePad')" v-if="menu === 'activite' && pad.registreActivite === 'active'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('activitePad') }}</span>
 			<span class="action">
-				<button type="button" class="reinitialiser" role="menuitem" tabindex="-1" :title="$t('reinitialiserActivite')" :aria-label="$t('reinitialiserActivite')" @click="afficherReinitialiserActivite" v-if="admin && activite.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
-				<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
+				<button type="button" class="reinitialiser" :title="$t('reinitialiserActivite')" :aria-label="$t('reinitialiserActivite')" @click="afficherReinitialiserActivite" v-if="admin && activite.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
+				<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 			</span>
 		</div>
 		<div class="contenu ascenseur">
@@ -48,79 +51,79 @@
 					<li v-if="entree.type === 'bloc-ajoute'" :data-bloc="entree.bloc" :key="'bloc-ajoute_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCreeCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aCreeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-duplique'" :data-bloc="entree.bloc" :key="'bloc-duplique_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aDupliqueCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aDupliqueUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-valide'" :data-bloc="entree.bloc" :key="'bloc-valide_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aValideCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aValideUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-supprime'" :data-bloc="entree.bloc" :key="'bloc-supprime_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aSupprimeCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aSupprimeUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-modifie'" :data-bloc="entree.bloc" :key="'bloc-modifie_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aModifieCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aModifieUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-commente'" :data-bloc="entree.bloc" :key="'bloc-commente_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aCommenteCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aCommenteUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'commentaire-valide'" :data-bloc="entree.bloc" :key="'commentaire-valide_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aValideCommentaire', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aValideUnCommentaire')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'bloc-evalue'" :data-bloc="entree.bloc" :key="'bloc-evalue_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-if="entree.titre !== ''" v-html="$t('aEvalueCapsule', { titre: echapperHTML(entree.titre) })" /><span v-else v-html="$t('aEvalueUneCapsule')" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-ajoutee' && pad.affichage === 'colonnes'" :key="'colonne-ajoutee_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aAjouteColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-dupliquee' && pad.affichage === 'colonnes'" :key="'colonne-dupliquee_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aDupliqueColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-videe' && pad.affichage === 'colonnes'" :key="'colonne-videe_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aVideColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-supprimee' && pad.affichage === 'colonnes'" :key="'colonne-supprimee_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aSupprimeColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 					<li v-else-if="entree.type === 'colonne-deplacee' && pad.affichage === 'colonnes'" :key="'colonne-deplacee_' + indexEntree">
 						<div class="conteneur-entree"><span> {{ definirNom(entree) }}</span> <span v-html="$t('aDeplaceColonne', { titre: echapperHTML(entree.titre) })" /> {{ $formaterDateRelative(entree.date, langue) }}.</div>
 						<div class="menu-entree" v-if="admin">
-							<button type="button" class="bouton supprimer" role="menuitem" tabindex="-1" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
+							<button type="button" class="bouton supprimer" :title="$t('supprimerEntree')" :aria-label="$t('supprimerEntree')" @click="supprimerActivite(entree.id)"><i class="material-icons" aria-hidden="true">delete</i></button>
 						</div>
 					</li>
 				</template>
@@ -128,12 +131,12 @@
 		</div>
 	</div>
 
-	<div id="menu-conversation" class="menu gauche" role="menu" :aria-label="$t('conversation')" @keydown="gererClavierMenu($event, 'menu-conversation')" v-else-if="menu === 'chat' && pad.conversation === 'activee'">
+	<div id="menu-conversation" class="menu gauche" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('conversation')" v-else-if="menu === 'chat' && pad.conversation === 'activee'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('conversation') }}</span>
 			<span class="action">
-				<button type="button" class="reinitialiser" role="menuitem" tabindex="-1" :title="$t('supprimerMessages')" :aria-label="$t('supprimerMessages')" @click="afficherReinitialiserMessages" v-if="admin && messagesChat.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
-				<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
+				<button type="button" class="reinitialiser" :title="$t('supprimerMessages')" :aria-label="$t('supprimerMessages')" @click="afficherReinitialiserMessages" v-if="admin && messagesChat.length > 0"><i class="material-icons" aria-hidden="true">autorenew</i></button>
+				<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 			</span>
 		</div>
 		<div class="contenu ascenseur">
@@ -141,171 +144,171 @@
 				<li v-for="(messageConversation, indexMessageConversation) in messagesChat" :key="'conversation_' + indexMessageConversation"><span>{{ definirNom(messageConversation) }}</span>{{ messageConversation.texte }}</li>
 			</ul>
 			<div id="ecrire-message">
-				<input type="text" role="menuitem" :value="messageChat" @input="messageChat = $event.target.value" autocomplete="off" @keydown.enter.prevent="envoyerMessage">
-				<button type="button" role="menuitem" tabindex="-1" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerMessage"><i class="material-icons" aria-hidden="true">send</i></button>
+				<input type="text" :aria-label="$t('ecrireMessage')" :value="messageChat" @input="messageChat = $event.target.value" autocomplete="off" @keydown.enter.prevent="envoyerMessage">
+				<button type="button" :title="$t('publier')" :aria-label="$t('publier')" @click="envoyerMessage"><i class="material-icons" aria-hidden="true">send</i></button>
 			</div>
 		</div>
 	</div>
 
-	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('parametresPad')" @keydown="gererClavierMenu($event, 'menu-options')" v-else-if="menu === 'options' && admin">
+	<div id="menu-options" class="menu gauche" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('parametresPad')" v-else-if="menu === 'options' && admin">
 		<div class="en-tete">
 			<span class="titre">{{ $t('parametresPad') }}</span>
-			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
+			<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<div class="conteneur">
 				<label for="titre-pad">{{ $t('titre') }}</label>
 				<input id="titre-pad" type="text" disabled :value="pad.titre" v-if="viaDigidrive">
-				<input id="titre-pad" type="text" role="menuitem" tabindex="-1" :value="pad.titre" @keydown.enter="modifierTitre" v-else>
+				<input id="titre-pad" type="text" :value="pad.titre" @keydown.enter="modifierTitre" v-else>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="!viaDigidrive">
-				<button type="button" class="bouton-vert" role="menuitem" tabindex="-1" @click="modifierTitre">{{ $t('enregistrer') }}</button>
+				<button type="button" class="bouton-vert" @click="modifierTitre">{{ $t('enregistrer') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
-				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherModaleModifierMotDePasse">{{ $t('modifierMotDePasse') }}</button>
+				<button type="button" class="bouton-bleu" @click="afficherModaleModifierMotDePasse">{{ $t('modifierMotDePasse') }}</button>
 			</div>
 			<div class="conteneur">
-				<label>{{ $t('lienEtCodeQR') }}</label>
+				<label for="champ-lien-partage">{{ $t('lienEtCodeQR') }}</label>
 				<div id="copier-lien">
-					<input type="text" disabled :value="hote + '/p/' + pad.id + '/' + pad.token">
-					<button type="button" class="icone lien" role="menuitem" tabindex="-1" :title="$t('copierLien')" :aria-label="$t('copierLien')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
-					<button type="button" class="icone codeqr" role="menuitem" tabindex="-1" :title="$t('afficherCodeQR')" :aria-label="$t('afficherCodeQR')" @click="afficherCodeQR"><i class="material-icons" aria-hidden="true">qr_code</i></button>
+					<input id="champ-lien-partage" type="text" disabled :value="hote + '/p/' + pad.id + '/' + pad.token">
+					<button type="button" class="icone lien" :title="$t('copierLien')" :aria-label="$t('copierLien')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+					<button type="button" class="icone codeqr" :title="$t('afficherCodeQR')" :aria-label="$t('afficherCodeQR')" @click="afficherCodeQR"><i class="material-icons" aria-hidden="true">qr_code</i></button>
 				</div>
 			</div>
 			<div class="conteneur">
-				<label>{{ $t('codeIntegration') }}</label>
+				<label for="champ-code-integration">{{ $t('codeIntegration') }}</label>
 				<div id="copier-code">
-					<input type="text" disabled :value="'<iframe src=&quot;' + hote + '/p/' + pad.id + '/' + pad.token + '&quot; frameborder=&quot;0&quot; width=&quot;100%&quot; height=&quot;500&quot; allow=&quot;autoplay; fullscreen&quot;></iframe>'">
-					<button type="button" class="icone lien" role="menuitem" tabindex="-1" :title="$t('copierCode')" :aria-label="$t('copierCode')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
+					<input id="champ-code-integration" type="text" disabled :value="'<iframe src=&quot;' + hote + '/p/' + pad.id + '/' + pad.token + '&quot; frameborder=&quot;0&quot; width=&quot;100%&quot; height=&quot;500&quot; allow=&quot;autoplay; fullscreen&quot;></iframe>'">
+					<button type="button" class="icone lien" :title="$t('copierCode')" :aria-label="$t('copierCode')"><i class="material-icons" aria-hidden="true">content_copy</i></button>
 				</div>
 			</div>
-			<div class="conteneur" v-if="pad.vues !== undefined && pad.vues !== null">
-				<label>{{ $t('nombreVues') }}</label>
+			<div class="conteneur" role="group" aria-labelledby="libelle-nombreVues" v-if="pad.vues !== undefined && pad.vues !== null">
+				<label id="libelle-nombreVues">{{ $t('nombreVues') }}</label>
 				<div id="vues">
 					<span>{{ pad.vues }}</span>
-					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('reinitialiserVues')" :aria-label="$t('reinitialiserVues')" @click="afficherReinitialiserVues" v-if="pad.identifiant === identifiant && pad.vues > 0"><i class="material-icons" aria-hidden="true">restart_alt</i></button>
+					<button type="button" class="icone" :title="$t('reinitialiserVues')" :aria-label="$t('reinitialiserVues')" @click="afficherReinitialiserVues" v-if="pad.identifiant === identifiant && pad.vues > 0"><i class="material-icons" aria-hidden="true">restart_alt</i></button>
 				</div>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('langue') }}</label>
+			<div class="conteneur" role="group" aria-labelledby="libelle-langue">
+				<label id="libelle-langue">{{ $t('langue') }}</label>
 				<div id="langues">
-					<button type="button" role="menuitem" tabindex="-1" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
-					<button type="button" role="menuitem" tabindex="-1" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
+					<button type="button" title="Français" aria-label="FR, Français" lang="fr" :aria-pressed="langue === 'fr' ? 'true' : 'false'" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+					<button type="button" title="Español" aria-label="ES, Español" lang="es" :aria-pressed="langue === 'es' ? 'true' : 'false'" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+					<button type="button" title="Italiano" aria-label="IT, Italiano" lang="it" :aria-pressed="langue === 'it' ? 'true' : 'false'" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+					<button type="button" title="Deutsch" aria-label="DE, Deutsch" lang="de" :aria-pressed="langue === 'de' ? 'true' : 'false'" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+					<button type="button" title="English" aria-label="EN, English" lang="en" :aria-pressed="langue === 'en' ? 'true' : 'false'" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+					<button type="button" title="Hrvatski" aria-label="HR, Hrvatski" lang="hr" :aria-pressed="langue === 'hr' ? 'true' : 'false'" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 				</div>
 			</div>
-			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut !== 'auteur'">
-				<label>{{ $t('adminsPad') }}</label>
-				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="ouvrirModaleAdmins">{{ $t('gererAdmins') }}</button>
+			<div class="conteneur conteneur-bouton" role="group" aria-labelledby="libelle-adminsPad" v-if="pad.identifiant === identifiant && statut !== 'auteur'">
+				<label id="libelle-adminsPad">{{ $t('adminsPad') }}</label>
+				<button type="button" class="bouton-bleu" @click="ouvrirModaleAdmins">{{ $t('gererAdmins') }}</button>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('acces') }}</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('public')" @keydown.enter.space.prevent="activerInput('acces-public')">{{ $t('public') }}
-					<input id="acces-public" type="radio" name="acces" :checked="pad.acces === 'public'" @change="modifierAcces('public')">
+			<div class="conteneur" role="radiogroup" aria-labelledby="libelle-acces" @keydown="gererClavierRadio">
+				<label id="libelle-acces">{{ $t('acces') }}</label>
+				<label class="bouton-radio" :tabindex="(pad.acces === 'public') ? 0 : -1" role="radio" :aria-checked="(pad.acces === 'public') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('acces-public')">{{ $t('public') }}
+					<input id="acces-public" type="radio" name="acces" tabindex="-1" aria-hidden="true" :checked="pad.acces === 'public'" @change="modifierAcces('public')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('prive')" @keydown.enter.space.prevent="activerInput('acces-prive')" v-if="statut === 'utilisateur'">{{ $t('prive') }}
-					<input id="acces-prive" type="radio" name="acces" :checked="pad.acces === 'prive'" @change="modifierAcces('prive')">
+				<label class="bouton-radio" :tabindex="(pad.acces === 'prive') ? 0 : -1" role="radio" :aria-checked="(pad.acces === 'prive') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('acces-prive')" v-if="statut === 'utilisateur'">{{ $t('prive') }}
+					<input id="acces-prive" type="radio" name="acces" tabindex="-1" aria-hidden="true" :checked="pad.acces === 'prive'" @change="modifierAcces('prive')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('acces') + ' ' + $t('protege')" @keydown.enter.space.prevent="activerInput('acces-code')">{{ $t('protege') }}
-					<input id="acces-code" type="radio" name="acces" :checked="pad.acces === 'code'" @change="modifierAcces('code')">
+				<label class="bouton-radio" :tabindex="(pad.acces === 'code') ? 0 : -1" role="radio" :aria-checked="(pad.acces === 'code') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('acces-code')">{{ $t('protege') }}
+					<input id="acces-code" type="radio" name="acces" tabindex="-1" aria-hidden="true" :checked="pad.acces === 'code'" @change="modifierAcces('code')">
 					<span class="coche" />
 				</label>
 			</div>
 			<div class="conteneur" v-if="pad.acces === 'code'">
-				<label for="champ-code-acces">{{ $t('codeAcces') }}</label>
+				<label :for="codeVisible ? 'champ-code-acces-texte' : 'champ-code-acces'">{{ $t('codeAcces') }}</label>
 				<div id="code-acces">
 					<template v-if="modificationCode === false">
 						<input id="champ-code-acces-texte" type="text" maxlength="18" disabled :value="pad.code" v-if="codeVisible">
 						<input id="champ-code-acces" type="password" disabled :value="pad.code" v-else>
 					</template>
 					<template v-else>
-						<input id="champ-code-acces-texte" type="text" role="menuitem" tabindex="-1" maxlength="18" :value="pad.code" v-if="codeVisible">
-						<input id="champ-code-acces" type="password" role="menuitem" tabindex="-1" :value="pad.code" v-else>
+						<input id="champ-code-acces-texte" type="text" maxlength="18" :value="pad.code" v-if="codeVisible">
+						<input id="champ-code-acces" type="password" :value="pad.code" v-else>
 					</template>
-					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('modifierCode')" :aria-label="$t('modifierCode')" @click="afficherModifierCodeAcces" v-if="!modificationCode"><i class="material-icons" aria-hidden="true">edit</i></button>
-					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('annulerModifierCode')" :aria-label="$t('annulerModifierCode')" @click="annulerModifierCodeAcces" v-else><i class="material-icons" aria-hidden="true">edit_off</i></button>
-					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
-					<button type="button" class="icone" role="menuitem" tabindex="-1" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
+					<button type="button" class="icone" :title="$t('modifierCode')" :aria-label="$t('modifierCode')" @click="afficherModifierCodeAcces" v-if="!modificationCode"><i class="material-icons" aria-hidden="true">edit</i></button>
+					<button type="button" class="icone" :title="$t('annulerModifierCode')" :aria-label="$t('annulerModifierCode')" @click="annulerModifierCodeAcces" v-else><i class="material-icons" aria-hidden="true">edit_off</i></button>
+					<button type="button" class="icone" :title="$t('masquerCode')" :aria-label="$t('masquerCode')" @click="masquerCodeAcces" v-if="codeVisible"><i class="material-icons" aria-hidden="true">visibility_off</i></button>
+					<button type="button" class="icone" :title="$t('afficherCode')" :aria-label="$t('afficherCode')" @click="afficherCodeAcces" v-else><i class="material-icons" aria-hidden="true">visibility</i></button>
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="modificationCode">
-				<button type="button" class="bouton-vert" role="menuitem" tabindex="-1" @click="modifierCodeAcces">{{ $t('enregistrer') }}</button>
+				<button type="button" class="bouton-vert" @click="modifierCodeAcces">{{ $t('enregistrer') }}</button>
 			</div>
-			<div class="conteneur" v-if="pad.acces !== 'prive'">
-				<label>{{ $t('contributions') }}</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('modifiables')" @keydown.enter.space.prevent="activerInput('contributions-modifiables')">{{ $t('modifiables') }}
-					<input id="contributions-modifiables" type="radio" name="contributions" :checked="pad.contributions === 'modifiables'" @change="modifierContributions('modifiables')">
+			<div class="conteneur" role="radiogroup" aria-labelledby="libelle-contributions" @keydown="gererClavierRadio" v-if="pad.acces !== 'prive'">
+				<label id="libelle-contributions">{{ $t('contributions') }}</label>
+				<label class="bouton-radio" :tabindex="(pad.contributions === 'modifiables') ? 0 : -1" role="radio" :aria-checked="(pad.contributions === 'modifiables') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('contributions-modifiables')">{{ $t('modifiables') }}
+					<input id="contributions-modifiables" type="radio" name="contributions" tabindex="-1" aria-hidden="true" :checked="pad.contributions === 'modifiables'" @change="modifierContributions('modifiables')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('ouvertes')" @keydown.enter.space.prevent="activerInput('contributions-ouvertes')">{{ $t('ouvertes') }}
-					<input id="contributions-ouvertes" type="radio" name="contributions" :checked="pad.contributions === 'ouvertes'" @change="modifierContributions('ouvertes')">
+				<label class="bouton-radio" :tabindex="(pad.contributions === 'ouvertes') ? 0 : -1" role="radio" :aria-checked="(pad.contributions === 'ouvertes') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('contributions-ouvertes')">{{ $t('ouvertes') }}
+					<input id="contributions-ouvertes" type="radio" name="contributions" tabindex="-1" aria-hidden="true" :checked="pad.contributions === 'ouvertes'" @change="modifierContributions('ouvertes')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('moderees')" @keydown.enter.space.prevent="activerInput('contributions-moderees')">{{ $t('moderees') }}
-					<input id="contributions-moderees" type="radio" name="contributions" :checked="pad.contributions === 'moderees'" @change="modifierContributions('moderees')">
+				<label class="bouton-radio" :tabindex="(pad.contributions === 'moderees') ? 0 : -1" role="radio" :aria-checked="(pad.contributions === 'moderees') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('contributions-moderees')">{{ $t('moderees') }}
+					<input id="contributions-moderees" type="radio" name="contributions" tabindex="-1" aria-hidden="true" :checked="pad.contributions === 'moderees'" @change="modifierContributions('moderees')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('contributions') + ' ' + $t('fermees')" @keydown.enter.space.prevent="activerInput('contributions-fermees')">{{ $t('fermees') }}
-					<input id="contributions-fermees" type="radio" name="contributions" :checked="pad.contributions === 'fermees'" @change="modifierContributions('fermees')">
-					<span class="coche" />
-				</label>
-			</div>
-			<div class="conteneur">
-				<label>{{ $t('affichage') }}</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('mur')" @keydown.enter.space.prevent="activerInput('affichage-mur')">{{ $t('mur') }}
-					<input id="affichage-mur" type="radio" name="affichage" :checked="pad.affichage === 'mur'" @change="modifierAffichage('mur')">
-					<span class="coche" />
-				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('fluxVertical')" @keydown.enter.space.prevent="activerInput('affichage-flux')">{{ $t('fluxVertical') }}
-					<input id="affichage-flux" type="radio" name="affichage" :checked="pad.affichage === 'flux-vertical'" @change="modifierAffichage('flux-vertical')">
-					<span class="coche" />
-				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('affichage') + ' ' + $t('colonnes')" @keydown.enter.space.prevent="activerInput('affichage-colonnes')">{{ $t('colonnes') }}
-					<input id="affichage-colonnes" type="radio" name="affichage" :checked="pad.affichage === 'colonnes'" @change="modifierAffichage('colonnes')">
+				<label class="bouton-radio" :tabindex="(pad.contributions === 'fermees') ? 0 : -1" role="radio" :aria-checked="(pad.contributions === 'fermees') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('contributions-fermees')">{{ $t('fermees') }}
+					<input id="contributions-fermees" type="radio" name="contributions" tabindex="-1" aria-hidden="true" :checked="pad.contributions === 'fermees'" @change="modifierContributions('fermees')">
 					<span class="coche" />
 				</label>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('ordreCapsules') }}</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('ordreCapsules') + ' ' + $t('croissant')" @keydown.enter.space.prevent="activerInput('ordre-croissant')">{{ $t('croissant') }}
-					<input id="ordre-croissant" type="radio" name="ordre" :checked="!pad.hasOwnProperty('ordre') || pad.ordre === 'croissant'" @change="modifierOrdre('croissant')">
+			<div class="conteneur" role="radiogroup" aria-labelledby="libelle-affichage" @keydown="gererClavierRadio">
+				<label id="libelle-affichage">{{ $t('affichage') }}</label>
+				<label class="bouton-radio" :tabindex="(pad.affichage === 'mur') ? 0 : -1" role="radio" :aria-checked="(pad.affichage === 'mur') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('affichage-mur')">{{ $t('mur') }}
+					<input id="affichage-mur" type="radio" name="affichage" tabindex="-1" aria-hidden="true" :checked="pad.affichage === 'mur'" @change="modifierAffichage('mur')">
 					<span class="coche" />
 				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('ordreCapsules') + ' ' + $t('decroissant')" @keydown.enter.space.prevent="activerInput('ordre-decroissant')">{{ $t('decroissant') }}
-					<input id="ordre-decroissant" type="radio" name="ordre" :checked="pad.hasOwnProperty('ordre') && pad.ordre === 'decroissant'" @change="modifierOrdre('decroissant')">
+				<label class="bouton-radio" :tabindex="(pad.affichage === 'flux-vertical') ? 0 : -1" role="radio" :aria-checked="(pad.affichage === 'flux-vertical') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('affichage-flux')">{{ $t('fluxVertical') }}
+					<input id="affichage-flux" type="radio" name="affichage" tabindex="-1" aria-hidden="true" :checked="pad.affichage === 'flux-vertical'" @change="modifierAffichage('flux-vertical')">
 					<span class="coche" />
 				</label>
-			</div>
-			<div class="conteneur">
-				<label>{{ $t('largeurCapsules') }}</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('largeurCapsules') + ' ' + $t('normale')" @keydown.enter.space.prevent="activerInput('largeur-normale')">{{ $t('normale') }}
-					<input id="largeur-normale" type="radio" name="largeur" :checked="!pad.hasOwnProperty('largeur') || pad.largeur === 'normale'" @change="modifierLargeur('normale')">
-					<span class="coche" />
-				</label>
-				<label class="bouton-radio" role="menuitem" tabindex="-1" :aria-label="$t('largeurCapsules') + ' ' + $t('large')" @keydown.enter.space.prevent="activerInput('largeur-large')">{{ $t('large') }}
-					<input id="largeur-large" type="radio" name="largeur" :checked="pad.hasOwnProperty('largeur') && pad.largeur === 'large'" @change="modifierLargeur('large')">
+				<label class="bouton-radio" :tabindex="(pad.affichage === 'colonnes') ? 0 : -1" role="radio" :aria-checked="(pad.affichage === 'colonnes') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('affichage-colonnes')">{{ $t('colonnes') }}
+					<input id="affichage-colonnes" type="radio" name="affichage" tabindex="-1" aria-hidden="true" :checked="pad.affichage === 'colonnes'" @change="modifierAffichage('colonnes')">
 					<span class="coche" />
 				</label>
 			</div>
-			<div class="conteneur fond">
-				<label>{{ $t('arrierePlan') }}</label>
+			<div class="conteneur" role="radiogroup" aria-labelledby="libelle-ordreCapsules" @keydown="gererClavierRadio">
+				<label id="libelle-ordreCapsules">{{ $t('ordreCapsules') }}</label>
+				<label class="bouton-radio" :tabindex="(!pad.hasOwnProperty('ordre') || pad.ordre === 'croissant') ? 0 : -1" role="radio" :aria-checked="(!pad.hasOwnProperty('ordre') || pad.ordre === 'croissant') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('ordre-croissant')">{{ $t('croissant') }}
+					<input id="ordre-croissant" type="radio" name="ordre" tabindex="-1" aria-hidden="true" :checked="!pad.hasOwnProperty('ordre') || pad.ordre === 'croissant'" @change="modifierOrdre('croissant')">
+					<span class="coche" />
+				</label>
+				<label class="bouton-radio" :tabindex="(pad.hasOwnProperty('ordre') && pad.ordre === 'decroissant') ? 0 : -1" role="radio" :aria-checked="(pad.hasOwnProperty('ordre') && pad.ordre === 'decroissant') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('ordre-decroissant')">{{ $t('decroissant') }}
+					<input id="ordre-decroissant" type="radio" name="ordre" tabindex="-1" aria-hidden="true" :checked="pad.hasOwnProperty('ordre') && pad.ordre === 'decroissant'" @change="modifierOrdre('decroissant')">
+					<span class="coche" />
+				</label>
+			</div>
+			<div class="conteneur" role="radiogroup" aria-labelledby="libelle-largeurCapsules" @keydown="gererClavierRadio">
+				<label id="libelle-largeurCapsules">{{ $t('largeurCapsules') }}</label>
+				<label class="bouton-radio" :tabindex="(!pad.hasOwnProperty('largeur') || pad.largeur === 'normale') ? 0 : -1" role="radio" :aria-checked="(!pad.hasOwnProperty('largeur') || pad.largeur === 'normale') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('largeur-normale')">{{ $t('normale') }}
+					<input id="largeur-normale" type="radio" name="largeur" tabindex="-1" aria-hidden="true" :checked="!pad.hasOwnProperty('largeur') || pad.largeur === 'normale'" @change="modifierLargeur('normale')">
+					<span class="coche" />
+				</label>
+				<label class="bouton-radio" :tabindex="(pad.hasOwnProperty('largeur') && pad.largeur === 'large') ? 0 : -1" role="radio" :aria-checked="(pad.hasOwnProperty('largeur') && pad.largeur === 'large') ? 'true' : 'false'" @keydown.enter.space.prevent="activerInput('largeur-large')">{{ $t('large') }}
+					<input id="largeur-large" type="radio" name="largeur" tabindex="-1" aria-hidden="true" :checked="pad.hasOwnProperty('largeur') && pad.largeur === 'large'" @change="modifierLargeur('large')">
+					<span class="coche" />
+				</label>
+			</div>
+			<div class="conteneur fond" role="group" aria-labelledby="libelle-arrierePlan">
+				<label id="libelle-arrierePlan">{{ $t('arrierePlan') }}</label>
 				<div class="fonds">
-					<button type="button" role="menuitem" tabindex="-1" :title="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" :aria-label="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" v-for="(imageFond, indexImageFond) in fonds" @click="modifierFond(imageFond)" :key="'fond_' + indexImageFond">
+					<button type="button" :title="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" :aria-label="$t('selectionnerImageFond', { fond: indexImageFond + 1 })" v-for="(imageFond, indexImageFond) in fonds" @click="modifierFond(imageFond)" :key="'fond_' + indexImageFond">
 						<img :src="'/img/vignettes/' + imageFond" :alt="'Fond' + (indexImageFond + 1)">
 					</button>
 					<span class="couleur-personnalisee">
-						<input type="color" role="menuitem" tabindex="-1" :value="pad.fond" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-if="pad.hasOwnProperty('fond') && pad.fond.substring(0, 1) === '#'">
-						<input type="color" role="menuitem" tabindex="-1" value="#ffffff" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-else>
+						<input type="color" :value="pad.fond" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-if="pad.hasOwnProperty('fond') && pad.fond.substring(0, 1) === '#'">
+						<input type="color" value="#ffffff" @change="modifierCouleurFond" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')" v-else>
 					</span>
 				</div>
 			</div>
 			<div class="conteneur">
-				<label for="televerser-fond" class="bouton-bleu" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('televerser-fond')" v-if="menu === 'options' && progressionFond === 0">{{ $t('televerserImageFond') }}</label>
+				<label for="televerser-fond" class="bouton-bleu" role="button" tabindex="0" @keydown.enter.space.prevent="activerInput('televerser-fond')" v-if="menu === 'options' && progressionFond === 0">{{ $t('televerserImageFond') }}</label>
 				<input id="televerser-fond" type="file" style="display: none" accept=".jpg, .jpeg, .png, .gif" @change="ajouterFond">
 				<div class="conteneur-chargement progression" v-if="menu === 'options' && progressionFond > 0">
 					<progress class="barre-progression" max="100" :value="progressionFond" />
@@ -313,142 +316,142 @@
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && progressionFond === 0">
 					<span>{{ $t('repeterImageFond') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
-						<input id="parametre-fond-repete" type="checkbox" :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.fondRepete === 'active') ? 'true' : 'false'" :aria-label="$t('repeterImageFond')" @keydown.enter.space.prevent="activerInput('parametre-fond-repete')">
+						<input id="parametre-fond-repete" type="checkbox" hidden :checked="pad.fondRepete === 'active'" @change="modifierFondRepete">
 						<span class="barre" />
 					</label>
 				</div>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('onglets') }}</label>
+			<div class="conteneur" role="group" aria-labelledby="libelle-onglets">
+				<label id="libelle-onglets">{{ $t('onglets') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('activitePad') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-registre-activite')">
-						<input id="parametre-registre-activite" type="checkbox" :checked="!pad.registreActivite || pad.registreActivite === 'active'" @change="modifierActivite">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.registreActivite || pad.registreActivite === 'active') ? 'true' : 'false'" :aria-label="$t('activitePad')" @keydown.enter.space.prevent="activerInput('parametre-registre-activite')">
+						<input id="parametre-registre-activite" type="checkbox" hidden :checked="!pad.registreActivite || pad.registreActivite === 'active'" @change="modifierActivite">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('conversation') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-conversation')">
-						<input id="parametre-conversation" type="checkbox" :checked="!pad.conversation || pad.conversation === 'activee'" @change="modifierConversation">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.conversation || pad.conversation === 'activee') ? 'true' : 'false'" :aria-label="$t('conversation')" @keydown.enter.space.prevent="activerInput('parametre-conversation')">
+						<input id="parametre-conversation" type="checkbox" hidden :checked="!pad.conversation || pad.conversation === 'activee'" @change="modifierConversation">
 						<span class="barre" />
 					</label>
 				</div>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('utilisateurs') }}</label>
+			<div class="conteneur" role="group" aria-labelledby="libelle-utilisateurs">
+				<label id="libelle-utilisateurs">{{ $t('utilisateurs') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('utilisateursConnectes') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-liste-utilisateurs')">
-						<input id="parametre-liste-utilisateurs" type="checkbox" :checked="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'" @change="modifierListeUtilisateurs">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee') ? 'true' : 'false'" :aria-label="$t('utilisateursConnectes')" @keydown.enter.space.prevent="activerInput('parametre-liste-utilisateurs')">
+						<input id="parametre-liste-utilisateurs" type="checkbox" hidden :checked="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'" @change="modifierListeUtilisateurs">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="!pad.listeUtilisateurs || pad.listeUtilisateurs === 'activee'">
 					<span>{{ $t('editionNom') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-edition-nom')">
-						<input id="parametre-edition-nom" type="checkbox" :checked="pad.editionNom === 'activee'" @change="modifierEditionNom">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.editionNom === 'activee') ? 'true' : 'false'" :aria-label="$t('editionNom')" @keydown.enter.space.prevent="activerInput('parametre-edition-nom')">
+						<input id="parametre-edition-nom" type="checkbox" hidden :checked="pad.editionNom === 'activee'" @change="modifierEditionNom">
 						<span class="barre" />
 					</label>
 				</div>
 			</div>
-			<div class="conteneur">
-				<label>{{ $t('capsules') }}</label>
+			<div class="conteneur" role="group" aria-labelledby="libelle-capsules">
+				<label id="libelle-capsules">{{ $t('capsules') }}</label>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('fichiers') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-fichiers')">
-						<input id="parametre-fichiers" type="checkbox" :checked="pad.fichiers === 'actives'" @change="modifierFichiers">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.fichiers === 'actives') ? 'true' : 'false'" :aria-label="$t('fichiers')" @keydown.enter.space.prevent="activerInput('parametre-fichiers')">
+						<input id="parametre-fichiers" type="checkbox" hidden :checked="pad.fichiers === 'actives'" @change="modifierFichiers">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('enregistrementsAudio') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-enregistrements')">
-						<input id="parametre-enregistrements" type="checkbox" :checked="pad.enregistrements === 'actives'" @change="modifierEnregistrements">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.enregistrements === 'actives') ? 'true' : 'false'" :aria-label="$t('enregistrementsAudio')" @keydown.enter.space.prevent="activerInput('parametre-enregistrements')">
+						<input id="parametre-enregistrements" type="checkbox" hidden :checked="pad.enregistrements === 'actives'" @change="modifierEnregistrements">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('liens') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-liens')">
-						<input id="parametre-liens" type="checkbox" :checked="pad.liens === 'actives'" @change="modifierLiens">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.liens === 'actives') ? 'true' : 'false'" :aria-label="$t('liens')" @keydown.enter.space.prevent="activerInput('parametre-liens')">
+						<input id="parametre-liens" type="checkbox" hidden :checked="pad.liens === 'actives'" @change="modifierLiens">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="etherpad !== ''">
 					<span>{{ $t('documentsCollaboratifs') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-documents')">
-						<input id="parametre-documents" type="checkbox" :checked="pad.documents === 'actives'" @change="modifierDocuments">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.documents === 'actives') ? 'true' : 'false'" :aria-label="$t('documentsCollaboratifs')" @keydown.enter.space.prevent="activerInput('parametre-documents')">
+						<input id="parametre-documents" type="checkbox" hidden :checked="pad.documents === 'actives'" @change="modifierDocuments">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('commentaires') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
-						<input id="parametre-commentaires" type="checkbox" :checked="pad.commentaires === 'actives'" @change="modifierCommentaires">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.commentaires === 'actives') ? 'true' : 'false'" :aria-label="$t('commentaires')" @keydown.enter.space.prevent="activerInput('parametre-commentaires')">
+						<input id="parametre-commentaires" type="checkbox" hidden :checked="pad.commentaires === 'actives'" @change="modifierCommentaires">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives'">
 					<label for="parametre-commentaires-visibilite">{{ $t('visibiliteCommentaires') }}</label>
-					<select id="parametre-commentaires-visibilite" role="menuitem" tabindex="-1" :value="pad.visibiliteCommentaires || 'tous'" @change="modifierVisibiliteCommentaires($event.target.value)">
+					<select id="parametre-commentaires-visibilite" :value="pad.visibiliteCommentaires || 'tous'" @change="modifierVisibiliteCommentaires($event.target.value)">
 						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
 						<option value="admin">{{ $t('adminsUniquement') }}</option>
 					</select>
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives' && pad.visibiliteCommentaires !== 'admin'">
 					<label for="parametre-commentaires-acces">{{ $t('autorisationCommentaire') }}</label>
-					<select id="parametre-commentaires-acces" role="menuitem" tabindex="-1" :value="pad.accesCommentaires || 'tous'" @change="modifierAccesCommentaires($event.target.value)">
+					<select id="parametre-commentaires-acces" :value="pad.accesCommentaires || 'tous'" @change="modifierAccesCommentaires($event.target.value)">
 						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
 						<option value="admin">{{ $t('adminsUniquement') }}</option>
 					</select>
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.commentaires === 'actives' && pad.accesCommentaires !== 'admin'">
 					<span>{{ $t('moderationCommentaires') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-commentaires-moderation')">
-						<input id="parametre-commentaires-moderation" type="checkbox" :checked="pad.commentairesModeration === 'activee'" @change="modifierModerationCommentaires">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.commentairesModeration === 'activee') ? 'true' : 'false'" :aria-label="$t('moderationCommentaires')" @keydown.enter.space.prevent="activerInput('parametre-commentaires-moderation')">
+						<input id="parametre-commentaires-moderation" type="checkbox" hidden :checked="pad.commentairesModeration === 'activee'" @change="modifierModerationCommentaires">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('etiquettes') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-etiquettes')">
-						<input id="parametre-etiquettes" type="checkbox" :checked="pad.etiquettes === 'activees'" @change="modifierEtiquettes">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.etiquettes === 'activees') ? 'true' : 'false'" :aria-label="$t('etiquettes')" @keydown.enter.space.prevent="activerInput('parametre-etiquettes')">
+						<input id="parametre-etiquettes" type="checkbox" hidden :checked="pad.etiquettes === 'activees'" @change="modifierEtiquettes">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('evaluations') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
-						<input id="parametre-evaluations" type="checkbox" :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.evaluations === 'activees') ? 'true' : 'false'" :aria-label="$t('evaluations')" @keydown.enter.space.prevent="activerInput('parametre-evaluations')">
+						<input id="parametre-evaluations" type="checkbox" hidden :checked="pad.evaluations === 'activees'" @change="modifierEvaluations">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.evaluations === 'activees'">
 					<label for="parametre-evaluations-visibilite">{{ $t('visibiliteEvaluations') }}</label>
-					<select id="parametre-evaluations-visibilite" role="menuitem" tabindex="-1" :value="pad.visibiliteEvaluations || 'tous'" @change="modifierVisibiliteEvaluations($event.target.value)">
+					<select id="parametre-evaluations-visibilite" :value="pad.visibiliteEvaluations || 'tous'" @change="modifierVisibiliteEvaluations($event.target.value)">
 						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
 						<option value="admin">{{ $t('adminsUniquement') }}</option>
 					</select>
 				</div>
 				<div class="conteneur-interrupteur" v-if="pad.evaluations === 'activees' && pad.visibiliteEvaluations !== 'admin'">
 					<label for="parametre-evaluations-acces">{{ $t('autorisationEvaluation') }}</label>
-					<select id="parametre-evaluations-acces" role="menuitem" tabindex="-1" :value="pad.accesEvaluations || 'tous'" @change="modifierAccesEvaluations($event.target.value)">
+					<select id="parametre-evaluations-acces" :value="pad.accesEvaluations || 'tous'" @change="modifierAccesEvaluations($event.target.value)">
 						<option value="tous">{{ $t('tousUtilisateurs') }}</option>
 						<option value="admin">{{ $t('adminsUniquement') }}</option>
 					</select>
 				</div>
 				<div class="conteneur-interrupteur" v-if="statut === 'utilisateur' || viaDigidrive">
 					<span>{{ $t('copieCapsule') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-copie-bloc')">
-						<input id="parametre-copie-bloc" type="checkbox" :checked="pad.copieBloc === 'activee'" @change="modifierCopieBloc">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.copieBloc === 'activee') ? 'true' : 'false'" :aria-label="$t('copieCapsule')" @keydown.enter.space.prevent="activerInput('parametre-copie-bloc')">
+						<input id="parametre-copie-bloc" type="checkbox" hidden :checked="pad.copieBloc === 'activee'" @change="modifierCopieBloc">
 						<span class="barre" />
 					</label>
 				</div>
 				<div class="conteneur-interrupteur" v-if="visionneuseDocx && visionneuseDocx !== '' && visionneuseDocx !== null && visionneuseDocxAlt && visionneuseDocxAlt !== '' && visionneuseDocxAlt !== null">
 					<label for="parametre-visionneuse">{{ $t('visionneuseOffice') }}</label>
-					<select id="parametre-visionneuse" role="menuitem" tabindex="-1" :value="pad.visionneuse" @change="modifierVisionneuse($event.target.value)">
+					<select id="parametre-visionneuse" :value="pad.visionneuse" @change="modifierVisionneuse($event.target.value)">
 						<option value="viewer">{{ $t('visionneuse') }}</option>
 						<option value="viewer-alt">{{ $t('visionneuseAlt') }}</option>
 					</select>
@@ -457,56 +460,56 @@
 			<div class="conteneur" v-if="pad.identifiant === identifiant && statut === 'utilisateur'">
 				<div class="conteneur-interrupteur">
 					<span>{{ $t('transfertPropriete') }}</span>
-					<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('parametre-transfert-propriete')">
-						<input id="parametre-transfert-propriete" type="checkbox" :checked="pad.transfertPropriete === 'active'" @change="modifierTransfertPropriete">
+					<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(pad.transfertPropriete === 'active') ? 'true' : 'false'" :aria-label="$t('transfertPropriete')" @keydown.enter.space.prevent="activerInput('parametre-transfert-propriete')">
+						<input id="parametre-transfert-propriete" type="checkbox" hidden :checked="pad.transfertPropriete === 'active'" @change="modifierTransfertPropriete">
 						<span class="barre" />
 					</label>
 				</div>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
-				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad('archive')">{{ $t('exporterPadArchive') }}</button>
+				<button type="button" class="bouton-bleu" @click="afficherExporterPad('archive')">{{ $t('exporterPadArchive') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur'">
-				<button type="button" class="bouton-bleu" role="menuitem" tabindex="-1" @click="afficherExporterPad('web')">{{ $t('exporterPadWeb') }}</button>
+				<button type="button" class="bouton-bleu" @click="afficherExporterPad('web')">{{ $t('exporterPadWeb') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && (statut === 'auteur' || statut === 'utilisateur')">
-				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherViderPad">{{ $t('viderPad') }}</button>
+				<button type="button" class="bouton-rouge" @click="afficherViderPad">{{ $t('viderPad') }}</button>
 			</div>
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
-				<button type="button" class="bouton-rouge" role="menuitem" tabindex="-1" @click="afficherSupprimerPad">{{ $t('supprimerPad') }}</button>
+				<button type="button" class="bouton-rouge" @click="afficherSupprimerPad">{{ $t('supprimerPad') }}</button>
 			</div>
 		</div>
 	</div>
-	<div id="menu-options" class="menu gauche" role="menu" :aria-label="$t('languePad')" @keydown="gererClavierMenu($event, 'menu-options')" v-else-if="menu === 'options' && !admin && statut !== 'utilisateur'">
+	<div id="menu-options" class="menu gauche" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('languePad')" v-else-if="menu === 'options' && !admin && statut !== 'utilisateur'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('languePad') }}</span>
-			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
+			<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenuOptions"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<div class="conteneur">
 				<div id="langues">
-					<button type="button" role="menuitem" tabindex="-1" title="Français" aria-label="Français" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Español" aria-label="Español" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Italiano" aria-label="Italiano" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Deutsch" aria-label="Deutsch" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
-					<button type="button" role="menuitem" tabindex="-1" title="English" aria-label="English" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
-					<button type="button" role="menuitem" tabindex="-1" title="Hrvatski" aria-label="Hrvatski" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
+					<button type="button" title="Français" aria-label="FR, Français" lang="fr" :aria-pressed="langue === 'fr' ? 'true' : 'false'" :class="{'selectionne': langue === 'fr'}" @click="modifierLangue('fr')">FR</button>
+					<button type="button" title="Español" aria-label="ES, Español" lang="es" :aria-pressed="langue === 'es' ? 'true' : 'false'" :class="{'selectionne': langue === 'es'}" @click="modifierLangue('es')">ES</button>
+					<button type="button" title="Italiano" aria-label="IT, Italiano" lang="it" :aria-pressed="langue === 'it' ? 'true' : 'false'" :class="{'selectionne': langue === 'it'}" @click="modifierLangue('it')">IT</button>
+					<button type="button" title="Deutsch" aria-label="DE, Deutsch" lang="de" :aria-pressed="langue === 'de' ? 'true' : 'false'" :class="{'selectionne': langue === 'de'}" @click="modifierLangue('de')">DE</button>
+					<button type="button" title="English" aria-label="EN, English" lang="en" :aria-pressed="langue === 'en' ? 'true' : 'false'" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
+					<button type="button" title="Hrvatski" aria-label="HR, Hrvatski" lang="hr" :aria-pressed="langue === 'hr' ? 'true' : 'false'" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div id="menu-utilisateurs" class="menu droite" role="menu" :aria-label="$t('utilisateursConnectes')" @keydown="gererClavierMenu($event, 'menu-utilisateurs')" v-else-if="menu === 'utilisateurs' && pad.listeUtilisateurs === 'activee'">
+	<div id="menu-utilisateurs" class="menu droite" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('utilisateursConnectes')" v-else-if="menu === 'utilisateurs' && pad.listeUtilisateurs === 'activee'">
 		<div class="en-tete">
 			<span class="titre">{{ $t('utilisateursConnectes') }}</span>
-			<button type="button" class="fermer" role="menuitem" tabindex="-1" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
+			<button type="button" class="fermer" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerMenu"><i class="material-icons" aria-hidden="true">close</i></button>
 		</div>
 		<div class="contenu ascenseur">
 			<ul id="utilisateurs">
 				<template v-for="(utilisateurConnecte, indexUtilisateurConnecte) in utilisateurs">
 					<li class="moi" v-if="utilisateurConnecte.identifiant === identifiant" :key="'utilisateur_moi_' + indexUtilisateurConnecte">
 						<span class="utilisateur" v-if="statut === 'utilisateur'">{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span>
-						<button type="button" class="utilisateur invite edition" role="menuitem" tabindex="-1" :title="$t('modifierNom')" :aria-label="$t('modifierNom')" @click="afficherModifierNom" v-else-if="statut !== 'utilisateur' && pad.editionNom && pad.editionNom === 'activee'"><span>{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span><span class="icone" aria-hidden="true"><i class="material-icons">edit</i></span></button>
+						<button type="button" class="utilisateur invite edition" :title="$t('modifierNom')" :aria-label="$t('modifierNom')" @click="afficherModifierNom" v-else-if="statut !== 'utilisateur' && pad.editionNom && pad.editionNom === 'activee'"><span>{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span><span class="icone" aria-hidden="true"><i class="material-icons">edit</i></span></button>
 						<span class="utilisateur invite" v-else-if="statut !== 'utilisateur' && (!pad.editionNom || (pad.editionNom && pad.editionNom === 'desactivee'))">{{ definirNom(utilisateurConnecte) }} ({{ $t('moi') }})</span>
 					</li>
 					<li v-else :key="'utilisateur_' + indexUtilisateurConnecte">
@@ -517,41 +520,42 @@
 		</div>
 	</div>
 
-	<div id="pad" aria-live="polite" :inert="disabledAlt || null" :class="{'fond-personnalise': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active', 'organiser': action === 'organiser'}" :style="definirFond(pad.fond)" v-if="Object.keys(pad).length > 0 && (pad.acces !== 'code' || (pad.acces === 'code' && accesAutorise))">
+	<span id="instructions-organiser" class="lecteur-ecran" aria-hidden="true" v-if="action === 'organiser'">{{ pad.affichage === 'colonnes' ? $t('instructionsOrganiserColonnes') : $t('instructionsOrganiser') }}</span>
+	<div id="pad" role="region" :aria-label="pad.titre" tabindex="-1" :inert="disabledAlt || null" :class="{'fond-personnalise': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && (!pad.hasOwnProperty('fondRepete') || pad.fondRepete === 'desactive'), 'fond-personnalise-repete': pad.hasOwnProperty('fond') && !pad.fond.includes('/img/') && pad.fond.substring(0, 1) !== '#' && pad.hasOwnProperty('fondRepete') && pad.fondRepete === 'active', 'organiser': action === 'organiser'}" :style="definirFond(pad.fond)" v-if="Object.keys(pad).length > 0 && (pad.acces !== 'code' || (pad.acces === 'code' && accesAutorise))">
 		<!-- Affichage mur // sans recherche -->
-		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-if="pad.affichage === 'mur' && action !== 'organiser' && !recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+		<masonry id="blocs" class="mur" :role="blocs.length > 0 ? 'feed' : null" :cols="definirLargeurCapsules()" :gutter="0" v-if="pad.affichage === 'mur' && action !== 'organiser' && !recherche">
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocs.length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage mur // avec recherche -->
-		<masonry id="blocs" class="mur" :cols="definirLargeurCapsules()" :gutter="0" v-else-if="pad.affichage === 'mur' && action !== 'organiser' && recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+		<masonry id="blocs" class="mur" :role="blocsRecherche.length > 0 ? 'feed' : null" :cols="definirLargeurCapsules()" :gutter="0" v-else-if="pad.affichage === 'mur' && action !== 'organiser' && recherche">
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocsRecherche.length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</masonry>
 		<!-- Affichage flux vertical // sans recherche -->
-		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && !recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+		<div id="blocs" class="flux-vertical" :role="blocs.length > 0 ? 'feed' : null" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && !recherche">
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocs.length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage flux vertical // avec recherche -->
-		<div id="blocs" class="flux-vertical" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && recherche">
-			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+		<div id="blocs" class="flux-vertical" :role="blocsRecherche.length > 0 ? 'feed' : null" :class="{'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-else-if="pad.affichage === 'flux-vertical' && action !== 'organiser' && recherche">
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocsRecherche.length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</div>
 		<!-- Affichage colonne // sans recherche -->
 		<div id="blocs" class="colonnes" v-else-if="pad.affichage === 'colonnes' && action !== 'organiser' && !recherche">
 			<template v-for="(col, indexCol) in pad.colonnes">
-				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol])" :key="'colonne_' + indexCol">
+				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol])" :aria-label="col" :key="'colonne_' + indexCol">
 					<div class="bloc haut">
-						<div class="titre-colonne" :class="{'admin': admin}">
+						<div class="titre-colonne" role="heading" aria-level="2" :class="{'admin': admin}">
 							<span>{{ col }}</span>
 						</div>
 						<div class="menu-deroulant menu-deroulant-colonne" v-if="admin">
-							<button type="button" class="bouton-menu" :id="'bouton-menu-colonne-' + indexCol" :disabled="disabled" :aria-label="$t('parametresColonne')" aria-haspopup="true" :aria-expanded="menuColonne === indexCol" @click="gererMenuColonne(indexCol)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
+							<button type="button" class="bouton-menu" :id="'bouton-menu-colonne-' + indexCol" :disabled="disabled" :aria-label="$t('libelleCible', { action: $t('parametresColonne'), cible: col })" aria-haspopup="true" :aria-expanded="menuColonne === indexCol" @click="gererMenuColonne(indexCol)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
 							<div :id="'menu-colonne-' + indexCol" class="contenu-menu-deroulant" role="menu" :aria-labelledby="'bouton-menu-colonne-' + indexCol" @keydown="gererClavierMenu($event, 'menu-colonne-' + indexCol)" v-show="menuColonne === indexCol">
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M800-200v-560H560v560h240Zm-640 80v-160h80v80h240v-560H240v80h-80v-160h720v720H160Zm320-360Zm80 0h-80 80Zm0 0ZM160-360v-80H80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneGauche') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol + 1)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M160-760v560h240v-560H160ZM80-120v-720h720v160h-80v-80H480v560h240v-80h80v160H80Zm400-360Zm-80 0h80-80Zm0 0Zm320 120v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneDroite') }}</button>
@@ -564,13 +568,13 @@
 							</div>
 						</div>
 					</div>
-					<div class="conteneur-colonne ascenseur" v-if="colonnes[indexCol].length > 0">
-						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+					<div class="conteneur-colonne ascenseur" :role="colonnes[indexCol].length > 0 ? 'feed' : null" :aria-label="col" v-if="colonnes[indexCol].length > 0">
+						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="colonnes[indexCol].length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 						</div>
 					</div>
 					<div class="ajouter" v-if="accesAutorise && (admin || pad.contributions !== 'fermees')">
-						<button type="button" :disabled="disabled" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', indexCol)">
+						<button type="button" :disabled="disabled" :title="$t('libelleCible', { action: $t('ajouterCapsule'), cible: col })" :aria-label="$t('libelleCible', { action: $t('ajouterCapsule'), cible: col })" @click="ouvrirModaleBloc('creation', '', indexCol)">
 							<i class="material-icons" aria-hidden="true">add</i>
 						</button>
 					</div>
@@ -587,14 +591,14 @@
 		<!-- Affichage colonne // avec recherche -->
 		<div id="blocs" class="colonnes" v-else-if="pad.affichage === 'colonnes' && action !== 'organiser' && recherche">
 			<template v-for="(col, indexCol) in pad.colonnes">
-				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="blocsRecherche[indexCol] && blocsRecherche[indexCol].length > 0 && (!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol]))" :key="'colonne_' + indexCol">
+				<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-if="blocsRecherche[indexCol] && blocsRecherche[indexCol].length > 0 && (!pad.hasOwnProperty('affichageColonnes') || admin || (pad.hasOwnProperty('affichageColonnes') && pad.affichageColonnes[indexCol]))" :aria-label="col" :key="'colonne_' + indexCol">
 					<div class="bloc haut">
-						<div class="titre-colonne">
+						<div class="titre-colonne" role="heading" aria-level="2">
 							<span>{{ col }}</span>
 						</div>
 					</div>
-					<div class="conteneur-colonne ascenseur">
-						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" @keydown.enter.space="activerActionBloc" :aria-label="definirAriaLabelBloc(item)" :key="'bloc_' + indexItem">
+					<div class="conteneur-colonne ascenseur" :role="blocsRecherche[indexCol].length > 0 ? 'feed' : null" :aria-label="col">
+						<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocsRecherche[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocsRecherche[indexCol].length" @keydown.enter.space="activerActionBloc" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" :key="'bloc_' + indexItem">
 							<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 						</div>
 					</div>
@@ -602,25 +606,25 @@
 			</template>
 		</div>
 		<!-- Mode Organiser // Affichage mur et flux vertical -->
-		<draggable id="blocs" :class="{'mur': pad.affichage === 'mur', 'flux-vertical': pad.affichage === 'flux-vertical', 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-model="blocs" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" @start="demarrerDeplacerBloc" @end="deplacerBloc" v-else-if="(pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && action === 'organiser'">
-			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
+		<draggable id="blocs" :role="blocs.length > 0 ? 'feed' : null" :class="{'mur': pad.affichage === 'mur', 'flux-vertical': pad.affichage === 'flux-vertical', 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-model="blocs" draggable=".bloc" filter=".deplacer" :prevent-on-filter="false" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" @start="demarrerDeplacerBloc" @end="deplacerBloc" v-else-if="(pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && action === 'organiser'">
+			<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in blocs" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" role="article" :aria-posinset="indexItem + 1" :aria-setsize="blocs.length" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" @focus="definirBlocActif(item.bloc)" @keydown="gererClavierOrganiser($event, item)" :key="'bloc_' + indexItem">
 				<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" type="double" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="0" :disabled="panneauOuvert" :action="action" />
 			</div>
 		</draggable>
 		<!-- Mode Organiser // Affichage colonnes -->
 		<div id="blocs" class="colonnes" v-else-if="pad.affichage === 'colonnes' && action === 'organiser'">
-			<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-for="(col, indexCol) in pad.colonnes" :key="'colonne_' + indexCol">
+			<section :id="'colonne' + indexCol" class="colonne" :class="{'masquee': admin && pad.hasOwnProperty('affichageColonnes') && !pad.affichageColonnes[indexCol], 'large': pad.hasOwnProperty('largeur') && pad.largeur === 'large'}" v-for="(col, indexCol) in pad.colonnes" :aria-label="col" :key="'colonne_' + indexCol">
 				<div class="bloc haut">
-					<div class="titre-colonne">
+					<div class="titre-colonne" role="heading" aria-level="2">
 						<span>{{ col }}</span>
 					</div>
 					<div class="menu-colonne" v-if="admin && pad.colonnes.length > 1">
-						<button type="button" class="bouton gauche" :disabled="disabled" :title="$t('deplacerGauche')" :aria-label="$t('deplacerGauche')" @click="deplacerColonne('gauche', indexCol)" v-if="indexCol > 0"><i class="material-icons" aria-hidden="true">arrow_back</i></button>
-						<button type="button" class="bouton droite" :disabled="disabled" :title="$t('deplacerDroite')" :aria-label="$t('deplacerDroite')" @click="deplacerColonne('droite', indexCol)" v-if="indexCol < (pad.colonnes.length - 1)"><i class="material-icons" aria-hidden="true">arrow_forward</i></button>
+						<button type="button" class="bouton gauche" :disabled="disabled" :title="$t('libelleCible', { action: $t('deplacerGauche'), cible: col })" :aria-label="$t('libelleCible', { action: $t('deplacerGauche'), cible: col })" @click="deplacerColonne('gauche', indexCol)" v-if="indexCol > 0"><i class="material-icons" aria-hidden="true">arrow_back</i></button>
+						<button type="button" class="bouton droite" :disabled="disabled" :title="$t('libelleCible', { action: $t('deplacerDroite'), cible: col })" :aria-label="$t('libelleCible', { action: $t('deplacerDroite'), cible: col })" @click="deplacerColonne('droite', indexCol)" v-if="indexCol < (pad.colonnes.length - 1)"><i class="material-icons" aria-hidden="true">arrow_forward</i></button>
 					</div>
 				</div>
-				<draggable class="conteneur-colonne ascenseur" v-model="colonnes[indexCol]" group="colonne" draggable=".bloc" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" :data-index="indexCol" @start="demarrerDeplacerBloc" @end="deplacerBloc">
-					<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" @focus="definirBlocActif(item.bloc)" :key="'bloc_' + indexItem">
+				<draggable class="conteneur-colonne ascenseur" :role="colonnes[indexCol].length > 0 ? 'feed' : null" :aria-label="col" v-model="colonnes[indexCol]" group="colonne" draggable=".bloc" filter=".deplacer" :prevent-on-filter="false" :sort="true" :animation="250" :swap-threshold="0.5" :force-fallback="true" :fallback-tolerance="10" :scroll-sensitivity="convertirRem(4)" :scroll-speed="convertirRem(4)" :data-index="indexCol" @start="demarrerDeplacerBloc" @end="deplacerBloc">
+					<div :id="item.bloc" class="bloc" :tabindex="tabIndex" :aria-disabled="disabled" :class="{'privee': item.visibilite === 'privee'}" v-for="(item, indexItem) in colonnes[indexCol]" :style="{'border-color': item.couleur}" :data-bloc="item.bloc" role="article" :aria-posinset="indexItem + 1" :aria-setsize="colonnes[indexCol].length" :aria-label="item.titre || definirAriaLabelBloc(item)" :aria-describedby="definirDescriptionBloc(item)" @focus="definirBlocActif(item.bloc)" @keydown="gererClavierOrganiser($event, item)" :key="'bloc_' + indexItem">
 						<Capsule :admin="admin" :identifiant="identifiant" :item="item" :pad="pad" :statut="statut" :viaDigidrive="viaDigidrive" :visionneuse="visionneuse" :indexCol="indexCol" :disabled="panneauOuvert" :action="action" />
 					</div>
 				</draggable>
@@ -666,12 +670,12 @@
 				<div class="contenu">
 					<div class="conteneur-interrupteur" v-if="admin">
 						<span>{{ $t('capsulePrivee') }}</span>
-						<label class="bouton-interrupteur" v-if="mode === 'edition' && visibiliteInitiale === 'privee'">
-							<input id="visibilite-capsule" type="checkbox" :checked="visibilite" disabled>
+						<label class="bouton-interrupteur" role="switch" :aria-checked="visibilite ? 'true' : 'false'" :aria-label="$t('capsulePrivee')" aria-disabled="true" v-if="mode === 'edition' && visibiliteInitiale === 'privee'">
+							<input id="visibilite-capsule" type="checkbox" hidden :checked="visibilite" disabled>
 							<span class="barre desactive" />
 						</label>
-						<label class="bouton-interrupteur" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('visibilite-capsule')" v-else>
-							<input id="visibilite-capsule" type="checkbox" :checked="visibilite" :disabled="disabledModale" @change="modifierVisibiliteCapsule">
+						<label class="bouton-interrupteur" role="switch" :aria-checked="visibilite ? 'true' : 'false'" :aria-label="$t('capsulePrivee')" :tabindex="tabIndexModale" :aria-disabled="disabledModale" @keydown.enter.space.prevent="activerInput('visibilite-capsule')" v-else>
+							<input id="visibilite-capsule" type="checkbox" hidden :checked="visibilite" :disabled="disabledModale" @change="modifierVisibiliteCapsule">
 							<span class="barre" />
 						</label>
 					</div>
@@ -679,9 +683,9 @@
 					<div id="couleurs">
 						<button type="button" :disabled="disabledModale" :title="$t('selectionnerCouleurModale', { couleur: item })" :aria-label="$t('selectionnerCouleurModale', { couleur: item })" v-for="(item, index) in couleurs" :class="{'selectionne': item === couleur}" :style="{'background': item}" @click="couleur = item" :key="'couleur_' + index" />
 						<span class="icone">
-							<label for="couleur" :title="$t('selectionnerCouleur')" :aria-label="$t('selectionnerCouleur')"><i class="material-icons" aria-hidden="true">colorize</i></label>
-							<input id="couleur" type="color" value="#dddddd" :disabled="disabledModale" @change="couleur = $event.target.value" v-if="couleurs.includes(couleur)">
-							<input id="couleur" type="color" :value="couleur" :disabled="disabledModale" class="selectionne" @change="couleur = $event.target.value" v-else>
+							<label for="couleur" :title="$t('selectionnerCouleur')"><i class="material-icons" aria-hidden="true">colorize</i></label>
+							<input id="couleur" type="color" :aria-label="$t('selectionnerCouleur')" value="#dddddd" :disabled="disabledModale" @change="couleur = $event.target.value" v-if="couleurs.includes(couleur)">
+							<input id="couleur" type="color" :aria-label="$t('selectionnerCouleur')" :value="couleur" :disabled="disabledModale" class="selectionne" @change="couleur = $event.target.value" v-else>
 						</span>
 					</div>
 					<label for="champ-titre">{{ $t('titre') }}</label>
@@ -704,7 +708,7 @@
 						<span>{{ $t('ou') }}</span>
 					</div>
 					<div id="ajouter-lien" v-if="media === '' && progressionFichier === 0 && !enregistrement && pad.liens === 'actives'">
-						<input type="text" :value="lien" :disabled="disabledModale" @input="lien = $event.target.value" :placeholder="$t('ajouterLien')" @keydown.enter="ajouterLien" v-if="!chargementLien">
+						<input type="text" :value="lien" :disabled="disabledModale" @input="lien = $event.target.value" :aria-label="$t('ajouterLien')" :placeholder="$t('ajouterLien')" @keydown.enter="ajouterLien" v-if="!chargementLien">
 						<button type="button" class="bouton rechercher" :disabled="disabledModale" :title="$t('valider')" :aria-label="$t('valider')" @click="ajouterLien" v-if="!chargementLien"><i class="material-icons" aria-hidden="true">search</i></button>
 						<div class="conteneur-chargement" v-else>
 							<div class="chargement" />
@@ -807,8 +811,8 @@
 						</div>
 					</template>
 
-					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" @click="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</button>
-					<button type="button" class="valider" :disabled="disabledModale || texte === undefined" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement || texte === undefined}" :title="texte === undefined ? $t('recuperationContenuEnCours') : ''" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
+					<button type="button" class="valider" :disabled="disabledModale" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement}" :aria-disabled="((titre === '' && texte === '' && media === '') || enregistrement) ? 'true' : 'false'" @click="ajouterBloc" v-if="mode === 'creation'">{{ $t('valider') }}</button>
+					<button type="button" class="valider" :disabled="disabledModale || texte === undefined" :class="{'desactive': (titre === '' && texte === '' && media === '') || enregistrement || texte === undefined}" :aria-disabled="((titre === '' && texte === '' && media === '') || enregistrement || texte === undefined) ? 'true' : 'false'" :title="texte === undefined ? $t('recuperationContenuEnCours') : ''" @click="modifierBloc" v-else-if="mode === 'edition'">{{ $t('valider') }}</button>
 				</div>
 			</div>
 		</div>
@@ -849,7 +853,7 @@
 				<button type="button" class="fermer" :disabled="disabledModale" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleCommentaires"><i class="material-icons" aria-hidden="true">close</i></button>
 			</div>
 			<ul class="commentaires ascenseur">
-				<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="tabIndexModale" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
+				<li :id="'commentaire-' + entreeCommentaire.id" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focusin="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
 					<span class="meta" :class="{'auteur': entreeCommentaire.identifiant === identifiant || admin}">{{ $t('par') }} {{ definirNom(entreeCommentaire) }}, {{ $formaterDateRelative(entreeCommentaire.date, langue) }}</span>
 					<div class="action" v-if="entreeCommentaire.identifiant === identifiant || admin">
 						<button type="button" :disabled="disabledModale" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="!editionCommentaire || commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></button>
@@ -1003,8 +1007,9 @@
 		</div>
 	</div>
 
-	<div class="conteneur-modale" v-if="modaleDiaporama">
-		<div id="diapositive" class="modale-diapositive" :class="{'privee': donneesBloc.visibilite === 'privee'}" :style="{'border-color': donneesBloc.couleur}" role="dialog" aria-modal="true" :aria-label="donneesBloc.titre + ' ' + $t('par') + ' ' + definirNom(donneesBloc)" v-show="!chargement">
+	<div id="conteneur-diaporama" class="conteneur-modale" role="dialog" aria-modal="true" :aria-label="(donneesBloc.titre || definirAriaLabelBloc(donneesBloc)) + ' ' + $t('par') + ' ' + definirNom(donneesBloc)" v-if="modaleDiaporama">
+		<div class="lecteur-ecran" aria-live="polite" aria-atomic="true">{{ annonceDiapositive }}</div>
+		<div id="diapositive" class="modale-diapositive" :class="{'privee': donneesBloc.visibilite === 'privee'}" :style="{'border-color': donneesBloc.couleur}" v-show="!chargement">
 			<div class="en-tete">
 				<span class="titre"><span>{{ donneesBloc.titre }}</span> <span>{{ $t('par') }} {{ definirNom(donneesBloc) }}</span></span>
 				<button type="button" class="fermer" :disabled="disabledModaleDiaporama" :title="$t('fermer')" :aria-label="$t('fermer')" @click="fermerModaleDiaporama"><i class="material-icons" aria-hidden="true">close</i></button>
@@ -1017,26 +1022,26 @@
 					<div class="media" v-if="donneesBloc.iframe === ''">
 						<img :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-if="donneesBloc.type === 'image'" @error="rafraichirUrlFichier(donneesBloc, 'media')">
 						<img :src="donneesBloc.media" :alt="definirTexteAlternatif(donneesBloc)" v-else-if="donneesBloc.type === 'lien-image'">
-						<audio controls :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
-						<video controls playsinline crossOrigin="anonymous" :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
-						<iframe class="document" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + langue + '&file=', stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media)" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
-						<iframe class="document" :src="definirLienVisionneuse(visionneuse, definirLienDocumentVisionneuse())" allowfullscreen v-else-if="(donneesBloc.type === 'office' || donneesBloc.type === 'document') && visionneuse !== ''" />
+						<audio controls :aria-label="donneesBloc.titre || definirNomMedia(donneesBloc)" :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'audio'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
+						<video controls :aria-label="donneesBloc.titre || definirNomMedia(donneesBloc)" playsinline crossOrigin="anonymous" :src="stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiers() + '/' + pad.id + '/' + donneesBloc.media" v-else-if="donneesBloc.type === 'video'" @error="rafraichirUrlFichier(donneesBloc, 'media')" />
+						<iframe class="document" :title="donneesBloc.titre || definirNomMedia(donneesBloc)" :src="definirLienVisionneuse('/pdfjs/web/viewer.html?lang=' + langue + '&file=', stockage === 's3' && donneesBloc.mediaUrl ? donneesBloc.mediaUrl : definirCheminFichiersHote() + '/' + pad.id + '/' + donneesBloc.media)" allowfullscreen v-else-if="donneesBloc.type === 'pdf'" />
+						<iframe class="document" :title="donneesBloc.titre || definirNomMedia(donneesBloc)" :src="definirLienVisionneuse(visionneuse, definirLienDocumentVisionneuse())" allowfullscreen v-else-if="(donneesBloc.type === 'office' || donneesBloc.type === 'document') && visionneuse !== ''" />
 						<span v-else-if="donneesBloc.type === 'lien'">
-							<a :href="donneesBloc.media" target="_blank">
-								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
-								<img src="/img/lien.png" alt="lien.png" v-else>
+							<a :href="donneesBloc.media" target="_blank" :aria-label="definirLibelleMedia(donneesBloc)">
+								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" alt="" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
+								<img src="/img/lien.png" alt="" v-else>
 							</a>
 						</span>
 						<span v-else>
-							<a :href="definirLienTelechargement(pad.id, donneesBloc)" :title="$t('telecharger')" :aria-label="$t('telecharger')" download @click="telechargerFichier($event, pad.id, donneesBloc)">
-								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" :alt="definirNomLienFichier(donneesBloc.vignette)" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
-								<img src="/img/telechargement.png" alt="telechargement.png" v-else>
+							<a :href="definirLienTelechargement(pad.id, donneesBloc)" :title="$t('libelleCible', { action: $t('telecharger'), cible: definirNomMedia(donneesBloc) })" :aria-label="$t('libelleCible', { action: $t('telecharger'), cible: definirNomMedia(donneesBloc) })" download @click="telechargerFichier($event, pad.id, donneesBloc)">
+								<img :src="definirLienVignette(pad.id, donneesBloc.vignette)" alt="" v-if="donneesBloc.vignette && donneesBloc.vignette !== ''" @error="rafraichirUrlFichier(donneesBloc, 'vignette')">
+								<img src="/img/telechargement.png" alt="" v-else>
 							</a>
 						</span>
 					</div>
 					<div class="media" :class="definirTypeMedia()" v-else>
 						<div class="conteneur-iframe">
-							<iframe :src="donneesBloc.iframe" allow="autoplay; fullscreen" v-if="verifierURL(donneesBloc.iframe) === true" />
+							<iframe :title="donneesBloc.titre || definirNomMedia(donneesBloc)" :src="donneesBloc.iframe" allow="autoplay; fullscreen" v-if="verifierURL(donneesBloc.iframe) === true" />
 							<div class="html" v-else v-html="donneesBloc.iframe" />
 						</div>
 					</div>
@@ -1057,7 +1062,7 @@
 				<div class="conteneur conteneur-evaluations" v-if="pad.evaluations === 'activees' && evaluationsVisibles">
 					<label>{{ $t('evaluations') }}</label>
 					<div class="evaluation">
-						<span class="etoiles" :title="definirEvaluationCapsule(donneesBloc.evaluations) > 1 ? definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoiles') : definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoile')">
+						<span class="etoiles" role="img" :title="(definirEvaluationCapsule(donneesBloc.evaluations) > 1 ? definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoiles') : definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoile')) + ' - ' + donneesBloc.evaluations.length + ' ' + $t('evaluations').toLowerCase()" :aria-label="(definirEvaluationCapsule(donneesBloc.evaluations) > 1 ? definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoiles') : definirEvaluationCapsule(donneesBloc.evaluations) + ' ' + $t('etoile')) + ' - ' + donneesBloc.evaluations.length + ' ' + $t('evaluations').toLowerCase()">
 							<i class="material-icons" aria-hidden="true" :class="{'evalue': verifierUtilisateurEvaluation(donneesBloc.evaluations) === true}" v-for="etoile in definirEvaluationCapsule(donneesBloc.evaluations)" :key="'etoilepleine_' + etoile">star</i>
 							<i class="material-icons" aria-hidden="true" :class="{'evalue': verifierUtilisateurEvaluation(donneesBloc.evaluations) === true}" v-for="etoile in (5 - definirEvaluationCapsule(donneesBloc.evaluations))" :key="'etoilevide_' + etoile">star_outline</i>
 							<span>({{ donneesBloc.evaluations.length }})</span>
@@ -1072,7 +1077,7 @@
 				<div class="conteneur conteneur-commentaires" v-if="pad.commentaires === 'actives' && commentairesVisibles">
 					<label>{{ $t('commentaires') }}</label>
 					<ul class="commentaires" v-if="commentaires.length > 0">
-						<li :id="'commentaire-' + entreeCommentaire.id" :tabindex="tabIndexModaleDiaporama" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focus="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
+						<li :id="'commentaire-' + entreeCommentaire.id" :class="{'edition': editionCommentaire && commentaireId === entreeCommentaire.id, 'focus': focusId === entreeCommentaire.id}" v-for="(entreeCommentaire, indexEntreeCommentaire) in commentaires" @focusin="focusId = entreeCommentaire.id" :key="'commentaire_' + indexEntreeCommentaire">
 							<span class="meta" :class="{'auteur': entreeCommentaire.identifiant === identifiant || admin}">{{ $t('par') }} {{ definirNom(entreeCommentaire) }}, {{ $formaterDateRelative(entreeCommentaire.date, langue) }}</span>
 							<div class="action" v-if="entreeCommentaire.identifiant === identifiant || admin">
 								<button type="button" :disabled="disabledModaleDiaporama" :title="$t('modifierCommentaire')" :aria-label="$t('modifierCommentaire')" @click="afficherModifierCommentaire(entreeCommentaire.id, entreeCommentaire.texte)" v-if="!editionCommentaire || commentaireId !== entreeCommentaire.id"><i class="material-icons" aria-hidden="true">edit</i></button>
@@ -1179,8 +1184,8 @@
 					<div class="message" v-html="messageConfirmation" />
 					<div class="conteneur-interrupteur confirmation" v-if="typeConfirmation === 'vider-pad' && pad.affichage === 'colonnes'">
 						<span>{{ $t('suppressionColonnes') }}</span>
-						<label class="bouton-interrupteur" role="menuitem" tabindex="-1" @keydown.enter.space.prevent="activerInput('confirmation-supprimer-colonnes')">
-							<input id="confirmation-supprimer-colonnes" type="checkbox" :checked="suppressionColonnes" @change="suppressionColonnes = !suppressionColonnes">
+						<label class="bouton-interrupteur" tabindex="0" role="switch" :aria-checked="(suppressionColonnes) ? 'true' : 'false'" :aria-label="$t('suppressionColonnes')" @keydown.enter.space.prevent="activerInput('confirmation-supprimer-colonnes')">
+							<input id="confirmation-supprimer-colonnes" type="checkbox" hidden :checked="suppressionColonnes" @change="suppressionColonnes = !suppressionColonnes">
 							<span class="barre" />
 						</label>
 					</div>

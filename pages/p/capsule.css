@@ -196,7 +196,7 @@
 }
 
 #blocs.colonnes .bloc.haut.ajouter-colonne .titre-colonne span {
-    color: #e32f6c;
+    color: #d1245e;
 }
 
 #blocs.colonnes .ajouter {
@@ -207,7 +207,7 @@
 #blocs.colonnes .ajouter button {
 	width: 4rem;
 	height: 4rem;
-	background: #e32f6c;
+	background: #d1245e;
 	color: #fff;
 	font-size: 2.7rem;
 	line-height: 4rem;
@@ -256,7 +256,7 @@
 }
 
 #blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button.supprimer i {
-	color: #ff6259;
+	color: #c9372c;
 }
 
 #blocs.colonnes .menu-deroulant-colonne .contenu-menu-deroulant button:hover {
@@ -303,7 +303,7 @@
 }
 
 #blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button.supprimer i {
-	color: #ff6259;
+	color: #c9372c;
 }
 
 #blocs .bloc .action .menu-deroulant-capsule .contenu-menu-deroulant button:hover {
@@ -472,11 +472,11 @@
 }
 
 #blocs .bloc .evaluation .etoiles i {
-	color: #aaa;
+	color: #8a8a8a;
 }
 
 #blocs .bloc .evaluation .etoiles .evalue {
-	color: #fdcc33;
+	color: #b87800;
 }
 
 #blocs .bloc .evaluation .etoiles span {
@@ -516,13 +516,18 @@
 
 #blocs .bloc .action .media-type {
 	font-size: 24px;
-	color: #aaa;
+	color: #8a8a8a;
+}
+
+#blocs .bloc .action .bouton.deplacer:disabled {
+	opacity: 0.4;
+	cursor: default;
 }
 
 #blocs .bloc .action .bouton .badge {
 	width: 1.5rem;
     height: 1.5rem;
-    background: #e32f6c;
+    background: #d1245e;
     position: absolute;
     top: -0.4rem;
     right: -0.7rem;
@@ -540,8 +545,8 @@
     padding: 0.9rem;
     text-align: center;
 	font-size: 12px;
-	color: #e32f6c;
-    border: 1px solid #e32f6c;
+	color: #d1245e;
+    border: 1px solid #d1245e;
     line-height: 1;
     font-weight: 700;
     letter-spacing: 1px;
@@ -560,7 +565,7 @@
 }
 
 #blocs .bloc .moderation button.bouton:hover {
-	background: #e32f6c;
+	background: #d1245e;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
