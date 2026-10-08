@@ -1,6 +1,6 @@
 {
   "name": "digipad",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "homepage": "https://digipad.app",
   "repository": {
     "type": "git",
@@ -64,7 +64,7 @@
     "linkifyjs": "^4.3.2",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "nodemailer": "^9.0.1",
+    "nodemailer": "^10.0.15",
     "proxy-addr": "^2.0.7",
     "rate-limit-redis": "^5.0.0",
     "redis": "^5.9.0",
