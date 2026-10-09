@@ -37,11 +37,11 @@ export default {
 			const notificationsPersistantes = [this.$t('rechargerPage'), this.$t('sessionExpiree')]
 			const notificationPersistante = notificationsPersistantes.includes(notification)
 			if (!notificationPersistante) {
-				conteneur?.querySelectorAll('.notification').forEach((ancienne) => {
-					if (ancienne.textContent === notification && this.chronos.has(ancienne)) {
-						clearTimeout(this.chronos.get(ancienne))
-						this.chronos.delete(ancienne)
-						ancienne.remove()
+				conteneur?.querySelectorAll('.notification').forEach((notificationPrecedente) => {
+					if (notificationPrecedente.textContent === notification && this.chronos.has(notificationPrecedente)) {
+						clearTimeout(this.chronos.get(notificationPrecedente))
+						this.chronos.delete(notificationPrecedente)
+						notificationPrecedente.remove()
 					}
 				})
 			}
