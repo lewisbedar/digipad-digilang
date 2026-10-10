@@ -1,4 +1,4 @@
-# Digipad pour DigiLang (« Mur », DigiLang Board)
+# Digipad pour DigiLang (« Mur », Board DigiLang)
 
 Ce dépôt est une copie de [Digipad](https://codeberg.org/ladigitale/digipad), logiciel libre de
 [La Digitale](https://ladigitale.dev) publié sous licence AGPL-3.0. Il fait tourner
@@ -15,7 +15,7 @@ Ce dépôt est une copie de [Digipad](https://codeberg.org/ladigitale/digipad), 
   Texte blanc sur les boutons devenus teal (contraste AA), icône de déconnexion `#FFC9BC` et icônes désactivées `#9FC3BD` sur la barre foncée.
 - Police Figtree (SIL OFL, `public/fonts/Figtree-*.woff2`) à la place de Mona Sans et Roboto Slab.
 - Logo de DigiLang qui remplit la case du coin, entre l'en-tête et la barre de gauche (`public/img/digilang.png`), favicon et icônes de l'application (`public/img/icones`),
-  image de partage `public/img/digilang-og.png`, `manifest.json` (« DigiLang Board »).
+  image de partage `public/img/digilang-og.png`, `manifest.json` (« Board DigiLang »).
 - Titres d'onglet « … - DigiLang » au lieu de « … - Digipad by La Digitale », métadonnées.
 - Fond uni `#F4F6F5` pour un nouveau mur (`server/fonctions-db.js`) ; les fonds de Digipad restent proposés.
 - Mention de La Digitale et lien vers le code source dans le menu des paramètres du mur (enseignant) et dans le menu

@@ -13,7 +13,7 @@ const locales = {
 
 async function render (pageContext) {
 	let hote = import.meta.env.DOMAIN || 'https://digipad.app'
-	let titre = 'DigiLang Board'
+	let titre = 'Board DigiLang'
 	let langueParDefaut = import.meta.env.VITE_DEFAULT_LANGUAGE || 'fr'
 	if (!locales.hasOwnProperty(langueParDefaut)) {
 		langueParDefaut = 'fr'
@@ -72,7 +72,7 @@ async function render (pageContext) {
 			</head>
 			<body>
 				<noscript>
-      				<strong>Veuillez activer Javascript dans votre navigateur pour utiliser <i>DigiLang Board</i>.</strong>
+      				<strong>Veuillez activer Javascript dans votre navigateur pour utiliser <i>Board DigiLang</i>.</strong>
     			</noscript>
 				<div id="app"></div>
 				<script src="/js/qrcode.js"></script>

@@ -7,7 +7,7 @@ function onBeforeRender (pageContext) {
 	const is404 = pageContext.is404 === true
 	const abortStatusCode = pageContext.abortStatusCode
 	const abortReason = pageContext.abortReason
-	const titre = 'Erreur - DigiLang Board'
+	const titre = 'Erreur - Board DigiLang'
 	const pageProps = { params, langues, langue, is404, abortStatusCode, abortReason, titre }
 	return {
 		pageContext: {
