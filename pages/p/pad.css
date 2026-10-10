@@ -1176,7 +1176,7 @@
 	display: flex;
 	padding: 0;
 	border-radius: 0;
-	border: 1px solid #b35900;
+	border: 1px solid #2b486b;
 	border-radius: 4px;
 }
 
@@ -1198,7 +1198,7 @@
 .commentaires li .texte button {
 	width: 5rem;
 	text-align: center;
-	background: #b35900;
+	background: #2b486b;
 	border: none;
 	color: #fff;
 	font-size: 24px;
@@ -1249,6 +1249,14 @@
 	height: 100%;
 	font-size: 24px;
 	border-bottom-right-radius: 10px;
+}
+
+.ecrire-commentaire > button:focus,
+.ecrire-commentaire > button:focus-visible,
+.commentaires li .texte > button:focus,
+.commentaires li .texte > button:focus-visible {
+	position: relative;
+	z-index: 2;
 }
 
 .modale .section-etoiles {
