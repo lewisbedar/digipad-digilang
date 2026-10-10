@@ -1,12 +1,12 @@
 {
-	"name": "Digipad",
-	"short_name": "Digipad",
+	"name": "DigiLang Board",
+	"short_name": "DigiLang",
 	"description": "Une application en ligne pour créer des murs multimédias collaboratifs proposée par La Digitale",
 	"start_url": "/",
 	"scope": "/",
 	"display": "standalone",
 	"background_color": "#ffffff",
-	"theme_color": "#00ced1",
+	"theme_color": "#1F7A70",
 	"lang": "fr",
 	"icons": [
 		{

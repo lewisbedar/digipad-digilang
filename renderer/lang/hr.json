@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Kapsula premještena: položaj {position} od {total}",
 	"capsuleDeplaceeColonne": "Kapsula premještena u stupac {colonne}: položaj {position} od {total}",
 	"instructionsOrganiser": "Alt + strelice za premještanje kapsule",
-	"instructionsOrganiserColonnes": "Alt + strelica gore ili dolje za premještanje kapsule u stupcu, Alt + strelica lijevo ili desno za promjenu stupca"
+	"instructionsOrganiserColonnes": "Alt + strelica gore ili dolje za premještanje kapsule u stupcu, Alt + strelica lijevo ili desno za promjenu stupca",
+	"creditDigipad": "Pokreće Digipad, slobodni softver (AGPL) organizacije"
 }

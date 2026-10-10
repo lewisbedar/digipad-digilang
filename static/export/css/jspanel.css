@@ -18,7 +18,7 @@
     flex-shrink: 0;
 	line-height: 1.1;
 	background-color: #fff!important;
-	color: #001d1d!important;
+	color: #1f2937!important;
 	border-bottom: 1px solid #ddd;
 }
 
@@ -101,7 +101,7 @@
 	font-weight: 700;
 	margin: 0 1rem 0 1rem;
 	min-width: 0;
-	color: #001d1d!important;
+	color: #1f2937!important;
 	font-size: 14px;
     text-transform: uppercase;
 }
@@ -126,7 +126,7 @@
 	margin: 0;
 	background-color: transparent;
 	box-shadow: none;
-	color: #001d1d!important;
+	color: #1f2937!important;
 	margin-right: 1rem;
 	line-height: 1;
 }

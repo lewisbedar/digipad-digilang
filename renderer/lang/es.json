@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Cápsula movida: posición {position} de {total}",
 	"capsuleDeplaceeColonne": "Cápsula movida a la columna {colonne}: posición {position} de {total}",
 	"instructionsOrganiser": "Alt + flechas para mover la cápsula",
-	"instructionsOrganiserColonnes": "Alt + flecha arriba o abajo para mover la cápsula en la columna, Alt + flecha izquierda o derecha para cambiar de columna"
+	"instructionsOrganiserColonnes": "Alt + flecha arriba o abajo para mover la cápsula en la columna, Alt + flecha izquierda o derecha para cambiar de columna",
+	"creditDigipad": "Funciona con Digipad, software libre (AGPL) de"
 }

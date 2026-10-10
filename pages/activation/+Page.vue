@@ -71,7 +71,7 @@ export default {
 	display: inline-block;
 	width: 10rem;
 	height: 10rem;
-	background: #00ced1;
+	background: #1F7A70;
 	border-radius: 50%;
 	margin-bottom: 3rem;
 }

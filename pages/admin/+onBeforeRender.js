@@ -6,7 +6,7 @@ function onBeforeRender (pageContext) {
 	const hote = pageContext.hote
 	const langues = pageContext.langues
 	const langue = pageContext.langue
-	const titre = 'Admin - Digipad by La Digitale'
+	const titre = 'Admin - DigiLang Board'
 	const pageProps = { urlOriginal, params, hote, langues, langue, titre }
 	return {
 		pageContext: {

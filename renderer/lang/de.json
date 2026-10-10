@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Kapsel verschoben: Position {position} von {total}",
 	"capsuleDeplaceeColonne": "Kapsel in Spalte {colonne} verschoben: Position {position} von {total}",
 	"instructionsOrganiser": "Alt + Pfeiltasten, um die Kapsel zu verschieben",
-	"instructionsOrganiserColonnes": "Alt + Pfeil nach oben oder unten, um die Kapsel in der Spalte zu verschieben, Alt + Pfeil nach links oder rechts, um die Spalte zu wechseln"
+	"instructionsOrganiserColonnes": "Alt + Pfeil nach oben oder unten, um die Kapsel in der Spalte zu verschieben, Alt + Pfeil nach links oder rechts, um die Spalte zu wechseln",
+	"creditDigipad": "Läuft mit Digipad, freie Software (AGPL) von"
 }

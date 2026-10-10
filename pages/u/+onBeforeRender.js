@@ -18,7 +18,7 @@ function onBeforeRender (pageContext) {
 	const padsAdmins = pageContext.padsAdmins
 	const padsFavoris = pageContext.padsFavoris
 	const dossiers = pageContext.dossiers
-	const titre = identifiant + ' - Digipad by La Digitale'
+	const titre = identifiant + ' - DigiLang Board'
 	const pageProps = { urlOriginal, params, hote, langues, identifiant, nom, email, langue, statut, affichage, classement, padsCrees, padsCorbeille, padsRejoints, padsAdmins, padsFavoris, dossiers, titre }
 	return {
 		pageContext: {

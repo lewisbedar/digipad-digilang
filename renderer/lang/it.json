@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Capsula spostata: posizione {position} di {total}",
 	"capsuleDeplaceeColonne": "Capsula spostata nella colonna {colonne}: posizione {position} di {total}",
 	"instructionsOrganiser": "Alt + frecce per spostare la capsula",
-	"instructionsOrganiserColonnes": "Alt + freccia su o giù per spostare la capsula nella colonna, Alt + freccia sinistra o destra per cambiare colonna"
+	"instructionsOrganiserColonnes": "Alt + freccia su o giù per spostare la capsula nella colonna, Alt + freccia sinistra o destra per cambiare colonna",
+	"creditDigipad": "Basato su Digipad, software libero (AGPL) di"
 }

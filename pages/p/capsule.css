@@ -142,7 +142,7 @@
 	align-items: center;
 	text-align: center;
     padding: 1rem;
-    color: #001d1d;
+    color: #1f2937;
 }
 
 #blocs.colonnes .bloc.haut .titre-colonne.admin {
@@ -196,7 +196,7 @@
 }
 
 #blocs.colonnes .bloc.haut.ajouter-colonne .titre-colonne span {
-    color: #d1245e;
+    color: #C7431D;
 }
 
 #blocs.colonnes .ajouter {
@@ -207,7 +207,7 @@
 #blocs.colonnes .ajouter button {
 	width: 4rem;
 	height: 4rem;
-	background: #d1245e;
+	background: #C7431D;
 	color: #fff;
 	font-size: 2.7rem;
 	line-height: 4rem;
@@ -283,7 +283,7 @@
 	max-width: calc(100vw - 2rem);
 	opacity: 1;
 	box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-	color: #001d1d;
+	color: #1f2937;
 	text-align: left;
 	z-index: 101;
 }
@@ -527,7 +527,7 @@
 #blocs .bloc .action .bouton .badge {
 	width: 1.5rem;
     height: 1.5rem;
-    background: #d1245e;
+    background: #C7431D;
     position: absolute;
     top: -0.4rem;
     right: -0.7rem;
@@ -545,8 +545,8 @@
     padding: 0.9rem;
     text-align: center;
 	font-size: 12px;
-	color: #d1245e;
-    border: 1px solid #d1245e;
+	color: #C7431D;
+    border: 1px solid #C7431D;
     line-height: 1;
     font-weight: 700;
     letter-spacing: 1px;
@@ -565,7 +565,7 @@
 }
 
 #blocs .bloc .moderation button.bouton:hover {
-	background: #d1245e;
+	background: #C7431D;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }

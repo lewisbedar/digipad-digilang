@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Capsule moved: position {position} of {total}",
 	"capsuleDeplaceeColonne": "Capsule moved to column {colonne}: position {position} of {total}",
 	"instructionsOrganiser": "Alt + arrow keys to move the capsule",
-	"instructionsOrganiserColonnes": "Alt + up or down arrow to move the capsule within the column, Alt + left or right arrow to change column"
+	"instructionsOrganiserColonnes": "Alt + up or down arrow to move the capsule within the column, Alt + left or right arrow to change column",
+	"creditDigipad": "Powered by Digipad, free software (AGPL) by"
 }

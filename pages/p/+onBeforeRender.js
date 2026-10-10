@@ -40,7 +40,7 @@ function onBeforeRender (pageContext) {
 			const pad = donneesPad.pad
 			const blocs = donneesPad.blocs
 			const activite = donneesPad.activite
-			const titre = pad.titre + ' - Digipad by La Digitale'
+			const titre = pad.titre + ' - DigiLang'
 			if (!admin) {
 				pads = []
 			}

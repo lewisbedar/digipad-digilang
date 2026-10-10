@@ -1,16 +1,18 @@
+/* DigiLang : police Figtree (SIL OFL), hébergée comme sur www.digilang.fr */
 @font-face {
-	font-family: 'Mona Sans Expanded';
-	src: url('/fonts/MonaSansExpanded-Black.woff2') format('woff2');
-	font-weight: 900;
+	font-family: 'Figtree';
+	font-style: normal;
+	font-weight: 400;
 	font-display: swap;
+	src: url('/fonts/Figtree-Regular.woff2') format('woff2');
 }
 
 @font-face {
-	font-family: 'Roboto-Slab';
+	font-family: 'Figtree';
 	font-style: normal;
-	font-weight: 500;
+	font-weight: 700;
 	font-display: swap;
-	src: local('Roboto Slab Medium'), local('Roboto-Slab-Medium'), url('/fonts/Roboto-Slab-Medium.woff2') format('woff2');
+	src: url('/fonts/Figtree-Bold.woff2') format('woff2');
 }
 
 @font-face {
@@ -63,10 +65,10 @@ html {
 }
 
 body {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-family: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     font-size: 16px;
 	font-weight: 400;
-	color: #001d1d;
+	color: #1f2937;
     line-height: 1.5;
 	height: 100%;
 	width: 100%;
@@ -101,7 +103,7 @@ ul {
 textarea,
 input,
 input[disabled="disabled"] {
-	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-family: "Figtree", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	opacity: 1;
 	appearance: none;
 	-webkit-appearance: none;
@@ -168,7 +170,7 @@ iframe {
 }
 
 input:disabled {
-	-webkit-text-fill-color: #001d1d;
+	-webkit-text-fill-color: #1f2937;
 	opacity: 1;
 }
 
@@ -217,7 +219,7 @@ main {
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
 header {
     text-align: left;
-    background: #242f3d;
+    background: #1F7A70;
     color: #fff;
     height: 4rem;
     width: 100%;
@@ -234,7 +236,7 @@ header.pleine-largeur {
 	width: 4rem;
     height: 4rem;
     text-align: center;
-    background: #001d1d;
+    background: #17605A;
     position: absolute;
     top: 0;
     left: 0;
@@ -243,14 +245,15 @@ header.pleine-largeur {
 #logo {
     width: 2.4rem;
     height: 2.4rem;
-    background: #00ced1;
+    background: #fff url('/img/digilang.png') center / 75% no-repeat;
     display: inline-block;
 	border-radius: 50%;
 	margin: 0.8rem;
 }
 
 #titre {
-	font-family: 'Roboto-Slab';
+	font-family: 'Figtree';
+	font-weight: 700;
     padding-left: 1.5rem;
     line-height: 4rem;
     font-size: 18px;
@@ -304,7 +307,7 @@ header.pleine-largeur #titre {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background: #001d1d;
+    background: #17605A;
     font-size: 1.25rem;
     text-align: center;
     margin-left: 0.5rem;
@@ -320,7 +323,7 @@ header.pleine-largeur #titre {
     left: 0;
     top: 4rem;
     width: 4rem;
-    background: #2c2d30;
+    background: #17605A;
     bottom: 0;
 	z-index: 100;
 	box-shadow: 2px 0 8px 0 rgba(0, 0, 0, 0.4);
@@ -464,7 +467,7 @@ header.pleine-largeur #titre {
 
 #langues span.selectionne,
 #langues button.selectionne {
-	background: #242f3d;
+	background: #1F7A70;
     color: #fff;
 	border: 1px solid #222;
 	cursor: default;
@@ -513,12 +516,12 @@ header.pleine-largeur #titre {
 }
 
 .bouton-bleu {
-	border: 1px solid #242f3d;
-    color: #242f3d;
+	border: 1px solid #1f2937;
+    color: #1f2937;
 }
 
 .bouton-bleu:hover {
-	background: #242f3d;
+	background: #1F7A70;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -538,7 +541,7 @@ label.bouton-bleu {
 	font-size: 14px!important;
 	line-height: 38px!important;
     margin-bottom: 0;
-    color: #242f3d;
+    color: #1f2937;
 }
 
 .icone {
@@ -687,9 +690,9 @@ label.bouton-bleu {
 	line-height: 40px;
 	padding: 0 20px;
 	cursor: pointer;
-	color: #001d1d;
+	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-	background: #00ced1;
+	background: #1F7A70;
 	border-radius: 5px;
 	letter-spacing: 1px;
 	text-indent: 1px;
@@ -702,7 +705,7 @@ label.bouton-bleu {
 
 .modale .conteneur .bouton:hover {
 	color: #fff;
-	background: #001d1d;
+	background: #17605A;
 }
 
 .modale .conteneur .actions {
@@ -1134,7 +1137,7 @@ label.bouton-bleu {
 .chargement {
 	display: inline-block;
 	border: 7px solid #ddd;
-	border-top: 7px solid #00ced1;
+	border-top: 7px solid #1F7A70;
 	border-radius: 50%;
 	width: 40px;
 	height: 40px;
@@ -1158,7 +1161,7 @@ label.bouton-bleu {
 }
 
 .barre-progression[value]::-moz-progress-bar {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 }
 
 .barre-progression:not([value])::-moz-progress-bar {
@@ -1170,7 +1173,7 @@ label.bouton-bleu {
 }
 
 .barre-progression::-webkit-progress-value {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 	transition: 0.2s ease-out;
 }
 
@@ -1195,7 +1198,7 @@ label.bouton-bleu {
 	width: 0.5rem;
     height: 2.5rem;
 	border-radius: 20%;
-	background: #00ced1;
+	background: #1F7A70;
 }
 
 .spinner div:nth-child(1) {

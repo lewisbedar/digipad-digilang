@@ -127,7 +127,7 @@
 	display: flex;
 	align-items: center;
     padding: 1rem;
-    color: #001d1d;
+    color: #1f2937;
 }
 
 #blocs.colonnes .bloc.haut .titre-colonne span {
@@ -315,7 +315,7 @@
 #blocs .bloc .action .bouton .badge {
 	width: 1.5rem;
     height: 1.5rem;
-    background: #d1245e;
+    background: #C7431D;
     position: absolute;
     top: -0.4rem;
     right: -0.7rem;

@@ -320,7 +320,7 @@ export default {
 .enregistrer.audio .chargement {
 	display: inline-block;
 	border: 7px solid #ddd;
-	border-top: 7px solid #00ced1;
+	border-top: 7px solid #1F7A70;
 	border-radius: 50%;
 	width: 50px;
 	height: 50px;
@@ -349,7 +349,7 @@ export default {
 
 #enregistrement .enregistrement .bouton {
 	background-color: #fff;
-	border-color: #001d1d;
+	border-color: #1f2937;
 	border-width: 2px;
 	border-radius: 0;
 	line-height: 1;
@@ -359,7 +359,7 @@ export default {
 }
 
 #enregistrement .enregistrement .bouton:hover {
-	color: #001d1d;
+	color: #1f2937;
 	background-color: #eee;
 }
 
@@ -374,7 +374,7 @@ export default {
 }
 
 #enregistrement .enregistrement .bouton.stopper {
-	color: #001d1d;
+	color: #1f2937;
     animation: couleur ease-in 2s infinite;
 }
 

@@ -776,7 +776,7 @@ export default {
 }
 
 #langues button.selectionne {
-    background: #242f3d;
+    background: #1F7A70;
     color: #fff;
     border: 1px solid #222;
     cursor: default;
@@ -791,7 +791,7 @@ export default {
 }
 
 #conteneur h1 {
-    font-family: 'Mona Sans Expanded', sans-serif;
+    font-family: 'Figtree', sans-serif;
     font-size: 2rem;
 	font-weight: 400;
 	margin: 0 1.5rem 0.85em;
@@ -861,7 +861,7 @@ export default {
 	text-align: center;
 	padding: 1em 1.5em;
 	margin-right: 1em;
-    border: 2px solid #00ced1;
+    border: 2px solid #1F7A70;
 	border-radius: 2em;
     background: #46fbff;
 	cursor: pointer;
@@ -880,7 +880,7 @@ export default {
 #conteneur .actions .bouton:hover {
     color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
-	background: #00ced1;
+	background: #1F7A70;
 }
 
 #conteneur .actions .bouton:last-child {
@@ -937,11 +937,11 @@ export default {
 }
 
 #conteneur .bouton-interrupteur input:checked + .barre {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 }
 
 #conteneur .bouton-interrupteur input:focus + .barre {
-	box-shadow: 0 0 1px #00ced1;
+	box-shadow: 0 0 1px #1F7A70;
 }
 
 #conteneur .bouton-interrupteur input:checked + .barre:before {

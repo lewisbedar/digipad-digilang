@@ -632,7 +632,7 @@ export default {
 			creationPadSansCompte: 0,
 			delaiRafraichissementFonds: 900000,
 			dernierRafraichissementFonds: Date.now(),
-			couleurFondIndisponible: '#00ced1',
+			couleurFondIndisponible: '#1F7A70',
 			elementPrecedent: null,
 			hote: this.$pageContext.pageProps.hote,
 			langues: this.$pageContext.pageProps.langues,
@@ -2067,7 +2067,7 @@ export default {
 	font-weight: 700;
 	text-transform: uppercase;
 	padding: 0.75em 1em;
-	border: 2px solid #00ced1;
+	border: 2px solid #1F7A70;
 	border-radius: 2em;
 	margin-bottom: 1.5rem;
 	background: #46fbff;
@@ -2135,7 +2135,7 @@ export default {
 
 #onglets .onglet.actif {
 	font-weight: 700;
-	border-bottom: 3px solid #00ced1;
+	border-bottom: 3px solid #1F7A70;
 }
 
 #actions-corbeille button,
@@ -2147,9 +2147,9 @@ export default {
 	height: 32px;
 	line-height: 32px;
 	padding: 0 20px;
-	color: #001d1d;
+	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
-	background: #00ced1;
+	background: #1F7A70;
 	border-radius: 5px;
 	letter-spacing: 1px;
 	text-indent: 1px;
@@ -2166,19 +2166,19 @@ export default {
 #actions-corbeille button:hover,
 #onglets .bouton-ajouter:hover {
 	color: #fff;
-	background: #001d1d;
+	background: #17605A;
 }
 
 #actions-corbeille button:disabled,
 #actions-corbeille button:disabled:hover {
-	color: #001d1d;
+	color: #1f2937;
 	background: #bfbfbf;
 }
 
 #onglets .menu-dossier {
 	visibility: hidden;
 	position: absolute;
-	color: #001d1d;
+	color: #1f2937;
 	top: -1px;
 	right: 0;
 	line-height: 1;
@@ -2219,7 +2219,7 @@ export default {
 	display: inline-block;
 	width: 2rem;
 	height: 2rem;
-	background: #d1245e;
+	background: #C7431D;
 	margin-right: 0;
 	border-radius: 50%;
 	font-size: 1.2rem;
@@ -2344,7 +2344,7 @@ export default {
 }
 
 #actions-dossier button {
-	color: #001d1d;
+	color: #1f2937;
 	font-size: 24px;
 	margin-left: 1.4rem;
 }
@@ -2449,7 +2449,7 @@ export default {
 .pad.liste .actions span {
 	margin-left: 1.5rem;
 	font-size: 24px;
-	color: #001d1d;
+	color: #1f2937;
 	cursor: pointer;
 }
 
@@ -2460,7 +2460,7 @@ export default {
 
 .pad.mosaique .actions button.deplacer.actif,
 .pad.liste .actions button.deplacer.actif {
-	color: #d1245e;
+	color: #C7431D;
 }
 
 .conteneur-pads {
@@ -2473,7 +2473,7 @@ export default {
 	padding: 0 0 4rem;
 	width: calc(50% - 1.5rem);
 	height: 20rem;
-	border: 2px solid #001d1d;
+	border: 2px solid #1f2937;
 	margin: 0 0.75rem 1.5rem;
 	position: relative;
 	border-radius: 1rem;
@@ -2542,7 +2542,7 @@ export default {
 }
 
 .pad.mosaique .actions button {
-	color: #001d1d;
+	color: #1f2937;
 	cursor: pointer;
 	text-align: center;
 	display: inline-block;
@@ -2555,7 +2555,7 @@ export default {
 
 .pad.liste .actions .admin,
 .pad.mosaique .actions .admin {
-	color: #00ced1;
+	color: #1F7A70;
 	cursor: default;
 }
 
@@ -2564,7 +2564,7 @@ export default {
 	height: 1rem;
 	display: inline-block;
 	border-radius: 50%;
-	background: #d1245e;
+	background: #C7431D;
 	margin-right: 0.7rem;
 }
 
@@ -2579,7 +2579,7 @@ export default {
 }
 
 .progression .chargement {
-	border-top: 0.7rem solid #00ced1;
+	border-top: 0.7rem solid #1F7A70;
 	margin-top: 1rem;
 }
 
@@ -2633,11 +2633,11 @@ export default {
 }
 
 .modale .bouton-interrupteur input:checked + .barre {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 }
 
 .modale .bouton-interrupteur input:focus + .barre {
-	box-shadow: 0 0 1px #00ced1;
+	box-shadow: 0 0 1px #1F7A70;
 }
 
 .modale .bouton-interrupteur input:checked + .barre:before {

@@ -9,7 +9,7 @@
 	left: 0.5rem;
 	z-index: 1000;
 	padding: 0.75rem 1rem;
-	background: #001d1d;
+	background: #17605A;
 	color: #fff;
 	font-size: 16px;
 	border-radius: 4px;
@@ -57,7 +57,7 @@
 #nav button .badge {
 	width: 1.5rem;
 	height: 1.5rem;
-	background: #d1245e;
+	background: #C7431D;
 	position: absolute;
 	top: -0.5rem;
 	right: -0.5rem;
@@ -259,7 +259,7 @@
 }
 
 #deconnexion {
-	color: #c9372c;
+	color: #FFC9BC;
 	margin-bottom: 3rem;
 }
 
@@ -269,7 +269,7 @@
 	right: 1.5rem;
 	width: 6.5rem;
 	height: 6.5rem;
-	background: #d1245e;
+	background: #C7431D;
 	color: #fff;
 	font-size: 4rem;
 	line-height: 6.5rem;
@@ -318,8 +318,8 @@
 	padding: 0.9rem;
 	text-align: center;
 	font-size: 12px;
-	color: #d1245e;
-	border: 1px solid #d1245e;
+	color: #C7431D;
+	border: 1px solid #C7431D;
 	line-height: 1;
 	font-weight: 700;
 	letter-spacing: 1px;
@@ -338,7 +338,7 @@
 }
 
 #diapositive .conteneur-moderation button.bouton:hover {
-	background: #d1245e;
+	background: #C7431D;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -350,8 +350,8 @@
 	padding: 0.5rem 0.9rem;
 	text-align: center;
 	font-size: 12px;
-	color: #d1245e;
-	border: 1px solid #d1245e;
+	color: #C7431D;
+	border: 1px solid #C7431D;
 	line-height: 1;
 	font-weight: 700;
 	letter-spacing: 1px;
@@ -372,7 +372,7 @@
 
 #discussion .commentaires li .moderation button.bouton:hover,
 #diapositive .conteneur-commentaires .commentaires li .moderation button.bouton:hover {
-	background: #d1245e;
+	background: #C7431D;
 	color: #fff;
 	text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
@@ -452,7 +452,7 @@
 	font-size: 16px;
 	text-transform: uppercase;
 	color: #fff;
-	background: #242f3d;
+	background: #1F7A70;
 	bottom: 20px;
 	height: 5rem;
 	cursor: pointer;
@@ -498,7 +498,7 @@
 }
 
 .progression .chargement {
-	border-top: 0.7rem solid #00ced1;
+	border-top: 0.7rem solid #1F7A70;
 	margin-top: 1rem;
 }
 
@@ -670,7 +670,7 @@
 }
 
 #ajouter-lien .chargement {
-	border-top: 0.7rem solid #00ced1;
+	border-top: 0.7rem solid #1F7A70;
 }
 
 #iframe .html,
@@ -751,7 +751,7 @@
 	display: flex;
 	justify-content: space-between;
 	font-size: 1.4rem;
-	color: #001d1d;
+	color: #1f2937;
 	margin-top: 0.5rem;
 }
 
@@ -997,7 +997,7 @@
 
 #messages li span {
 	padding: 0.3rem 0.5rem;
-	background: #242f3d;
+	background: #1F7A70;
 	color: #fff;
 	border-radius: 0.3rem;
 	margin-right: 0.5rem;
@@ -1034,7 +1034,7 @@
 #ecrire-message button {
 	width: 5rem;
 	text-align: center;
-	background: #00ced1;
+	background: #1F7A70;
 	border: none;
 	padding: 0.5rem 0;
 	color: #fff;
@@ -1048,7 +1048,7 @@
 }
 
 #utilisateurs li.moi {
-	border: 2px solid #001d1d;
+	border: 2px solid #1f2937;
 }
 
 #utilisateurs li.moi .utilisateur {
@@ -1155,7 +1155,7 @@
 
 .commentaires li .action button {
 	font-size: 24px;
-	color: #001d1d;
+	color: #1f2937;
 	line-height: 1;
 	cursor: pointer;
 }
@@ -1243,7 +1243,7 @@
 .ecrire-commentaire button {
 	width: 5rem;
 	text-align: center;
-	background: #00ced1;
+	background: #1F7A70;
 	border: none;
 	color: #fff;
 	height: 100%;
@@ -1367,7 +1367,7 @@
 }
 
 .menu .bouton-radio input:checked ~ .coche {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 }
 
 .menu .coche:after {
@@ -1471,12 +1471,12 @@
 
 .modale .bouton-interrupteur input:checked + .barre,
 .menu .bouton-interrupteur input:checked + .barre {
-	background-color: #00ced1;
+	background-color: #1F7A70;
 }
 
 .modale .bouton-interrupteur input:focus + .barre,
 .menu .bouton-interrupteur input:focus + .barre {
-	box-shadow: 0 0 1px #00ced1;
+	box-shadow: 0 0 1px #1F7A70;
 }
 
 .modale .bouton-interrupteur input:checked + .barre:before,
@@ -1793,4 +1793,16 @@
 		width: 100%!important;
 		overflow: auto!important;
 	}
+}
+
+/* DigiLang : mention de Digipad et lien vers le code source modifié (AGPL) */
+.credit-digilang p {
+	font-size: 13px;
+	line-height: 1.5;
+	color: #5b5b5b;
+}
+
+.credit-digilang a {
+	color: #17605A;
+	text-decoration: underline;
 }

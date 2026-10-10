@@ -478,6 +478,9 @@
 			<div class="conteneur conteneur-bouton" v-if="pad.identifiant === identifiant && statut === 'auteur' && !viaDigidrive">
 				<button type="button" class="bouton-rouge" @click="afficherSupprimerPad">{{ $t('supprimerPad') }}</button>
 			</div>
+			<div class="conteneur credit-digilang">
+				<p>{{ $t('creditDigipad') }} <a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noopener noreferrer">La Digitale</a> · <a href="https://github.com/lewisbedar/digipad-digilang" target="_blank" rel="noopener noreferrer">{{ $t('codeSource') }}</a></p>
+			</div>
 		</div>
 	</div>
 	<div id="menu-options" class="menu gauche" role="dialog" aria-modal="true" :inert="menuInerte || null" :aria-label="$t('languePad')" v-else-if="menu === 'options' && !admin && statut !== 'utilisateur'">
@@ -495,6 +498,9 @@
 					<button type="button" title="English" aria-label="EN, English" lang="en" :aria-pressed="langue === 'en' ? 'true' : 'false'" :class="{'selectionne': langue === 'en'}" @click="modifierLangue('en')">EN</button>
 					<button type="button" title="Hrvatski" aria-label="HR, Hrvatski" lang="hr" :aria-pressed="langue === 'hr' ? 'true' : 'false'" :class="{'selectionne': langue === 'hr'}" @click="modifierLangue('hr')">HR</button>
 				</div>
+			</div>
+			<div class="conteneur credit-digilang">
+				<p>{{ $t('creditDigipad') }} <a href="https://codeberg.org/ladigitale/digipad" target="_blank" rel="noopener noreferrer">La Digitale</a> · <a href="https://github.com/lewisbedar/digipad-digilang" target="_blank" rel="noopener noreferrer">{{ $t('codeSource') }}</a></p>
 			</div>
 		</div>
 	</div>
@@ -557,8 +563,8 @@
 						<div class="menu-deroulant menu-deroulant-colonne" v-if="admin">
 							<button type="button" class="bouton-menu" :id="'bouton-menu-colonne-' + indexCol" :disabled="disabled" :aria-label="$t('libelleCible', { action: $t('parametresColonne'), cible: col })" aria-haspopup="true" :aria-expanded="menuColonne === indexCol" @click="gererMenuColonne(indexCol)"><i class="material-icons" aria-hidden="true">more_vert</i></button>
 							<div :id="'menu-colonne-' + indexCol" class="contenu-menu-deroulant" role="menu" :aria-labelledby="'bouton-menu-colonne-' + indexCol" @keydown="gererClavierMenu($event, 'menu-colonne-' + indexCol)" v-show="menuColonne === indexCol">
-								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M800-200v-560H560v560h240Zm-640 80v-160h80v80h240v-560H240v80h-80v-160h720v720H160Zm320-360Zm80 0h-80 80Zm0 0ZM160-360v-80H80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneGauche') }}</button>
-								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol + 1)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#001d1d" aria-hidden="true"><path d="M160-760v560h240v-560H160ZM80-120v-720h720v160h-80v-80H480v560h240v-80h80v160H80Zm400-360Zm-80 0h80-80Zm0 0Zm320 120v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneDroite') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#1f2937" aria-hidden="true"><path d="M800-200v-560H560v560h240Zm-640 80v-160h80v80h240v-560H240v80h-80v-160h720v720H160Zm320-360Zm80 0h-80 80Zm0 0ZM160-360v-80H80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneGauche') }}</button>
+								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ajouterColonne(indexCol + 1)"><svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 -960 960 960" fill="#1f2937" aria-hidden="true"><path d="M160-760v560h240v-560H160ZM80-120v-720h720v160h-80v-80H480v560h240v-80h80v160H80Zm400-360Zm-80 0h80-80Zm0 0Zm320 120v-80h-80v-80h80v-80h80v80h80v80h-80v80h-80Z"/></svg>{{ $t('ajouterColonneDroite') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="masquerColonne(indexCol)" v-if="!pad.hasOwnProperty('affichageColonnes') || pad.affichageColonnes[indexCol]"><i class="material-icons" aria-hidden="true">visibility_off</i>{{ $t('masquerColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="afficherColonne(indexCol)" v-else><i class="material-icons" aria-hidden="true">visibility</i>{{ $t('afficherColonne') }}</button>
 								<button type="button" role="menuitem" tabindex="-1" :disabled="disabled" @click="ouvrirModaleColonne('edition', indexCol)"><i class="material-icons" aria-hidden="true">edit</i>{{ $t('modifierColonne') }}</button>
@@ -632,7 +638,7 @@
 		</div>
 	</div>
 
-	<div id="pad" :style="{'background': '#00ced1'}" v-else />
+	<div id="pad" :style="{'background': '#1F7A70'}" v-else />
 
 	<Transition name="fondu">
 		<button type="button" id="ajouter" :disabled="disabled" :title="$t('ajouterCapsule')" :aria-label="$t('ajouterCapsule')" @click="ouvrirModaleBloc('creation', '', 0)" v-if="accesAutorise && !recherche && ((pad.affichage === 'mur' || pad.affichage === 'flux-vertical') && ((admin && action !== 'organiser') || (!admin && pad.contributions !== 'fermees')))">

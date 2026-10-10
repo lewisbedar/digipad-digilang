@@ -532,5 +532,6 @@
 	"capsuleDeplacee": "Capsule déplacée : position {position} sur {total}",
 	"capsuleDeplaceeColonne": "Capsule déplacée dans la colonne {colonne} : position {position} sur {total}",
 	"instructionsOrganiser": "Alt + flèches pour déplacer la capsule",
-	"instructionsOrganiserColonnes": "Alt + flèche haut ou bas pour déplacer la capsule dans la colonne, Alt + flèche gauche ou droite pour changer de colonne"
+	"instructionsOrganiserColonnes": "Alt + flèche haut ou bas pour déplacer la capsule dans la colonne, Alt + flèche gauche ou droite pour changer de colonne",
+	"creditDigipad": "Propulsé par Digipad, logiciel libre (AGPL) de"
 }

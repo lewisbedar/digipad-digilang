@@ -1162,7 +1162,7 @@ export default {
 							if (champ === null) {
 								return
 							}
-							champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
+							champ.value = couleurActuelle !== '' ? couleurActuelle : '#1f2937'
 							this.ouvrirSelecteurCouleur(champ)
 						} },
 						{ name: 'liste-ordonnee', shortcut: 'shift+7', title: this.$t('listeOrdonnee'), icon: '<i class="material-icons" aria-hidden="true">format_list_numbered</i>', result: () => pell.exec('insertOrderedList'), state: () => document.queryCommandState('insertOrderedList') },
@@ -3104,7 +3104,7 @@ export default {
 					if (champ === null) {
 						return
 					}
-					champ.value = couleurActuelle !== '' ? couleurActuelle : '#001d1d'
+					champ.value = couleurActuelle !== '' ? couleurActuelle : '#1f2937'
 					this.ouvrirSelecteurCouleur(champ)
 				} },
 				{ name: 'lien', shortcut: 'k', title: this.$t('lien'), icon: '<i class="material-icons" aria-hidden="true">link</i>', result: () => {
@@ -5371,7 +5371,7 @@ export default {
 
 			this.$socket.on('modifiertitre', (titre, identifiant) => {
 				this.pad.titre = titre
-				document.title = titre + ' - Digipad by La Digitale'
+				document.title = titre + ' - DigiLang'
 				this.chargement = false
 				if (this.admin && this.identifiant === identifiant) {
 					this.notification = this.$t('titrePadModifie')
