@@ -243,12 +243,11 @@ header.pleine-largeur {
 }
 
 #logo {
-    width: 2.4rem;
-    height: 2.4rem;
-    background: #fff url('/img/digilang.png') center / 75% no-repeat;
-    display: inline-block;
-	border-radius: 50%;
-	margin: 0.8rem;
+    /* DigiLang : le logo carré remplit toute la case du coin, entre l'en-tête et la barre de gauche. */
+    width: 100%;
+    height: 100%;
+    background: url('/img/digilang.png') center / cover no-repeat;
+    display: block;
 }
 
 #titre {

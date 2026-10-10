@@ -14,7 +14,7 @@ Ce dépôt est une copie de [Digipad](https://codeberg.org/ladigitale/digipad), 
   `#17605A` en fond et encre `#1f2937` en texte, en-tête `#242f3d` → teal, barre de gauche `#2c2d30` → teal foncé.
   Texte blanc sur les boutons devenus teal (contraste AA), icône de déconnexion `#FFC9BC` sur la barre foncée.
 - Police Figtree (SIL OFL, `public/fonts/Figtree-*.woff2`) à la place de Mona Sans et Roboto Slab.
-- Logo de DigiLang dans l'en-tête (`public/img/digilang.png`), favicon et icônes de l'application (`public/img/icones`),
+- Logo de DigiLang qui remplit la case du coin, entre l'en-tête et la barre de gauche (`public/img/digilang.png`), favicon et icônes de l'application (`public/img/icones`),
   image de partage `public/img/digilang-og.png`, `manifest.json` (« DigiLang Board »).
 - Titres d'onglet « … - DigiLang » au lieu de « … - Digipad by La Digitale », métadonnées.
 - Fond uni `#F4F6F5` pour un nouveau mur (`server/fonctions-db.js`) ; les fonds de Digipad restent proposés.
