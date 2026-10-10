@@ -2179,7 +2179,7 @@ export default {
 	visibility: hidden;
 	position: absolute;
 	color: #001d1d;
-	top: 0;
+	top: -1px;
 	right: 0;
 	line-height: 1;
 	font-size: 24px;
