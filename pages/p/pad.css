@@ -73,7 +73,8 @@
 }
 
 #recherche.desactive {
-	color: #555;
+	/* DigiLang : icône désactivée visible sur la barre teal foncé (3,9:1), plus terne que les actives (blanc) */
+	color: #9FC3BD;
 	cursor: default;
 }
 
@@ -254,7 +255,7 @@
 
 #diaporama.desactive,
 #organisation.desactive {
-	color: #555;
+	color: #9FC3BD;
 	cursor: default;
 }
 

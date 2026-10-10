@@ -12,7 +12,7 @@ Ce dépôt est une copie de [Digipad](https://codeberg.org/ladigitale/digipad), 
 
 - Couleurs de DigiLang : `#00ced1` → teal `#1F7A70`, `#d1245e` → terracotta `#C7431D`, `#001d1d` → teal foncé
   `#17605A` en fond et encre `#1f2937` en texte, en-tête `#242f3d` → teal, barre de gauche `#2c2d30` → teal foncé.
-  Texte blanc sur les boutons devenus teal (contraste AA), icône de déconnexion `#FFC9BC` sur la barre foncée.
+  Texte blanc sur les boutons devenus teal (contraste AA), icône de déconnexion `#FFC9BC` et icônes désactivées `#9FC3BD` sur la barre foncée.
 - Police Figtree (SIL OFL, `public/fonts/Figtree-*.woff2`) à la place de Mona Sans et Roboto Slab.
 - Logo de DigiLang qui remplit la case du coin, entre l'en-tête et la barre de gauche (`public/img/digilang.png`), favicon et icônes de l'application (`public/img/icones`),
   image de partage `public/img/digilang-og.png`, `manifest.json` (« DigiLang Board »).
