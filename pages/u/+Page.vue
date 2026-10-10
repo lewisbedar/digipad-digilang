@@ -2455,7 +2455,7 @@ export default {
 
 .pad.mosaique .actions button.supprimer-favori,
 .pad.liste .actions button.supprimer-favori {
-	color: #fdcc33;
+	color: #b87800;
 }
 
 .pad.mosaique .actions button.deplacer.actif,
