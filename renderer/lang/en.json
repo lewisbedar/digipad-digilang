@@ -533,5 +533,16 @@
 	"capsuleDeplaceeColonne": "Capsule moved to column {colonne}: position {position} of {total}",
 	"instructionsOrganiser": "Alt + arrow keys to move the capsule",
 	"instructionsOrganiserColonnes": "Alt + up or down arrow to move the capsule within the column, Alt + left or right arrow to change column",
+	"insererActiviteDigilang": "Insert a DigiLang activity",
+	"activitesDigilang": "My DigiLang activities",
+	"activitesDigilangConnexion": "Sign in to DigiLang in this browser to see your activities.",
+	"seConnecterDigilang": "Sign in to DigiLang",
+	"activitesDigilangIndisponibles": "Your activities list is not available right now.",
+	"rechercherActivite": "Search for an activity",
+	"aucuneActiviteDigilang": "You do not have any DigiLang activity yet.",
+	"aucuneActiviteTrouvee": "No activity matches.",
+	"activiteFermee": "Closed to students",
+	"retourActivites": "Back",
+	"actualiserActivites": "Refresh",
 	"creditDigipad": "Powered by Digipad, free software (AGPL) by"
 }

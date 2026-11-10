@@ -159,6 +159,12 @@ export default {
 			blocs: this.$pageContext.pageProps.blocs,
 			activite: this.$pageContext.pageProps.activite,
 			etherpad: import.meta.env.VITE_ETHERPAD,
+			digilang: import.meta.env.VITE_DIGILANG_URL ? import.meta.env.VITE_DIGILANG_URL.replace(/\/+$/, '') : '',
+			panneauActivites: false,
+			chargementActivites: false,
+			erreurActivites: '',
+			activitesDigilang: [],
+			rechercheActivite: '',
 			pixabayApi: import.meta.env.VITE_PIXABAY_API_KEY,
 			limite: import.meta.env.VITE_UPLOAD_LIMIT ? parseFloat(import.meta.env.VITE_UPLOAD_LIMIT) : 20,
 			fichiersAutorises: import.meta.env.VITE_UPLOAD_FILE_TYPES,
@@ -169,6 +175,11 @@ export default {
 		}
 	},
 	computed: {
+		activitesFiltrees () {
+			const recherche = this.rechercheActivite.trim().toLowerCase()
+			if (recherche === '') return this.activitesDigilang
+			return this.activitesDigilang.filter((activite) => (activite.title + ' ' + activite.tool).toLowerCase().includes(recherche))
+		},
 		admin () {
 			return ((this.statut === 'utilisateur' && ((this.pad.hasOwnProperty('identifiant') && this.pad.identifiant === this.identifiant) || (this.pad.hasOwnProperty('admins') && this.pad.admins.includes(this.identifiant)))) || (this.statut === 'auteur' && this.pad.hasOwnProperty('identifiant') && this.pad.identifiant === this.identifiant && this.pad.hasOwnProperty('id') && this.pads.includes(parseInt(this.pad.id, 10))))
 		},
@@ -1504,6 +1515,44 @@ export default {
 				audioContext.close()
 			}
 		},
+		async ouvrirActivitesDigilang () {
+			this.panneauActivites = true
+			this.rechercheActivite = ''
+			await this.chargerActivitesDigilang()
+		},
+		fermerActivitesDigilang () {
+			this.panneauActivites = false
+			this.erreurActivites = ''
+		},
+		async chargerActivitesDigilang () {
+			this.chargementActivites = true
+			this.erreurActivites = ''
+			try {
+				const reponse = await axios.get(this.digilang + '/api/mur/activites', { withCredentials: true })
+				this.activitesDigilang = Array.isArray(reponse.data.activities) ? reponse.data.activities : []
+			} catch (erreur) {
+				this.activitesDigilang = []
+				this.erreurActivites = (erreur.response && erreur.response.status === 401) ? 'connexion' : 'indisponible'
+			}
+			this.chargementActivites = false
+		},
+		insererActiviteDigilang (activite) {
+			// Même résultat qu'un lien intégré : la page élève de l'activité s'affiche dans la capsule (sans interroger noembed.com).
+			const adresse = this.digilang + '/s/' + encodeURIComponent(activite.url.split('/s/').pop())
+			this.lien = adresse
+			this.iframe = adresse
+			this.$nextTick(() => {
+				this.media = adresse
+				this.source = 'digilang'
+				this.type = 'embed'
+				this.vignette = '/img/digilang.png'
+				this.vignetteDefaut = '/img/digilang.png'
+				if (this.titre.trim() === '') {
+					this.titre = activite.title.substring(0, 96)
+				}
+				this.panneauActivites = false
+			})
+		},
 		async ajouterLien () {
 			if (this.lien !== '') {
 				const regexIframe = /<iframe(.+)<\/iframe>/
@@ -1730,6 +1779,7 @@ export default {
 			}
 		},
 		supprimerLien () {
+			this.panneauActivites = false
 			if (this.iframe.includes(this.etherpad)) {
 				const etherpadId = this.iframe.replace(this.etherpad + '/p/', '')
 				axios.post(this.hote + '/api/supprimer-etherpad', { padID: etherpadId, pad: this.pad.id, token: this.pad.token })
@@ -1923,6 +1973,8 @@ export default {
 			this.$socket.emit('autorisercommentaire', this.pad.id, bloc, id, this.identifiant, this.nom)
 		},
 		fermerModaleBloc () {
+			this.panneauActivites = false
+			this.erreurActivites = ''
 			this.modale = ''
 			this.mode = ''
 			this.action = ''

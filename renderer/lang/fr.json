@@ -533,5 +533,16 @@
 	"capsuleDeplaceeColonne": "Capsule déplacée dans la colonne {colonne} : position {position} sur {total}",
 	"instructionsOrganiser": "Alt + flèches pour déplacer la capsule",
 	"instructionsOrganiserColonnes": "Alt + flèche haut ou bas pour déplacer la capsule dans la colonne, Alt + flèche gauche ou droite pour changer de colonne",
+	"insererActiviteDigilang": "Insérer une activité DigiLang",
+	"activitesDigilang": "Mes activités DigiLang",
+	"activitesDigilangConnexion": "Connectez-vous à DigiLang dans ce navigateur pour voir vos activités.",
+	"seConnecterDigilang": "Se connecter à DigiLang",
+	"activitesDigilangIndisponibles": "La liste de vos activités n'est pas disponible pour le moment.",
+	"rechercherActivite": "Rechercher une activité",
+	"aucuneActiviteDigilang": "Vous n'avez pas encore d'activité DigiLang.",
+	"aucuneActiviteTrouvee": "Aucune activité ne correspond.",
+	"activiteFermee": "Fermée aux élèves",
+	"retourActivites": "Retour",
+	"actualiserActivites": "Actualiser",
 	"creditDigipad": "Propulsé par Digipad, logiciel libre (AGPL) de"
 }

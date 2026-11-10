@@ -533,5 +533,16 @@
 	"capsuleDeplaceeColonne": "Kapsula premještena u stupac {colonne}: položaj {position} od {total}",
 	"instructionsOrganiser": "Alt + strelice za premještanje kapsule",
 	"instructionsOrganiserColonnes": "Alt + strelica gore ili dolje za premještanje kapsule u stupcu, Alt + strelica lijevo ili desno za promjenu stupca",
+	"insererActiviteDigilang": "Umetni DigiLang aktivnost",
+	"activitesDigilang": "Moje DigiLang aktivnosti",
+	"activitesDigilangConnexion": "Prijavite se na DigiLang u ovom pregledniku kako biste vidjeli svoje aktivnosti.",
+	"seConnecterDigilang": "Prijava na DigiLang",
+	"activitesDigilangIndisponibles": "Popis vaših aktivnosti trenutno nije dostupan.",
+	"rechercherActivite": "Traži aktivnost",
+	"aucuneActiviteDigilang": "Još nemate nijednu DigiLang aktivnost.",
+	"aucuneActiviteTrouvee": "Nijedna aktivnost ne odgovara.",
+	"activiteFermee": "Zatvoreno za učenike",
+	"retourActivites": "Natrag",
+	"actualiserActivites": "Osvježi",
 	"creditDigipad": "Pokreće Digipad, slobodni softver (AGPL) organizacije"
 }

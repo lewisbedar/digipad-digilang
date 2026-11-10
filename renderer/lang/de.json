@@ -533,5 +533,16 @@
 	"capsuleDeplaceeColonne": "Kapsel in Spalte {colonne} verschoben: Position {position} von {total}",
 	"instructionsOrganiser": "Alt + Pfeiltasten, um die Kapsel zu verschieben",
 	"instructionsOrganiserColonnes": "Alt + Pfeil nach oben oder unten, um die Kapsel in der Spalte zu verschieben, Alt + Pfeil nach links oder rechts, um die Spalte zu wechseln",
+	"insererActiviteDigilang": "DigiLang-Aktivität einfügen",
+	"activitesDigilang": "Meine DigiLang-Aktivitäten",
+	"activitesDigilangConnexion": "Melden Sie sich in diesem Browser bei DigiLang an, um Ihre Aktivitäten zu sehen.",
+	"seConnecterDigilang": "Bei DigiLang anmelden",
+	"activitesDigilangIndisponibles": "Die Liste Ihrer Aktivitäten ist derzeit nicht verfügbar.",
+	"rechercherActivite": "Aktivität suchen",
+	"aucuneActiviteDigilang": "Sie haben noch keine DigiLang-Aktivität.",
+	"aucuneActiviteTrouvee": "Keine Aktivität gefunden.",
+	"activiteFermee": "Für Schüler geschlossen",
+	"retourActivites": "Zurück",
+	"actualiserActivites": "Aktualisieren",
 	"creditDigipad": "Läuft mit Digipad, freie Software (AGPL) von"
 }

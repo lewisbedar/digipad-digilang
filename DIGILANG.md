@@ -21,6 +21,11 @@ Ce dépôt est une copie de [Digipad](https://codeberg.org/ladigitale/digipad), 
 - Mention de La Digitale et lien vers le code source dans le menu des paramètres du mur (enseignant) et dans le menu
   des langues (élèves) : `.credit-digilang` dans `pages/p/pad.html` et `pad.css`, clé `creditDigipad` dans
   `renderer/lang/*.json`.
+- **Insérer une activité DigiLang** (fenêtre « Ajouter une capsule », administrateur du mur seulement) : bouton « Insérer une activité DigiLang »
+  (`#ajouter-activite` dans `pages/p/pad.html`) qui liste les activités de l'enseignant lues sur `${VITE_DIGILANG_URL}/api/mur/activites` (navigateur de
+  l'enseignant, cookie de session de DigiLang) et place la page élève `/s/CODE` dans la capsule (méthodes `ouvrirActivitesDigilang`, `chargerActivitesDigilang`,
+  `insererActiviteDigilang` de `pages/p/pad.js`, textes `insererActiviteDigilang`… dans `renderer/lang/*.json`). Variable `VITE_DIGILANG_URL` (sans elle, pas de bouton) ;
+  `server/routes.js` ajoute cette origine à `connect-src`.
 
 ## Mettre à jour Digipad
 

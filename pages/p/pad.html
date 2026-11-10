@@ -726,6 +726,43 @@
 					<div id="ajouter-document" v-if="media === '' && progressionFichier === 0 && !chargementLien && !enregistrement && pad.documents === 'actives'">
 						<button type="button" class="bouton" :disabled="disabledModale" @click="ajouterDocument">{{ $t('creerDocCollaboratif') }}</button>
 					</div>
+					<div class="separateur" v-if="admin && digilang !== '' && media === '' && progressionFichier === 0 && !chargementLien && !enregistrement">
+						<span>{{ $t('ou') }}</span>
+					</div>
+					<div id="ajouter-activite" v-if="admin && digilang !== '' && media === '' && progressionFichier === 0 && !chargementLien && !enregistrement">
+						<button type="button" class="bouton" :disabled="disabledModale" aria-controls="activites-digilang" aria-expanded="false" @click="ouvrirActivitesDigilang" v-if="!panneauActivites">{{ $t('insererActiviteDigilang') }}</button>
+						<div id="activites-digilang" v-else>
+							<div class="entete">
+								<span class="titre-panneau">{{ $t('activitesDigilang') }}</span>
+								<button type="button" class="bouton" :disabled="disabledModale" @click="fermerActivitesDigilang">{{ $t('retourActivites') }}</button>
+							</div>
+							<div class="conteneur-chargement" v-if="chargementActivites">
+								<div class="chargement" />
+							</div>
+							<div class="message" role="status" v-else-if="erreurActivites === 'connexion'">
+								<span>{{ $t('activitesDigilangConnexion') }}</span>
+								<a :href="digilang + '/login'" target="_blank" rel="noopener">{{ $t('seConnecterDigilang') }}</a>
+								<button type="button" class="bouton" @click="chargerActivitesDigilang">{{ $t('actualiserActivites') }}</button>
+							</div>
+							<div class="message" role="status" v-else-if="erreurActivites === 'indisponible'">
+								<span>{{ $t('activitesDigilangIndisponibles') }}</span>
+								<button type="button" class="bouton" @click="chargerActivitesDigilang">{{ $t('actualiserActivites') }}</button>
+							</div>
+							<template v-else>
+								<input id="recherche-activite" type="search" :value="rechercheActivite" :aria-label="$t('rechercherActivite')" :placeholder="$t('rechercherActivite')" :disabled="disabledModale" @input="rechercheActivite = $event.target.value" v-if="activitesDigilang.length > 5">
+								<p class="message" role="status" v-if="activitesDigilang.length === 0">{{ $t('aucuneActiviteDigilang') }}</p>
+								<p class="message" role="status" v-else-if="activitesFiltrees.length === 0">{{ $t('aucuneActiviteTrouvee') }}</p>
+								<ul class="liste-activites" v-else>
+									<li v-for="activite in activitesFiltrees" :key="'activite_' + activite.id">
+										<button type="button" :disabled="disabledModale" @click="insererActiviteDigilang(activite)">
+											<span class="titre-activite">{{ activite.title }}</span>
+											<span class="detail-activite">{{ activite.tool }}<template v-if="activite.closed"> · {{ $t('activiteFermee') }}</template></span>
+										</button>
+									</li>
+								</ul>
+							</template>
+						</div>
+					</div>
 					<label v-if="media !== '' && source !== 'etherpad'">{{ $t('media') }}</label>
 					<label v-else-if="media !== ''">{{ $t('documentCollaboratif') }}</label>
 					<div id="media" v-if="media !== '' && iframe !== ''">

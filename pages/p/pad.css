@@ -718,6 +718,90 @@
 	text-align: left;
 }
 
+#ajouter-activite {
+	margin-bottom: 1.5rem;
+	text-align: center;
+	font-size: 0;
+}
+
+#activites-digilang {
+	text-align: left;
+	font-size: 1.5rem;
+}
+
+#activites-digilang .entete {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+#activites-digilang .titre-panneau {
+	font-weight: 700;
+	color: #1f2937;
+}
+
+#activites-digilang input[type="search"] {
+	width: 100%;
+	margin-bottom: 1rem;
+}
+
+#activites-digilang .message {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+	margin: 0;
+	color: #1f2937;
+}
+
+#activites-digilang .message a {
+	color: #17605A;
+	text-decoration: underline;
+}
+
+#activites-digilang .liste-activites {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 26rem;
+	overflow-y: auto;
+	border: 1px solid #E0E6E3;
+	border-radius: 0.8rem;
+}
+
+#activites-digilang .liste-activites li + li {
+	border-top: 1px solid #E0E6E3;
+}
+
+#activites-digilang .liste-activites button {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.2rem;
+	width: 100%;
+	padding: 1rem 1.2rem;
+	text-align: left;
+	background: #fff;
+	color: #1f2937;
+	cursor: pointer;
+}
+
+#activites-digilang .liste-activites button:hover,
+#activites-digilang .liste-activites button:focus-visible {
+	background: #F4F6F5;
+}
+
+#activites-digilang .liste-activites .titre-activite {
+	font-weight: 700;
+}
+
+#activites-digilang .liste-activites .detail-activite {
+	font-size: 1.3rem;
+	color: #4b5563;
+}
+
 #recherche {
 	margin-bottom: 20px;
 }

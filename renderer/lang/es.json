@@ -533,5 +533,16 @@
 	"capsuleDeplaceeColonne": "Cápsula movida a la columna {colonne}: posición {position} de {total}",
 	"instructionsOrganiser": "Alt + flechas para mover la cápsula",
 	"instructionsOrganiserColonnes": "Alt + flecha arriba o abajo para mover la cápsula en la columna, Alt + flecha izquierda o derecha para cambiar de columna",
+	"insererActiviteDigilang": "Insertar una actividad de DigiLang",
+	"activitesDigilang": "Mis actividades de DigiLang",
+	"activitesDigilangConnexion": "Inicie sesión en DigiLang en este navegador para ver sus actividades.",
+	"seConnecterDigilang": "Iniciar sesión en DigiLang",
+	"activitesDigilangIndisponibles": "La lista de sus actividades no está disponible por el momento.",
+	"rechercherActivite": "Buscar una actividad",
+	"aucuneActiviteDigilang": "Todavía no tiene ninguna actividad de DigiLang.",
+	"aucuneActiviteTrouvee": "Ninguna actividad coincide.",
+	"activiteFermee": "Cerrada para los alumnos",
+	"retourActivites": "Volver",
+	"actualiserActivites": "Actualizar",
 	"creditDigipad": "Funciona con Digipad, software libre (AGPL) de"
 }

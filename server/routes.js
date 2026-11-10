@@ -72,10 +72,16 @@ export default async function initialiserRoutes ({
 	app.set('trust proxy', trustProxy)
 	app.use(cors({ 'origin': domainesAutorises }))
 
+	// DigiLang : la page du mur lit la liste des activités de l'enseignant (bouton « Insérer une activité DigiLang »).
+	let origineDigilang = null
+	try {
+		origineDigilang = process.env.VITE_DIGILANG_URL ? new URL(process.env.VITE_DIGILANG_URL).origin : null
+	} catch {}
+
 	const politiqueSecuriteApplication = helmet.contentSecurityPolicy({
 		directives: {
 			'default-src': ['\'self\'', 'https:'],
-			'connect-src': ['\'self\'', hoteWs, hoteVite, hoteTeleversement, 'https://pixabay.com', 'https://noembed.com', ...(etherpad ? [etherpad] : []), ...(domaineUmami ? [domaineUmami] : []), ...(domaineMatomo ? [domaineMatomo] : []), ...(Array.isArray(originesS3) ? originesS3 : [])],
+			'connect-src': ['\'self\'', hoteWs, hoteVite, hoteTeleversement, 'https://pixabay.com', 'https://noembed.com', ...(etherpad ? [etherpad] : []), ...(origineDigilang ? [origineDigilang] : []), ...(domaineUmami ? [domaineUmami] : []), ...(domaineMatomo ? [domaineMatomo] : []), ...(Array.isArray(originesS3) ? originesS3 : [])],
 			'script-src': scriptSrc,
 			'media-src': ['\'self\'', 'https:', 'data:', 'blob:'],
 			'worker-src': ['\'self\'', 'https:', 'data:', 'blob:'],
